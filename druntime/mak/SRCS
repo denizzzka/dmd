@@ -31,6 +31,7 @@ SRCS=\
 	src\core\internal\dassert.d \
 	src\core\internal\destruction.d \
 	src\core\internal\entrypoint.d \
+	src\core\internal\event_tests.d \
 	src\core\internal\execinfo.d \
 	src\core\internal\hash.d \
 	src\core\internal\moving.d \
@@ -104,7 +105,6 @@ SRCS=\
 	src\core\stdc\stdio.d \
 	src\core\stdc\stdlib.d \
 	src\core\stdc\string.d \
-	src\core\stdc\tgmath.d \
 	src\core\stdc\time.d \
 	src\core\stdc\wchar_.d \
 	src\core\stdc\wctype.d \
@@ -126,7 +126,6 @@ SRCS=\
 	src\core\sync\condition.d \
 	src\core\sync\config.d \
 	src\core\sync\exception.d \
-	src\core\sync\event.d \
 	src\core\sync\mutex.d \
 	src\core\sync\rwmutex.d \
 	src\core\sync\semaphore.d \
@@ -567,7 +566,6 @@ SRCS=\
 	src\rt\ehalloc.d \
 	src\rt\invariant.d \
 	src\rt\lifetime.d \
-	src\rt\llmath.d \
 	src\rt\memory.d \
 	src\rt\memset.d \
 	src\rt\minfo.d \

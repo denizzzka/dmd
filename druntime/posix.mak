@@ -112,14 +112,48 @@ DRUNTIMESOLIB=$(ROOT)/libdruntime.so.a
 
 STDDOC=
 
+###############
+
+TAGGED_COPY_LIST_FILE:=mak/TAGGED_COPY
+TAGGED_SRCS_FILE:=$(ROOT)/GEN_SRCS
+TAGGED_COPY_FILE:=$(ROOT)/GEN_COPY
+
+# TODO: implement tags table
+ifeq ($(MODEL), 64)
+	ARCH=x86_64
+else
+	ARCH=x86
+endif
+
+ifeq ($(OS), Win_64)
+	# Tags order doesn't matter
+	TAGS:=windows,default,$(ARCH)
+else
+	TAGS:=$(ARCH),posix,$(OS),default
+endif
+
+TGEN_CMD:=./cp_tagged_hier.sh config $(TAGGED_SRCS_FILE) $(TAGGED_COPY_LIST_FILE) $(TAGGED_COPY_FILE) $(TAGS) > /dev/null
+
+TAGGED_SRCS:=$(shell $(TGEN_CMD) && cat $(TAGGED_SRCS_FILE))
+ifneq ($(.SHELLSTATUS),0)
+  $(error Tagged sources list generation failed)
+endif
+
+TAGGED_COPY:=$(shell $(TGEN_CMD) && cat $(TAGGED_COPY_FILE))
+ifneq ($(.SHELLSTATUS),0)
+  $(error Tagged copy list generation failed)
+endif
+
+###############
+
 include mak/COPY
-COPY:=$(subst \,/,$(COPY))
+COPY:=$(subst \,/,$(COPY)) $(subst \,/,$(TAGGED_COPY))
 
 include mak/DOCS
 DOCS:=$(subst \,/,$(DOCS))
 
 include mak/SRCS
-SRCS:=$(subst \,/,$(SRCS))
+SRCS:=$(subst \,/,$(SRCS)) $(subst \,/,$(TAGGED_SRCS))
 
 # NOTE: trace.d and cover.d are not necessary for a successful build
 #       as both are used for debugging features (profiling and coverage)
@@ -371,6 +405,11 @@ $(ROOT)/valgrind.o : src/etc/valgrind/valgrind.c src/etc/valgrind/valgrind.h src
 	@mkdir -p `dirname $@`
 	$(CC) -c $(CFLAGS) $< -o$@
 
+################################################
+
+gen_tagged_srcs_clean:
+	rm -f $(TAGGED_SRCS_FILE) $(TAGGED_COPY_FILE)
+
 ######################## Create a shared library ##############################
 
 $(DRUNTIMESO) $(DRUNTIMESOLIB) dll: DFLAGS+=-version=Shared -fPIC
@@ -510,7 +549,7 @@ install: target
 	cp -r import/* $(INSTALL_DIR)/src/druntime/import/
 endif
 
-clean: $(addsuffix /.clean,$(ADDITIONAL_TESTS))
+clean: $(addsuffix /.clean,$(ADDITIONAL_TESTS)) gen_tagged_srcs_clean
 	rm -rf $(ROOT_OF_THEM_ALL) $(IMPDIR) $(DOC_OUTPUT_DIR) druntime.zip
 
 test/%/.clean: test/%/Makefile
