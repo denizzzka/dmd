@@ -79,10 +79,10 @@ nothrow @nogc:
      */
     void initialize(bool manualReset, bool initialState)
     {
-            if (m_event)
-                return;
-            m_event = CreateEvent(null, manualReset, initialState, null);
-            m_event || abort("Error: CreateEvent failed.");
+        if (m_event)
+            return;
+        m_event = CreateEvent(null, manualReset, initialState, null);
+        m_event || abort("Error: CreateEvent failed.");
     }
 
     // copying not allowed, can produce resource leaks
@@ -100,9 +100,9 @@ nothrow @nogc:
     */
     void terminate()
     {
-            if (m_event)
-                CloseHandle(m_event);
-            m_event = null;
+        if (m_event)
+            CloseHandle(m_event);
+        m_event = null;
     }
 
     deprecated ("Use setIfInitialized() instead") void set()
@@ -113,15 +113,15 @@ nothrow @nogc:
     /// Set the event to "signaled", so that waiting clients are resumed
     void setIfInitialized()
     {
-            if (m_event)
-                SetEvent(m_event);
+        if (m_event)
+            SetEvent(m_event);
     }
 
     /// Reset the event manually
     void reset()
     {
-            if (m_event)
-                ResetEvent(m_event);
+        if (m_event)
+            ResetEvent(m_event);
     }
 
     /**
@@ -132,7 +132,7 @@ nothrow @nogc:
      */
     bool wait()
     {
-            return m_event && WaitForSingleObject(m_event, INFINITE) == WAIT_OBJECT_0;
+        return m_event && WaitForSingleObject(m_event, INFINITE) == WAIT_OBJECT_0;
     }
 
     /**
@@ -146,22 +146,21 @@ nothrow @nogc:
      */
     bool wait(Duration tmout)
     {
-            if (!m_event)
-                return false;
+        if (!m_event)
+            return false;
 
-            auto maxWaitMillis = dur!("msecs")(uint.max - 1);
+        auto maxWaitMillis = dur!("msecs")(uint.max - 1);
 
-            while (tmout > maxWaitMillis)
-            {
-                auto res = WaitForSingleObject(m_event, uint.max - 1);
-                if (res != WAIT_TIMEOUT)
-                    return res == WAIT_OBJECT_0;
-                tmout -= maxWaitMillis;
-            }
-            auto ms = cast(uint)(tmout.total!"msecs");
-            return WaitForSingleObject(m_event, ms) == WAIT_OBJECT_0;
+        while (tmout > maxWaitMillis)
+        {
+            auto res = WaitForSingleObject(m_event, uint.max - 1);
+            if (res != WAIT_TIMEOUT)
+                return res == WAIT_OBJECT_0;
+            tmout -= maxWaitMillis;
+        }
+        auto ms = cast(uint)(tmout.total!"msecs");
+        return WaitForSingleObject(m_event, ms) == WAIT_OBJECT_0;
     }
 
-private:
-        HANDLE m_event;
+    private HANDLE m_event;
 }
