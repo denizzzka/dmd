@@ -412,7 +412,7 @@ $(ROOT)/valgrind.o : src/etc/valgrind/valgrind.c src/etc/valgrind/valgrind.h src
 ################################################
 
 gen_tagged_srcs_clean:
-	rm -f $(TAGGED_SRCS_FILE) $(TAGGED_COPY_FILE)
+	rm -f $(TAGGED_SRCS_FILE) $(TAGGED_SRCS_FILE).disabled $(TAGGED_COPY_FILE)
 
 ######################## Create a shared library ##############################
 
