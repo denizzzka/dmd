@@ -228,7 +228,6 @@ public:
     virtual const char *kind() const;
     virtual Dsymbol *toAlias();                 // resolve real symbol
     virtual Dsymbol *toAlias2();
-    virtual void importAll(Scope *sc);
     virtual bool overloadInsert(Dsymbol *s);
     virtual uinteger_t size(const Loc &loc);
     virtual bool isforwardRef();
@@ -248,7 +247,6 @@ public:
     virtual Visibility visible();
     virtual Dsymbol *syntaxCopy(Dsymbol *s);    // copy only syntax trees
     virtual bool oneMember(Dsymbol **ps, Identifier *ident);
-    virtual void setFieldOffset(AggregateDeclaration *ad, FieldState& fieldState, bool isunion);
     virtual bool hasPointers();
     virtual bool hasStaticCtorOrDtor();
     virtual void addObjcSymbols(ClassDeclarations *, ClassDeclarations *) { }
@@ -431,3 +429,5 @@ void addMember(Dsymbol *dsym, Scope *sc, ScopeDsymbol *sds);
 Dsymbol *search(Dsymbol *d, const Loc &loc, Identifier *ident, SearchOptFlags flags = (SearchOptFlags)SearchOpt::localsOnly);
 bool checkDeprecated(Dsymbol *d, const Loc &loc, Scope *sc);
 void setScope(Dsymbol *d, Scope *sc);
+void importAll(Dsymbol *d, Scope *sc);
+void setFieldOffset(Dsymbol *d, AggregateDeclaration *ad, FieldState& fieldState, bool isunion);

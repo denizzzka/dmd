@@ -594,7 +594,7 @@ extern (C++) class ClassDeclaration : AggregateDeclaration
         fieldState.offset = structsize;
         foreach (s; *members)
         {
-            s.setFieldOffset(this, fieldState, false);
+            s.setFieldOffset(this, &fieldState, false);
         }
 
         sizeok = Sizeok.done;
@@ -670,6 +670,7 @@ extern (C++) class ClassDeclaration : AggregateDeclaration
 
         void searchVtbl(ref Dsymbols vtbl)
         {
+            import dmd.typesem : covariant;
             bool seenInterfaceVirtual;
             foreach (s; vtbl)
             {

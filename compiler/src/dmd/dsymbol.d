@@ -713,10 +713,6 @@ extern (C++) class Dsymbol : ASTNode
         return toAlias();
     }
 
-    void importAll(Scope* sc)
-    {
-    }
-
     bool overloadInsert(Dsymbol s)
     {
         //printf("Dsymbol::overloadInsert('%s')\n", s.toChars());
@@ -921,10 +917,6 @@ extern (C++) class Dsymbol : ASTNode
         *ps = s; // s is the one symbol, null if none
         //printf("\ttrue\n");
         return true;
-    }
-
-    void setFieldOffset(AggregateDeclaration ad, ref FieldState fieldState, bool isunion)
-    {
     }
 
     /*****************************************
