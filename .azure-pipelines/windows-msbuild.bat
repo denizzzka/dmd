@@ -1,5 +1,10 @@
 setlocal
 @echo on
+
+:: put bash and GNU tools in front of PATH
+set PATH=C:\Program Files\Git\usr\bin;%PATH%
+
+:: now set up MSVC environment (=> first link.exe etc. in PATH is MSVC's, not GNU's)
 call "%VSINSTALLDIR%\VC\Auxiliary\Build\vcvarsall.bat" %ARCH%
 @echo on
 
@@ -19,10 +24,7 @@ set LDC_DIR=%DMD_DIR%\ldc2-%LDC_VERSION%-windows-multilib
 if "%D_COMPILER%" == "ldc" set HOST_DMD=%LDC_DIR%\bin\ldmd2.exe
 if "%D_COMPILER%" == "dmd" set HOST_DMD=%DMD_DIR%\dmd2\windows\bin\dmd.exe
 
-REM take the first found cl.exe, in case there was already one in the path when vcvarsall.bat was called
-FOR /F "tokens=* USEBACKQ" %%F IN (`where cl.exe`) DO (SET MSVC_CC=%%~fsF
-  goto CC_DONE)
-:CC_DONE
+set MSVC_CC=cl.exe
 FOR /F "tokens=* USEBACKQ" %%F IN (`where lib.exe`) DO (SET MSVC_AR=%%~fsF)
 
 REM add grep to PATH
@@ -43,12 +45,11 @@ msbuild /target:dmd /p:Configuration=%CONFIGURATION% /p:Platform=%PLATFORM% %LDC
 %DMD% --version
 
 echo [STEP]: Building druntime
-cd "%DMD_DIR%\druntime"
-"%DM_MAKE%" -f win64.mak MODEL=%MODEL% "DMD=%DMD%" "VCDIR=%VCINSTALLDIR%." "CC=%MSVC_CC%" "MAKE=%DM_MAKE%" "HOST_DMD=%HOST_DMD%" target || exit /B 2
+make -j%N% -C "%DMD_DIR%\druntime" MODEL=%MODEL% "DMD=%DMD%" || exit /B 2
 
 echo [STEP]: Building phobos
 cd "%DMD_DIR%\..\phobos"
-"%DM_MAKE%" -f win64.mak MODEL=%MODEL% "DMD=%DMD%" "VCDIR=%VCINSTALLDIR%." "CC=%MSVC_CC%" "AR=%MSVC_AR%" "MAKE=%DM_MAKE%" "DRUNTIME=%DMD_DIR%\druntime" || exit /B 3
+"%DM_MAKE%" -f win64.mak MODEL=%MODEL% "DMD=%DMD%" "VCDIR=%VCINSTALLDIR%." "CC=%MSVC_CC%" "AR=%MSVC_AR%" "MAKE=%DM_MAKE%" "DRUNTIME=%DMD_DIR%\druntime" "DRUNTIMELIB=%DMD_DIR%\generated\windows\release\%MODEL%\druntime.lib" || exit /B 3
 :: The expected Phobos filename for 32-bit COFF is phobos32mscoff.lib, not phobos32.lib.
 if "%MODEL%" == "32" ren phobos32.lib phobos32mscoff.lib || exit /B 3
 
@@ -61,7 +62,7 @@ run.exe tools "BUILD=%CONFIGURATION%" "DMD_MODEL=%PLATFORM%" || exit /B 4
 :: FIXME: skip unit_tests temporarily due to unclear (spurious?) CI failures
 :: set DMD_TESTS=all
 set DMD_TESTS=runnable runnable_cxx compilable fail_compilation dshell
-set DRUNTIME_TESTS=test_all
+set DRUNTIME_TESTS_TARGET=unittest
 cd "%DMD_DIR%"
 if not "%C_RUNTIME%" == "mingw" goto not_mingw
     rem install recent LLD and mingw libraries to built dmd
@@ -87,18 +88,17 @@ if not "%C_RUNTIME%" == "mingw" goto not_mingw
     set DMD_TESTS=runnable compilable fail_compilation dshell
     rem FIXME: debug info incomplete when linking through lld-link
     del compiler\test\runnable\testpdb.d
-
-    set DRUNTIME_TESTS=test_mingw
+    rem Somehow, and only for the MinGW CI job, building the druntime unittest runner in release mode can take ages (~15 mins with -j1)
+    set DRUNTIME_TESTS_TARGET=unittest-debug
 :not_mingw
 
 echo [STEP]: Building and running druntime tests
 cd "%DMD_DIR%\druntime"
-"%DM_MAKE%" -f win64.mak MODEL=%MODEL% "DMD=%DMD%" "VCDIR=%VCINSTALLDIR%." "CC=%MSVC_CC%" "MAKE=%DM_MAKE%" unittest %DRUNTIME_TESTS% || exit /B 5
+make -j%N% MODEL=%MODEL% "DMD=%DMD%" "CC=%MSVC_CC%" %DRUNTIME_TESTS_TARGET% || exit /B 5
 
 echo [STEP]: Running DMD testsuite
 cd "%DMD_DIR%\compiler\test"
-set CC=%MSVC_CC%
-run.exe --environment --jobs=%N% %DMD_TESTS% "ARGS=-O -inline -g" "BUILD=%CONFIGURATION%" "DMD_MODEL=%PLATFORM%" || exit /B 6
+run.exe --environment --jobs=%N% %DMD_TESTS% "ARGS=-O -inline -g" "BUILD=%CONFIGURATION%" "DMD_MODEL=%PLATFORM%" "CC=%MSVC_CC%" || exit /B 6
 
 echo [STEP]: Building and running Phobos unittests
 rem FIXME: lld-link fails to link phobos unittests ("error: relocation against symbol in discarded section: __TMP2427")
@@ -108,4 +108,4 @@ if "%D_COMPILER%_%MODEL%" == "ldc_64" copy %LDC_DIR%\lib64\libcurl.dll .
 if "%D_COMPILER%_%MODEL%" == "ldc_32" copy %LDC_DIR%\lib32\libcurl.dll .
 if "%D_COMPILER%_%MODEL%" == "dmd_64" copy %DMD_DIR%\dmd2\windows\bin64\libcurl.dll .
 if "%D_COMPILER%_%MODEL%" == "dmd_32" copy %DMD_DIR%\dmd2\windows\bin\libcurl.dll .
-"%DM_MAKE%" -f win64.mak MODEL=%MODEL% "DMD=%DMD%" "VCDIR=%VCINSTALLDIR%." "CC=%MSVC_CC%" "MAKE=%DM_MAKE%" "DRUNTIME=%DMD_DIR%\druntime" unittest || exit /B 7
+"%DM_MAKE%" -f win64.mak MODEL=%MODEL% "DMD=%DMD%" "VCDIR=%VCINSTALLDIR%." "CC=%MSVC_CC%" "MAKE=%DM_MAKE%" "DRUNTIME=%DMD_DIR%\druntime" "DRUNTIMELIB=%DMD_DIR%\generated\windows\release\%MODEL%\druntime.lib" unittest || exit /B 7
