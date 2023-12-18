@@ -138,8 +138,18 @@ TAGGED_COPY_LIST_FILE:=mak/TAGGED_COPY
 TAGGED_SRCS_FILE:=$(ROOT)/GEN_SRCS
 TAGGED_COPY_FILE:=$(ROOT)/GEN_COPY
 
-# Tags order doesn't matter
-TAGS:=posix,$(OS),default
+ifeq (64,$(MODEL))
+	ARCH_TAG:=x86_64
+else
+	ARCH_TAG:=x86
+endif
+
+ifeq (windows,$(OS))
+	# Tags order doesn't matter
+	TAGS:=$(ARCH_TAG),windows
+else
+	TAGS:=$(ARCH_TAG),posix,$(OS)
+endif
 
 TGEN_CMD:=./parse_tagged_hier.sh config $(TAGGED_SRCS_FILE) $(TAGGED_COPY_LIST_FILE) $(TAGGED_COPY_FILE) $(TAGS) > /dev/null
 
