@@ -148,7 +148,7 @@ ifeq (windows,$(OS))
 	# Tags order doesn't matter
 	TAGS:=$(ARCH_TAG),windows
 else
-	TAGS:=$(ARCH_TAG),posix,$(OS)
+	TAGS:=$(ARCH_TAG),$(OS),posix_threads
 endif
 
 TGEN_CMD:=./parse_tagged_hier.sh config $(TAGGED_SRCS_FILE) $(TAGGED_COPY_LIST_FILE) $(TAGGED_COPY_FILE) $(TAGS) > /dev/null
