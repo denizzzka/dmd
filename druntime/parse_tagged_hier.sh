@@ -7,6 +7,7 @@ DST_FILE=$2
 SRC_COPY_FILE=$3
 DST_COPY_FILE=$4
 TAGS=$5
+IMPDIR=$6
 
 if [[ ! -d ${SRC_DIR} ]]; then
     echo "Tags dir '${SRC_DIR}' not found" >&2
@@ -65,7 +66,7 @@ do
 
     # Adds copy entry if file mentioned in the list
     grep -F "$maybe_copy" ${SRC_COPY_FILE} > /dev/null && {
-        echo 'import\'${fl} >> ${DST_COPY_FILE}
+        echo ${IMPDIR}'\'${fl} >> ${DST_COPY_FILE}
         COPIED=$((COPIED+1))
     }
 done
