@@ -74,7 +74,7 @@ if [ $COPIED -ne $LINES_TO_COPY ]; then
     echo "File '$SRC_COPY_FILE' contains $LINES_TO_COPY meaningful line(s), but to '$DST_COPY_FILE' added $COPIED line(s)" >&2
 
     mv ${DST_FILE} "$DST_FILE.disabled"
-    echo "File '$DST_FILE' to '$DST_FILE.disabled' to avoid considering that tags parsing process was sucessfully done" >&2
+    echo "File '$DST_FILE' moved to '$DST_FILE.disabled' to avoid considering that tags parsing process was sucessfully done" >&2
     exit 1
 fi
 
