@@ -3,7 +3,7 @@
  *
  * Specification: $(LINK2 https://dlang.org/spec/ddoc.html, Documentation Generator)
  *
- * Copyright:   Copyright (C) 1999-2023 by The D Language Foundation, All Rights Reserved
+ * Copyright:   Copyright (C) 1999-2024 by The D Language Foundation, All Rights Reserved
  * Authors:     $(LINK2 https://www.digitalmars.com, Walter Bright)
  * License:     $(LINK2 https://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
  * Source:      $(LINK2 https://github.com/dlang/dmd/blob/master/src/dmd/doc.d, _doc.d)
@@ -1296,7 +1296,7 @@ void toDocBuffer(Dsymbol s, ref OutBuffer buf, Scope* sc)
                 Type origType = d.originalType ? d.originalType : d.type;
                 if (origType.ty == Tfunction)
                 {
-                    functionToBufferFull(cast(TypeFunction)origType, *buf, d.ident, &hgs, td);
+                    functionToBufferFull(cast(TypeFunction)origType, *buf, d.ident, hgs, td);
                 }
                 else
                     toCBuffer(origType, *buf, d.ident, hgs);
@@ -1355,6 +1355,7 @@ void toDocBuffer(Dsymbol s, ref OutBuffer buf, Scope* sc)
             {
                 if (type.ty == Tclass || type.ty == Tstruct || type.ty == Tenum)
                 {
+                    import dmd.typesem : toDsymbol;
                     if (Dsymbol s = type.toDsymbol(null)) // elaborate type
                         prettyPrintDsymbol(s, ad.parent);
                     else

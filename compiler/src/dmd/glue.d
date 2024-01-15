@@ -3,7 +3,7 @@
  *
  * generateCodeAndWrite() is the only function seen by the front end.
  *
- * Copyright:   Copyright (C) 1999-2023 by The D Language Foundation, All Rights Reserved
+ * Copyright:   Copyright (C) 1999-2024 by The D Language Foundation, All Rights Reserved
  * Authors:     $(LINK2 https://www.digitalmars.com, Walter Bright)
  * License:     $(LINK2 https://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
  * Source:      $(LINK2 https://github.com/dlang/dmd/blob/master/src/glue.d, _glue.d)
@@ -203,12 +203,13 @@ struct Glue
     elem *eictor;
     Symbol *ictorlocalgot;
 
-    symbols sctors;
+    symbols sctors; // static constructorss
     StaticDtorDeclarations ectorgates;
     symbols sdtors;
     symbols stests;
 
-    symbols ssharedctors;
+    symbols ssharedctors; // shared static constructors
+    symbols sisharedctors; // standalone shared static constructors
     SharedStaticDtorDeclarations esharedctorgates;
     symbols sshareddtors;
 
@@ -637,7 +638,7 @@ private void genObjFile(Module m, bool multiobj)
 
     // If coverage / static constructor / destructor / unittest calls
     if (glue.eictor || glue.sctors.length || glue.ectorgates.length || glue.sdtors.length ||
-        glue.ssharedctors.length || glue.esharedctorgates.length || glue.sshareddtors.length || glue.stests.length)
+        glue.ssharedctors.length || glue.esharedctorgates.length || glue.sshareddtors.length || glue.stests.length || glue.sisharedctors.length)
     {
         if (glue.eictor)
         {
@@ -653,6 +654,13 @@ private void genObjFile(Module m, bool multiobj)
 
         m.sctor = callFuncsAndGates(m, glue.sctors[], glue.ectorgates[], "__modctor");
         m.sdtor = callFuncsAndGates(m, glue.sdtors[], null, "__moddtor");
+
+        if (glue.sisharedctors.length > 0)
+        {
+            if (m.sictor)
+                glue.sisharedctors.shift(m.sictor);
+            m.sictor = callFuncsAndGates(m, glue.sisharedctors[], null, "__modsharedictor");
+        }
 
         m.ssharedctor = callFuncsAndGates(m, glue.ssharedctors[], cast(StaticDtorDeclaration[])glue.esharedctorgates[], "__modsharedctor");
         m.sshareddtor = callFuncsAndGates(m, glue.sshareddtors[], null, "__modshareddtor");
@@ -1198,9 +1206,12 @@ public void FuncDeclaration_toObjFile(FuncDeclaration fd, bool multiobj)
         insertFinallyBlockCalls(f.Fstartblock);
 
     // If static constructor
-    if (fd.isSharedStaticCtorDeclaration())        // must come first because it derives from StaticCtorDeclaration
+    if (auto sctor = fd.isSharedStaticCtorDeclaration())        // must come first because it derives from StaticCtorDeclaration
     {
-        glue.ssharedctors.push(s);
+        if (sctor.standalone)
+            glue.sisharedctors.push(s);
+        else
+            glue.ssharedctors.push(s);
     }
     else if (fd.isStaticCtorDeclaration())
     {
@@ -1255,7 +1266,7 @@ public void FuncDeclaration_toObjFile(FuncDeclaration fd, bool multiobj)
     // Restore symbol table
     cstate.CSpsymtab = symtabsave;
 
-    if (fd.isExport())
+    if (fd.isExport() || driverParams.exportVisibility == ExpVis.public_)
         objmod.export_symbol(s, cast(uint)Para.offset);
 
     if (fd.isCrtCtor)

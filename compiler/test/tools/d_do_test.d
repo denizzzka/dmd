@@ -103,6 +103,7 @@ struct TestArgs
     string   compileOutput;         /// `TEST_OUTPUT`: expected output of dmd
     string   compileOutputFile;     /// `TEST_OUTPUT_FILE`: file containing the expected `TEST_OUTPUT`
     string   runOutput;             /// `RUN_OUTPUT`: expected output of the compiled executable
+    ubyte    runReturn;             /// `RUN_RETURN` expected exit code of the executable when run
     string   gdbScript;             /// `GDB_SCRIPT`: script executed when running the compiled executable in GDB
     string   gdbMatch;              /// `GDB_MATCH`: regex describing the expected output from executing `GDB_SSCRIPT`
     string   postScript;            /// `POSTSCRIPT`: bash script executed after a successful test
@@ -138,7 +139,6 @@ struct EnvData
     bool coverage_build;         /// `COVERAGE`: coverage build, skip linking & executing to save time
     bool autoUpdate;             /// `AUTO_UPDATE`: update `(TEST|RUN)_OUTPUT` on missmatch
     bool printRuntime;           /// `PRINT_RUNTIME`: Print time spent on a single test
-    bool usingMicrosoftCompiler; /// Using Visual Studio toolchain
     bool tryDisabled;            /// `TRY_DISABLED`:Silently try disabled tests (ignore failure and report success)
 }
 
@@ -198,17 +198,15 @@ immutable(EnvData) processEnvironment()
         else if (envData.model == "32omf")
             envData.ccompiler = "dmc";
         else if (envData.model == "64")
-            envData.ccompiler = `C:\"Program Files (x86)"\"Microsoft Visual Studio 10.0"\VC\bin\amd64\cl.exe`;
+            envData.ccompiler = "cl";
         else if (envData.model == "32mscoff")
-            envData.ccompiler = `C:\"Program Files (x86)"\"Microsoft Visual Studio 10.0"\VC\bin\amd64_x86\cl.exe`;
+            envData.ccompiler = "cl";
         else
         {
             writeln("Unknown $OS$MODEL combination: ", envData.os, envData.model);
             throw new SilentQuit();
         }
     }
-
-    envData.usingMicrosoftCompiler = envData.ccompiler.toLower.endsWith("cl.exe");
 
     version (Windows) {} else
     {
@@ -831,6 +829,17 @@ bool gatherTestParameters(ref TestArgs testArgs, string input_dir, string input_
 
     findOutputParameter(file, "RUN_OUTPUT", testArgs.runOutput, envData);
 
+    string dummy;
+    if (findTestParameter(envData, file, "RUN_RETURN", dummy))
+    {
+        import std.conv : to;
+        scope(failure)
+        {
+            writeln("Something went wrong when parsing RUN_RETURN from " ~ dummy);
+        }
+        testArgs.runReturn = dummy.to!(typeof(testArgs.runReturn));
+    }
+
     findOutputParameter(file, "GDB_SCRIPT", testArgs.gdbScript, envData);
     findTestParameter(envData, file, "GDB_MATCH", testArgs.gdbMatch);
 
@@ -923,7 +932,7 @@ void tryRemove(in char[] filename)
  * Throws:
  *   Exception if `command` returns another exit code than 0/1 (depending on expectPass)
  */
-string execute(ref File f, string command, bool expectpass)
+string execute(ref File f, string command, const ubyte expectedRc)
 {
     f.writeln(command);
     const result = std.process.executeShell(command);
@@ -935,8 +944,7 @@ string execute(ref File f, string command, bool expectpass)
     }
     else
     {
-        const exp = expectpass ? 0 : 1;
-        enforce(result.status == exp, format("Expected rc == %d, but exited with rc == %d", exp, result.status));
+        enforce(result.status == expectedRc, format("Expected rc == %d, but exited with rc == %d", expectedRc, result.status));
     }
 
     return result.output;
@@ -1098,13 +1106,13 @@ bool collectExtraSources (in string input_dir, in string output_dir, in string[]
         auto curSrc = input_dir ~ envData.sep ~"extra-files" ~ envData.sep ~ cur;
         auto curObj = output_dir ~ envData.sep ~ cur ~ envData.obj;
         string command = quoteSpaces(compiler);
-        if (envData.usingMicrosoftCompiler)
-        {
-            command ~= ` /c /nologo `~curSrc~` /Fo`~curObj;
-        }
-        else if (envData.compiler == "dmd" && envData.os == "windows" && envData.model == "32omf")
+        if (envData.model == "32omf") // dmc.exe
         {
             command ~= " -c "~curSrc~" -o"~curObj;
+        }
+        else if (envData.os == "windows") // cl.exe
+        {
+            command ~= ` /c /nologo `~curSrc~` /Fo`~curObj;
         }
         else
         {
@@ -1738,7 +1746,7 @@ int tryMain(string[] args)
                         (autoCompileImports ? "-i" : join(testArgs.compiledImports, " ")));
 
                 try
-                    compile_output = execute(fThisRun, command, testArgs.mode != TestMode.FAIL_COMPILE);
+                    compile_output = execute(fThisRun, command, testArgs.mode == TestMode.FAIL_COMPILE);
                 catch (Exception e)
                 {
                     writeln(""); // We're at "... runnable/xxxx.d (args)"
@@ -1755,7 +1763,7 @@ int tryMain(string[] args)
 
                     command = format("%s -conf= -m%s -I%s %s %s -od%s -c %s %s", envData.dmd, envData.model, input_dir,
                         testArgs.requiredArgs, permutedArgs, output_dir, argSet, filename);
-                    compile_output ~= execute(fThisRun, command, testArgs.mode != TestMode.FAIL_COMPILE);
+                    compile_output ~= execute(fThisRun, command, testArgs.mode == TestMode.FAIL_COMPILE);
                 }
 
                 if (testArgs.mode == TestMode.RUN || testArgs.link)
@@ -1766,7 +1774,7 @@ int tryMain(string[] args)
                         autoCompileImports ? "extraSourceIncludePaths" : "",
                         envData.required_args, testArgs.requiredArgsForLink, output_dir, test_app_dmd, join(toCleanup, " "));
 
-                    execute(fThisRun, command, true);
+                    execute(fThisRun, command, testArgs.runReturn);
                 }
             }
 
@@ -1832,7 +1840,7 @@ int tryMain(string[] args)
             {
                 toCleanup ~= test_app_dmd;
                 version(Windows)
-                    if (envData.usingMicrosoftCompiler)
+                    if (envData.model != "32omf")
                     {
                         toCleanup ~= test_app_dmd_base ~ to!string(permuteIndex) ~ ".ilk";
                         toCleanup ~= test_app_dmd_base ~ to!string(permuteIndex) ~ ".pdb";
@@ -1843,9 +1851,11 @@ int tryMain(string[] args)
                     command = test_app_dmd;
                     if (testArgs.executeArgs) command ~= " " ~ testArgs.executeArgs;
 
-                    const output = execute(fThisRun, command, true)
+                    string output = execute(fThisRun, command, testArgs.runReturn)
                                     .strip()
                                     .unifyNewLine();
+
+                    output.applyOutputTransformations(testArgs.transformOutput);
 
                     if (testArgs.runOutput && !compareOutput(output, testArgs.runOutput, envData))
                     {
@@ -1864,7 +1874,7 @@ int tryMain(string[] args)
                             write(testArgs.gdbScript);
                         }
                         string gdbCommand = "gdb "~test_app_dmd~" --batch -x "~script;
-                        auto gdb_output = execute(fThisRun, gdbCommand, true);
+                        auto gdb_output = execute(fThisRun, gdbCommand, 0);
                         if (testArgs.gdbMatch !is null)
                         {
                             enforce(match(gdb_output, regex(testArgs.gdbMatch)),
@@ -1882,7 +1892,7 @@ int tryMain(string[] args)
                 f.write("Executing post-test script: ");
                 string prefix = "";
                 version (Windows) prefix = "bash ";
-                execute(f, prefix ~ "tools/postscript.sh " ~ testArgs.postScript ~ " " ~ input_dir ~ " " ~ test_name ~ " " ~ thisRunName, true);
+                execute(f, prefix ~ "tools/postscript.sh " ~ testArgs.postScript ~ " " ~ input_dir ~ " " ~ test_name ~ " " ~ thisRunName, 0);
             }
 
             foreach (file; chain(toCleanup, testArgs.outputFiles))

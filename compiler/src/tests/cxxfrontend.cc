@@ -220,7 +220,7 @@ void test_visitors()
     assert(tv.stmt == true);
 
     TypePointer *tp = TypePointer::create(Type::tvoid);
-    assert(tp->hasPointers() == true);
+    assert(hasPointers(tp) == true);
     tp->accept(&tv);
     assert(tv.type == true);
 
@@ -694,7 +694,7 @@ public:
             for (size_t i = 0; i < attrs->length; i++)
             {
                 Expression *attr = (*attrs)[i];
-                Dsymbol *sym = attr->type->toDsymbol(0);
+                Dsymbol *sym = toDsymbol(attr->type, 0);
                 if (!sym)
                 {
                     if (TemplateExp *te = attr->isTemplateExp())
@@ -1680,6 +1680,11 @@ void test_backend(FuncDeclaration *f, Type *t)
         (void)t->mod;
     }
     f->fbody->accept(&v);
+}
+
+void link_test_typesem(Type *t1, Type *t2)
+{
+    covariant(t1, t2);
 }
 
 /**********************************/

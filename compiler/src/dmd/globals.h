@@ -1,6 +1,6 @@
 
 /* Compiler implementation of the D programming language
- * Copyright (C) 1999-2023 by The D Language Foundation, All Rights Reserved
+ * Copyright (C) 1999-2024 by The D Language Foundation, All Rights Reserved
  * written by Walter Bright
  * https://www.digitalmars.com
  * Distributed under the Boost Software License, Version 1.0.
@@ -307,7 +307,7 @@ struct Global
     ErrorSink* errorSink;       // where the error messages go
     ErrorSink* errorSinkNull;   // where the error messages disappear
 
-    FileName (*preprocess)(FileName, const Loc&, bool&, OutBuffer&);
+    DArray<unsigned char> (*preprocess)(FileName, const Loc&, OutBuffer&);
 
     /* Start gagging. Return the current number of gagged errors
      */

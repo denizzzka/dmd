@@ -15,11 +15,10 @@
 
 QUIET:=
 
-DMD_DIR=../compiler
 DUB=dub
 TOOLS_DIR=../../tools
 
-include $(DMD_DIR)/src/osmodel.mak
+include ../compiler/src/osmodel.mak
 
 ifeq (windows,$(OS))
     DOTEXE:=.exe
@@ -51,7 +50,7 @@ ifneq ($(BUILD),release)
     endif
 endif
 
-DMD=$(DMD_DIR)/../generated/$(OS)/$(BUILD)/$(MODEL)/dmd$(DOTEXE)
+DMD=../generated/$(OS)/$(BUILD)/$(MODEL)/dmd$(DOTEXE)
 INSTALL_DIR=../../install
 
 # directory where the html files for the documentation are placed
@@ -111,6 +110,9 @@ else
 	DFLAGS:=$(UDFLAGS) -inline # unittests don't compile with -inline
 endif
 
+SHAREDFLAGS:=$(if $(findstring $(OS),windows),-visibility=public -mscrtlib=msvcrt,-fPIC)
+SOLIBS:=$(if $(findstring $(OS),windows),msvcrt.lib legacy_stdio_definitions.lib,-L-lpthread -L-lm)
+
 UTFLAGS:=-version=CoreUnittest -unittest -checkaction=context
 
 # Set PHOBOS_DFLAGS (for linking against Phobos)
@@ -126,7 +128,8 @@ ROOT_OF_THEM_ALL = ../generated
 ROOT = $(ROOT_OF_THEM_ALL)/$(OS)/$(BUILD)/$(MODEL)
 OBJDIR=obj/$(OS)/$(BUILD)/$(MODEL)
 DRUNTIME=$(ROOT)/$(if $(findstring $(OS),windows),,lib)druntime$(DOTLIB)
-DRUNTIMESO=$(ROOT)/$(if $(findstring $(OS),windows),,lib)druntime$(DOTDLL)
+DRUNTIMESO_BASE=$(ROOT)/$(if $(findstring $(OS),windows),druntime_shared,libdruntime)
+DRUNTIMESO=$(DRUNTIMESO_BASE)$(DOTDLL)
 DRUNTIMESOOBJ=$(DRUNTIMESO)$(DOTOBJ)
 DRUNTIMESOLIB=$(DRUNTIMESO)$(DOTLIB)
 
@@ -410,11 +413,11 @@ $(IMPDIR)/%.h : src/%.h
 
 ######################## Build DMD if non-existent ##############################
 
-$(DMD_DIR)/../generated/$(OS)/$(BUILD)/$(MODEL)/dmd$(DOTEXE):
-	$(MAKE) -C $(DMD_DIR)/.. dmd BUILD=$(BUILD) OS=$(OS) MODEL=$(MODEL) DMD=""
+../generated/$(OS)/$(BUILD)/$(MODEL)/dmd$(DOTEXE):
+	$(MAKE) -C .. dmd BUILD=$(BUILD) OS=$(OS) MODEL=$(MODEL) DMD=""
 
 # alias using the absolute path (the Phobos Makefile specifies an absolute path)
-$(abspath $(DMD_DIR)/../generated/$(OS)/$(BUILD)/$(MODEL)/dmd$(DOTEXE)): $(DMD_DIR)/../generated/$(OS)/$(BUILD)/$(MODEL)/dmd$(DOTEXE)
+$(abspath ../generated/$(OS)/$(BUILD)/$(MODEL)/dmd$(DOTEXE)): ../generated/$(OS)/$(BUILD)/$(MODEL)/dmd$(DOTEXE)
 
 ################### C/ASM Targets ############################
 
@@ -453,11 +456,12 @@ gen_tagged_srcs_clean:
 
 ######################## Create a shared library ##############################
 
-$(DRUNTIMESO) $(DRUNTIMESOLIB) dll: DFLAGS+=-version=Shared $(if $(findstring $(OS),windows),,-fPIC)
+$(DRUNTIMESO) $(DRUNTIMESOLIB) dll: DFLAGS+=-version=Shared $(SHAREDFLAGS)
 dll: $(DRUNTIMESOLIB)
+dll_so: $(DRUNTIMESO)
 
 $(DRUNTIMESO): $(OBJS) $(SRCS) $(DMD)
-	$(DMD) -shared -debuglib= -defaultlib= -of$(DRUNTIMESO) $(DFLAGS) $(SRCS) $(OBJS) $(LINKDL) -L-lpthread -L-lm
+	$(DMD) -shared -debuglib= -defaultlib= -of$(DRUNTIMESO) $(DFLAGS) $(SRCS) $(OBJS) $(LINKDL) $(SOLIBS)
 
 $(DRUNTIMESOLIB): $(OBJS) $(SRCS) $(DMD)
 	$(DMD) -c $(if $(findstring $(OS),windows),,-fPIC) -of$(DRUNTIMESOOBJ) $(DFLAGS) $(SRCS)
@@ -470,7 +474,8 @@ $(DRUNTIME): $(OBJS) $(SRCS) $(DMD)
 
 lib: $(DRUNTIME)
 
-UT_MODULES:=$(patsubst src/%.d,$(ROOT)/unittest/%,$(SRCS))
+UT_SRCS:=$(SRCS)
+UT_MODULES:=$(patsubst src/%.d,$(ROOT)/unittest/%,$(UT_SRCS))
 HAS_ADDITIONAL_TESTS:=$(shell test -d test && echo 1)
 ifeq ($(HAS_ADDITIONAL_TESTS),1)
     ADDITIONAL_TESTS:=test/init_fini test/exceptions test/coverage test/profile test/cycles test/allocations test/typeinfo \
@@ -523,13 +528,14 @@ $(ROOT)/unittest/test_runner$(DOTEXE): $(OBJS) $(SRCS) src/test_runner.d $(DMD)
 else
 
 UT_DRUNTIME:=$(ROOT)/unittest/libdruntime-ut$(DOTDLL)
+UT_DRUNTIMELIB:=$(ROOT)/unittest/libdruntime-ut$(if $(findstring $(OS),windows),$(DOTLIB),$(DOTDLL))
 
-$(UT_DRUNTIME): UDFLAGS+=-version=Shared $(if $(findstring $(OS),windows),,-fPIC)
+$(UT_DRUNTIME): UDFLAGS+=-version=Shared $(SHAREDFLAGS)
 $(UT_DRUNTIME): $(OBJS) $(SRCS) $(DMD)
-	$(DMD) $(UDFLAGS) -shared $(UTFLAGS) -of$@ $(SRCS) $(OBJS) $(LINKDL) -defaultlib= $(if $(findstring $(OS),windows),user32.lib,-L-lpthread -L-lm)
+	$(DMD) $(UDFLAGS) -shared $(UTFLAGS) -of$@ $(SRCS) $(OBJS) $(LINKDL) -defaultlib= $(if $(findstring $(OS),windows),user32.lib -L/IMPLIB:$(UT_DRUNTIMELIB),) $(SOLIBS)
 
 $(ROOT)/unittest/test_runner$(DOTEXE): $(UT_DRUNTIME) src/test_runner.d $(DMD)
-	$(DMD) $(UDFLAGS) -of$@ src/test_runner.d -L$(UT_DRUNTIME) -defaultlib= $(if $(findstring $(OS),windows),user32.lib,-L-lpthread -L-lm)
+	$(DMD) $(UDFLAGS) -of$@ src/test_runner.d -L$(UT_DRUNTIMELIB) -defaultlib= $(if $(findstring $(OS),windows),-dllimport=defaultLibsOnly user32.lib,-L-lpthread -L-lm)
 
 endif
 

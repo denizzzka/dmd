@@ -1,7 +1,7 @@
 /**
  * Defines a D type.
  *
- * Copyright:   Copyright (C) 1999-2023 by The D Language Foundation, All Rights Reserved
+ * Copyright:   Copyright (C) 1999-2024 by The D Language Foundation, All Rights Reserved
  * Authors:     $(LINK2 https://www.digitalmars.com, Walter Bright)
  * License:     $(LINK2 https://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
  * Source:      $(LINK2 https://github.com/dlang/dmd/blob/master/src/dmd/mtype.d, _mtype.d)
@@ -26,11 +26,9 @@ import dmd.dclass;
 import dmd.dcast;
 import dmd.declaration;
 import dmd.denum;
-import dmd.dmangle;
 import dmd.dscope;
 import dmd.dstruct;
 import dmd.dsymbol;
-import dmd.dsymbolsem;
 import dmd.dtemplate;
 import dmd.errors;
 import dmd.expression;
@@ -525,13 +523,7 @@ extern (C++) abstract class Type : ASTNode
      */
     final override const(char)* toChars() const
     {
-        OutBuffer buf;
-        buf.reserve(16);
-        HdrGenState hgs;
-        hgs.fullQual = (ty == Tclass && !mod);
-
-        toCBuffer(this, buf, null, hgs);
-        return buf.extractChars();
+        return dmd.hdrgen.toChars(this);
     }
 
     /// ditto
@@ -1913,11 +1905,6 @@ extern (C++) abstract class Type : ASTNode
         return t;
     }
 
-    Dsymbol toDsymbol(Scope* sc)
-    {
-        return null;
-    }
-
     /*******************************
      * If this is a shell around another type,
      * get that other type.
@@ -1929,11 +1916,6 @@ extern (C++) abstract class Type : ASTNode
          */
         TypeEnum te;
         return ((te = isTypeEnum()) !is null) ? te.toBasetype2() : this;
-    }
-
-    bool isBaseOf(Type t, int* poffset)
-    {
-        return 0; // assume not
     }
 
     /********************************
@@ -2161,48 +2143,12 @@ extern (C++) abstract class Type : ASTNode
         return false; // assume not
     }
 
-    final Identifier getTypeInfoIdent()
-    {
-        // _init_10TypeInfo_%s
-        OutBuffer buf;
-        buf.reserve(32);
-        mangleToBuffer(this, buf);
-
-        const slice = buf[];
-
-        // Allocate buffer on stack, fail over to using malloc()
-        char[128] namebuf;
-        const namelen = 19 + size_t.sizeof * 3 + slice.length + 1;
-        auto name = namelen <= namebuf.length ? namebuf.ptr : cast(char*)Mem.check(malloc(namelen));
-
-        const length = snprintf(name, namelen, "_D%lluTypeInfo_%.*s6__initZ",
-                cast(ulong)(9 + slice.length), cast(int)slice.length, slice.ptr);
-        //printf("%p %s, deco = %s, name = %s\n", this, toChars(), deco, name);
-        assert(0 < length && length < namelen); // don't overflow the buffer
-
-        auto id = Identifier.idPool(name[0 .. length]);
-
-        if (name != namebuf.ptr)
-            free(name);
-        return id;
-    }
-
     /***************************************
      * Return !=0 if the type or any of its subtypes is wild.
      */
     int hasWild() const
     {
         return mod & MODFlags.wild;
-    }
-
-    /***************************************
-     * Return !=0 if type has pointers that need to
-     * be scanned by the GC during a collection cycle.
-     */
-    bool hasPointers()
-    {
-        //printf("Type::hasPointers() %s, %d\n", toChars(), ty);
-        return false;
     }
 
     /*************************************
@@ -3537,24 +3483,6 @@ extern (C++) final class TypeSArray : TypeArray
         return ae;
     }
 
-    override bool hasPointers()
-    {
-        /* Don't want to do this, because:
-         *    struct S { T* array[0]; }
-         * may be a variable length struct.
-         */
-        //if (dim.toInteger() == 0)
-        //    return false;
-
-        if (next.ty == Tvoid)
-        {
-            // Arrays of void contain arbitrary data, which may include pointers
-            return true;
-        }
-        else
-            return next.hasPointers();
-    }
-
     override bool hasSystemFields()
     {
         return next.hasSystemFields();
@@ -3679,11 +3607,6 @@ extern (C++) final class TypeDArray : TypeArray
         return Type.implicitConvTo(to);
     }
 
-    override bool hasPointers()
-    {
-        return true;
-    }
-
     override void accept(Visitor v)
     {
         v.visit(this);
@@ -3736,11 +3659,6 @@ extern (C++) final class TypeAArray : TypeArray
     }
 
     override bool isBoolean()
-    {
-        return true;
-    }
-
-    override bool hasPointers()
     {
         return true;
     }
@@ -3879,11 +3797,6 @@ extern (C++) final class TypePointer : TypeNext
     }
 
     override bool isZeroInit(const ref Loc loc)
-    {
-        return true;
-    }
-
-    override bool hasPointers()
     {
         return true;
     }
@@ -4119,122 +4032,6 @@ extern (C++) final class TypeFunction : TypeNext
     bool isDstyleVariadic() const pure nothrow
     {
         return linkage == LINK.d && parameterList.varargs == VarArg.variadic;
-    }
-
-    /************************************
-     * Take the specified storage class for p,
-     * and use the function signature to infer whether
-     * STC.scope_ and STC.return_ should be OR'd in.
-     * (This will not affect the name mangling.)
-     * Params:
-     *  tthis = type of `this` parameter, null if none
-     *  p = parameter to this function
-     *  outerVars = context variables p could escape into, if any
-     *  indirect = is this for an indirect or virtual function call?
-     * Returns:
-     *  storage class with STC.scope_ or STC.return_ OR'd in
-     */
-    StorageClass parameterStorageClass(Type tthis, Parameter p, VarDeclarations* outerVars = null,
-        bool indirect = false)
-    {
-        //printf("parameterStorageClass(p: %s)\n", p.toChars());
-        auto stc = p.storageClass;
-
-        // When the preview switch is enable, `in` parameters are `scope`
-        if (stc & STC.in_ && global.params.previewIn)
-            return stc | STC.scope_;
-
-        if (stc & (STC.scope_ | STC.return_ | STC.lazy_) || purity == PURE.impure)
-            return stc;
-
-        /* If haven't inferred the return type yet, can't infer storage classes
-         */
-        if (!nextOf() || !isnothrow())
-            return stc;
-
-        purityLevel();
-
-        static bool mayHavePointers(Type t)
-        {
-            if (auto ts = t.isTypeStruct())
-            {
-                auto sym = ts.sym;
-                if (sym.members && !sym.determineFields() && sym.type != Type.terror)
-                    // struct is forward referenced, so "may have" pointers
-                    return true;
-            }
-            return t.hasPointers();
-        }
-
-        // See if p can escape via any of the other parameters
-        if (purity == PURE.weak)
-        {
-            /*
-             * Indirect calls may escape p through a nested context
-             * See:
-             *   https://issues.dlang.org/show_bug.cgi?id=24212
-             *   https://issues.dlang.org/show_bug.cgi?id=24213
-             */
-            if (indirect)
-                return stc;
-
-            // Check escaping through parameters
-            foreach (i, fparam; parameterList)
-            {
-                Type t = fparam.type;
-                if (!t)
-                    continue;
-                t = t.baseElemOf();     // punch thru static arrays
-                if (t.isMutable() && t.hasPointers())
-                {
-                    if (fparam.isReference() && fparam != p)
-                        return stc;
-
-                    if (t.ty == Tdelegate)
-                        return stc;     // could escape thru delegate
-
-                    if (t.ty == Tclass)
-                        return stc;
-
-                    /* if t is a pointer to mutable pointer
-                     */
-                    if (auto tn = t.nextOf())
-                    {
-                        if (tn.isMutable() && mayHavePointers(tn))
-                            return stc;   // escape through pointers
-                    }
-                }
-            }
-
-            // Check escaping through `this`
-            if (tthis && tthis.isMutable())
-            {
-                foreach (VarDeclaration v; isAggregate(tthis).fields)
-                {
-                    if (v.hasPointers())
-                        return stc;
-                }
-            }
-
-            // Check escaping through nested context
-            if (outerVars && this.isMutable())
-            {
-                foreach (VarDeclaration v; *outerVars)
-                {
-                    if (v.hasPointers())
-                        return stc;
-                }
-            }
-        }
-
-        // Check escaping through return value
-        Type tret = nextOf().toBasetype();
-        if (isref || tret.hasPointers())
-        {
-            return stc | STC.scope_ | STC.return_ | STC.returnScope;
-        }
-        else
-            return stc | STC.scope_;
     }
 
     override Type addStorageClass(StorageClass stc)
@@ -4637,11 +4434,6 @@ extern (C++) final class TypeDelegate : TypeNext
         return true;
     }
 
-    override bool hasPointers()
-    {
-        return true;
-    }
-
     override void accept(Visitor v)
     {
         v.visit(this);
@@ -4682,20 +4474,6 @@ extern (C++) final class TypeTraits : Type
         return tt;
     }
 
-    override Dsymbol toDsymbol(Scope* sc)
-    {
-        Type t;
-        Expression e;
-        Dsymbol s;
-        resolve(this, loc, sc, e, t, s);
-        if (t && t.ty != Terror)
-            s = t.toDsymbol(sc);
-        else if (e)
-            s = getDsymbol(e);
-
-        return s;
-    }
-
     override void accept(Visitor v)
     {
         v.visit(this);
@@ -4733,20 +4511,6 @@ extern (C++) final class TypeMixin : Type
     override TypeMixin syntaxCopy()
     {
         return new TypeMixin(loc, Expression.arraySyntaxCopy(exps));
-    }
-
-   override Dsymbol toDsymbol(Scope* sc)
-    {
-        Type t;
-        Expression e;
-        Dsymbol s;
-        resolve(this, loc, sc, e, t, s);
-        if (t)
-            s = t.toDsymbol(sc);
-        else if (e)
-            s = getDsymbol(e);
-
-        return s;
     }
 
     override void accept(Visitor v)
@@ -4873,28 +4637,6 @@ extern (C++) final class TypeIdentifier : TypeQualified
         return t;
     }
 
-    /*****************************************
-     * See if type resolves to a symbol, if so,
-     * return that symbol.
-     */
-    override Dsymbol toDsymbol(Scope* sc)
-    {
-        //printf("TypeIdentifier::toDsymbol('%s')\n", toChars());
-        if (!sc)
-            return null;
-
-        Type t;
-        Expression e;
-        Dsymbol s;
-        resolve(this, loc, sc, e, t, s);
-        if (t && t.ty != Tident)
-            s = t.toDsymbol(sc);
-        if (e)
-            s = getDsymbol(e);
-
-        return s;
-    }
-
     override void accept(Visitor v)
     {
         v.visit(this);
@@ -4928,18 +4670,6 @@ extern (C++) final class TypeInstance : TypeQualified
         return t;
     }
 
-    override Dsymbol toDsymbol(Scope* sc)
-    {
-        Type t;
-        Expression e;
-        Dsymbol s;
-        //printf("TypeInstance::semantic(%s)\n", toChars());
-        resolve(this, loc, sc, e, t, s);
-        if (t && t.ty != Tinstance)
-            s = t.toDsymbol(sc);
-        return s;
-    }
-
     override void accept(Visitor v)
     {
         v.visit(this);
@@ -4971,16 +4701,6 @@ extern (C++) final class TypeTypeof : TypeQualified
         t.syntaxCopyHelper(this);
         t.mod = mod;
         return t;
-    }
-
-    override Dsymbol toDsymbol(Scope* sc)
-    {
-        //printf("TypeTypeof::toDsymbol('%s')\n", toChars());
-        Expression e;
-        Type t;
-        Dsymbol s;
-        resolve(this, loc, sc, e, t, s);
-        return s;
     }
 
     override uinteger_t size(const ref Loc loc)
@@ -5017,15 +4737,6 @@ extern (C++) final class TypeReturn : TypeQualified
         t.syntaxCopyHelper(this);
         t.mod = mod;
         return t;
-    }
-
-    override Dsymbol toDsymbol(Scope* sc)
-    {
-        Expression e;
-        Type t;
-        Dsymbol s;
-        resolve(this, loc, sc, e, t, s);
-        return s;
     }
 
     override void accept(Visitor v)
@@ -5072,11 +4783,6 @@ extern (C++) final class TypeStruct : Type
     override TypeStruct syntaxCopy()
     {
         return this;
-    }
-
-    override Dsymbol toDsymbol(Scope* sc)
-    {
-        return sym;
     }
 
     override structalign_t alignment()
@@ -5218,15 +4924,6 @@ extern (C++) final class TypeStruct : Type
                 return true;
         }
         return false;
-    }
-
-    override bool hasPointers()
-    {
-        if (sym.members && !sym.determineFields() && sym.type != Type.terror)
-            error(sym.loc, "no size because of forward references");
-
-        sym.determineTypeProperties();
-        return sym.hasPointerField;
     }
 
     override bool hasVoidInitPointers()
@@ -5399,9 +5096,9 @@ extern (C++) final class TypeEnum : Type
         return sym.getMemtype(loc).size(loc);
     }
 
-    Type memType(const ref Loc loc = Loc.initial)
+    Type memType()
     {
-        return sym.getMemtype(loc);
+        return sym.getMemtype(Loc.initial);
     }
 
     override uint alignsize()
@@ -5410,11 +5107,6 @@ extern (C++) final class TypeEnum : Type
         if (t.ty == Terror)
             return 4;
         return t.alignsize();
-    }
-
-    override Dsymbol toDsymbol(Scope* sc)
-    {
-        return sym;
     }
 
     override bool isintegral()
@@ -5517,11 +5209,6 @@ extern (C++) final class TypeEnum : Type
         return sym.getDefaultValue(loc).toBool().hasValue(false);
     }
 
-    override bool hasPointers()
-    {
-        return memType().hasPointers();
-    }
-
     override bool hasVoidInitPointers()
     {
         return memType().hasVoidInitPointers();
@@ -5577,44 +5264,14 @@ extern (C++) final class TypeClass : Type
         return this;
     }
 
-    override Dsymbol toDsymbol(Scope* sc)
-    {
-        return sym;
-    }
-
     override inout(ClassDeclaration) isClassHandle() inout
     {
         return sym;
     }
 
-    override bool isBaseOf(Type t, int* poffset)
-    {
-        if (t && t.ty == Tclass)
-        {
-            ClassDeclaration cd = (cast(TypeClass)t).sym;
-            if (cd.semanticRun < PASS.semanticdone && !cd.isBaseInfoComplete())
-                cd.dsymbolSemantic(null);
-            if (sym.semanticRun < PASS.semanticdone && !sym.isBaseInfoComplete())
-                sym.dsymbolSemantic(null);
-
-            if (sym.isBaseOf(cd, poffset))
-                return true;
-        }
-        return false;
-    }
-
     extern (D) MATCH implicitConvToWithoutAliasThis(Type to)
     {
-        // Run semantic before checking whether class is convertible
         ClassDeclaration cdto = to.isClassHandle();
-        if (cdto)
-        {
-            //printf("TypeClass::implicitConvTo(to = '%s') %s, isbase = %d %d\n", to.toChars(), toChars(), cdto.isBaseInfoComplete(), sym.isBaseInfoComplete());
-            if (cdto.semanticRun < PASS.semanticdone && !cdto.isBaseInfoComplete())
-                cdto.dsymbolSemantic(null);
-            if (sym.semanticRun < PASS.semanticdone && !sym.isBaseInfoComplete())
-                sym.dsymbolSemantic(null);
-        }
         MATCH m = constConv(to);
         if (m > MATCH.nomatch)
             return m;
@@ -5708,11 +5365,6 @@ extern (C++) final class TypeClass : Type
     }
 
     override bool isBoolean()
-    {
-        return true;
-    }
-
-    override bool hasPointers()
     {
         return true;
     }
@@ -5956,14 +5608,6 @@ extern (C++) final class TypeNull : Type
         }
 
         return MATCH.nomatch;
-    }
-
-    override bool hasPointers()
-    {
-        /* Although null isn't dereferencable, treat it as a pointer type for
-         * attribute inference, generic code, etc.
-         */
-        return true;
     }
 
     override bool isBoolean()
@@ -6433,28 +6077,22 @@ extern (C++) final class Parameter : ASTNode
      * Params:
      *  returnByRef = true if the function returns by ref
      *  p = Parameter to compare with
-     *  previewIn = Whether `-preview=in` is being used, and thus if
-     *              `in` means `scope [ref]`.
-     *
      * Returns:
      *  true = `this` can be used in place of `p`
      *  false = nope
      */
-    bool isCovariant(bool returnByRef, const Parameter p, bool previewIn = global.params.previewIn)
+    bool isCovariant(bool returnByRef, const Parameter p)
         const pure nothrow @nogc @safe
     {
         ulong thisSTC = this.storageClass;
         ulong otherSTC = p.storageClass;
 
-        if (previewIn)
-        {
-            if (thisSTC & STC.in_)
-                thisSTC |= STC.scope_;
-            if (otherSTC & STC.in_)
-                otherSTC |= STC.scope_;
-        }
+        if (thisSTC & STC.constscoperef)
+            thisSTC |= STC.scope_;
+        if (otherSTC & STC.constscoperef)
+            otherSTC |= STC.scope_;
 
-        const mask = STC.ref_ | STC.out_ | STC.lazy_ | (previewIn ? STC.in_ : 0);
+        const mask = STC.ref_ | STC.out_ | STC.lazy_ | (((thisSTC | otherSTC) & STC.constscoperef) ? STC.in_ : 0);
         if ((thisSTC & mask) != (otherSTC & mask))
             return false;
         return isCovariantScope(returnByRef, thisSTC, otherSTC);
@@ -6739,7 +6377,7 @@ enum ScopeRef
  * Returns:
  *      corresponding string
  */
-const(char)* toChars(ScopeRef sr) pure nothrow @nogc @safe
+const(char)* ScopeRefToChars(ScopeRef sr) pure nothrow @nogc @safe
 {
     with (ScopeRef)
     {

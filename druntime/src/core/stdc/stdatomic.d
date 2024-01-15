@@ -169,9 +169,9 @@ void atomic_flag_clear_explicit_impl()(atomic_flag* obj, memory_order order)
             break;
 
         case memory_order.memory_order_acquire:
-            // What GCC does here is generate a relaxed order (no barriers)
-            // we'll copy it, although the D compiler should really be helping out at compile time.
-            atomicStore!(memory_order.memory_order_relaxed)(&obj.b, false);
+            // Ideally this would error at compile time but alas it is not an intrinsic.
+            // Note: this is not a valid memory order for this operation.
+            atomicStore!(memory_order.memory_order_seq_cst)(&obj.b, false);
             break;
 
         case memory_order.memory_order_release:
@@ -436,9 +436,9 @@ void atomic_store_explicit_impl(A, C)(shared(A)* obj, C desired, memory_order or
             break;
 
         case memory_order.memory_order_acquire:
-            // What GCC does here is generate a relaxed order (no barriers)
-            // we'll copy it, although the D compiler should really be helping out at compile time.
-            atomicStore!(memory_order.memory_order_relaxed)(obj, cast(A)desired);
+            // Ideally this would error at compile time but alas it is not an intrinsic.
+            // Note: this is not a valid memory order for this operation.
+            atomicStore!(memory_order.memory_order_release)(obj, cast(A)desired);
             break;
 
         case memory_order.memory_order_release:
@@ -492,9 +492,9 @@ A atomic_load_explicit_impl(A)(const shared(A)* obj, memory_order order) @truste
             return atomicLoad!(memory_order.memory_order_acquire)(obj);
 
         case memory_order.memory_order_release:
-            // What GCC does here is generate a relaxed order (no barriers)
-            // we'll copy it, although the D compiler should really be helping out at compile time.
-            return atomicLoad!(memory_order.memory_order_relaxed)(obj);
+            // Ideally this would error at compile time but alas it is not an intrinsic.
+            // Note: this is not a valid memory order for this operation.
+            return atomicLoad!(memory_order.memory_order_acquire)(obj);
 
         case memory_order.memory_order_acq_rel:
             return atomicLoad!(memory_order.memory_order_acq_rel)(obj);
@@ -513,7 +513,7 @@ unittest
 
 ///
 pragma(inline, true)
-A atomic_exchange_impl(A, C)(const shared(A)* obj, C desired) @trusted
+A atomic_exchange_impl(A, C)(shared(A)* obj, C desired) @trusted
 {
     assert(obj !is null);
     return atomicExchange(cast(shared(A)*)obj, cast(A)desired);
@@ -528,7 +528,7 @@ unittest
 
 ///
 pragma(inline, true)
-A atomic_exchange_explicit_impl(A, C)(const shared(A)* obj, C desired, memory_order order) @trusted
+A atomic_exchange_explicit_impl(A, C)(shared(A)* obj, C desired, memory_order order) @trusted
 {
     assert(obj !is null);
 

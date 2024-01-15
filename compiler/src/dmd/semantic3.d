@@ -1,7 +1,7 @@
 /**
  * Performs the semantic3 stage, which deals with function bodies.
  *
- * Copyright:   Copyright (C) 1999-2023 by The D Language Foundation, All Rights Reserved
+ * Copyright:   Copyright (C) 1999-2024 by The D Language Foundation, All Rights Reserved
  * Authors:     $(LINK2 https://www.digitalmars.com, Walter Bright)
  * License:     $(LINK2 https://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
  * Source:      $(LINK2 https://github.com/dlang/dmd/blob/master/src/dmd/semantic3.d, _semantic3.d)
@@ -231,8 +231,7 @@ private extern(C++) final class Semantic3Visitor : Visitor
             if (sc.flags & SCOPE.Cfile && funcdecl.isCMain() && f.next.ty == Tint32)
                 return true;
 
-            return f.next.ty == Tvoid &&
-                (funcdecl.isMain() || global.params.betterC && funcdecl.isCMain());
+            return f.next.ty == Tvoid && (funcdecl.isMain() || funcdecl.isCMain());
         }
 
         VarDeclaration _arguments = null;
@@ -346,6 +345,7 @@ private extern(C++) final class Semantic3Visitor : Visitor
             sc2.tf = null;
             sc2.os = null;
             sc2.inLoop = false;
+            sc2.inDefaultArg = false;
             sc2.userAttribDecl = null;
             if (sc2.intypeof == 1)
                 sc2.intypeof = 2;
@@ -570,7 +570,7 @@ private extern(C++) final class Semantic3Visitor : Visitor
 
                 if ((needEnsure && global.params.useOut == CHECKENABLE.on) || fpostinv)
                 {
-                    funcdecl.returnLabel = funcdecl.searchLabel(Id.returnLabel);
+                    funcdecl.returnLabel = funcdecl.searchLabel(Id.returnLabel, Loc.initial);
                 }
 
                 // scope of out contract (need for vresult.semantic)

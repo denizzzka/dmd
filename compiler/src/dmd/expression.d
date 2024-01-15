@@ -3,7 +3,7 @@
  *
  * Specification: ($LINK2 https://dlang.org/spec/expression.html, Expressions)
  *
- * Copyright:   Copyright (C) 1999-2023 by The D Language Foundation, All Rights Reserved
+ * Copyright:   Copyright (C) 1999-2024 by The D Language Foundation, All Rights Reserved
  * Authors:     $(LINK2 https://www.digitalmars.com, Walter Bright)
  * License:     $(LINK2 https://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
  * Source:      $(LINK2 https://github.com/dlang/dmd/blob/master/src/dmd/expression.d, _expression.d)
@@ -186,39 +186,6 @@ extern (C++) void expandTuples(Expressions* exps, Identifiers* names = null)
             (*exps)[i] = Expression.combine(te.e0, (*exps)[i]);
             arg = (*exps)[i];
         }
-    }
-}
-
-/****************************************
- * Expand alias this tuples.
- */
-TupleDeclaration isAliasThisTuple(Expression e)
-{
-    if (!e.type)
-        return null;
-
-    Type t = e.type.toBasetype();
-    while (true)
-    {
-        if (Dsymbol s = t.toDsymbol(null))
-        {
-            if (auto ad = s.isAggregateDeclaration())
-            {
-                s = ad.aliasthis ? ad.aliasthis.sym : null;
-                if (s && s.isVarDeclaration())
-                {
-                    TupleDeclaration td = s.isVarDeclaration().toAlias().isTupleDeclaration();
-                    if (td && td.isexp)
-                        return td;
-                }
-                if (Type att = t.aliasthisOf())
-                {
-                    t = att;
-                    continue;
-                }
-            }
-        }
-        return null;
     }
 }
 
@@ -420,10 +387,7 @@ extern (C++) abstract class Expression : ASTNode
 
     override const(char)* toChars() const
     {
-        OutBuffer buf;
-        HdrGenState hgs;
-        toCBuffer(this, buf, hgs);
-        return buf.extractChars();
+        return .toChars(this);
     }
 
     /**********************************

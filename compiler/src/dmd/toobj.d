@@ -1,7 +1,7 @@
 /**
  * Convert an AST that went through all semantic phases into an object file.
  *
- * Copyright:   Copyright (C) 1999-2023 by The D Language Foundation, All Rights Reserved
+ * Copyright:   Copyright (C) 1999-2024 by The D Language Foundation, All Rights Reserved
  * Authors:     $(LINK2 https://www.digitalmars.com, Walter Bright)
  * License:     $(LINK2 https://www.boost.org/LICENSE_1_0.txt, Boost License 1.0)
  * Source:      $(LINK2 https://github.com/dlang/dmd/blob/master/src/tocsym.d, _toobj.d)
@@ -214,6 +214,8 @@ void genModuleInfo(Module m)
     //////////////////////////////////////////////
 
     objmod.moduleinfo(msym);
+    if (driverParams.exportVisibility == ExpVis.public_)
+        objmod.export_symbol(msym, 0);
 }
 
 /*****************************************
@@ -243,6 +245,7 @@ void write_pointers(Type type, Symbol *s, uint offset)
 */
 void write_instance_pointers(Type type, Symbol *s, uint offset)
 {
+    import dmd.typesem : hasPointers;
     if (!type.hasPointers())
         return;
 
@@ -392,6 +395,8 @@ void toObjFile(Dsymbol ds, bool multiobj)
                 sinit.Sdt = dtb.finish();
                 out_readonly(sinit);
                 outdata(sinit);
+                if (cd.isExport() || driverParams.exportVisibility == ExpVis.public_)
+                    objmod.export_symbol(sinit, 0);
             }
 
             //////////////////////////////////////////////
@@ -438,8 +443,8 @@ void toObjFile(Dsymbol ds, bool multiobj)
             cd.vtblsym.csym.Sfl = FLdata;
             out_readonly(cd.vtblsym.csym);
             outdata(cd.vtblsym.csym);
-            if (cd.isExport())
-                objmod.export_symbol(cd.vtblsym.csym,0);
+            if (cd.isExport() || driverParams.exportVisibility == ExpVis.public_)
+                objmod.export_symbol(cd.vtblsym.csym, 0);
         }
 
         override void visit(InterfaceDeclaration id)
@@ -544,6 +549,8 @@ void toObjFile(Dsymbol ds, bool multiobj)
                     else
                         out_readonly(sinit);    // put in read-only segment
                     outdata(sinit);
+                    if (sd.isExport() || driverParams.exportVisibility == ExpVis.public_)
+                        objmod.export_symbol(sinit, 0);
                 }
 
                 // Put out the members
@@ -673,7 +680,7 @@ void toObjFile(Dsymbol ds, bool multiobj)
             outdata(s);
             if (vd.type.isMutable() || !vd._init)
                 write_pointers(vd.type, s, 0);
-            if (vd.isExport())
+            if (vd.isExport() || driverParams.exportVisibility == ExpVis.public_)
                 objmod.export_symbol(s, 0);
         }
 
@@ -755,7 +762,7 @@ void toObjFile(Dsymbol ds, bool multiobj)
             }
 
             outdata(s);
-            if (tid.isExport())
+            if (tid.isExport() || driverParams.exportVisibility == ExpVis.public_)
                 objmod.export_symbol(s, 0);
         }
 
@@ -1213,11 +1220,34 @@ private size_t emitVtbl(ref DtBuilder dtb, BaseClass *b, ref FuncDeclarations bv
  */
 private void genClassInfoForClass(ClassDeclaration cd, Symbol* sinit)
 {
+    if (Type.typeinfoclass)
+    {
+        if (Type.typeinfoclass.structsize != target.classinfosize)
+        {
+            debug printf("target.classinfosize = x%x, Type.typeinfoclass.structsize = x%x\n", target.classinfosize, Type.typeinfoclass.structsize);
+            .error(cd.loc, "%s `%s` mismatch between dmd and object.d or object.di found. Check installation and import paths with -v compiler switch.", cd.kind, cd.toPrettyChars);
+            fatal();
+        }
+    }
+
     // Put out the ClassInfo, which will be the __ClassZ symbol in the object file
     SC scclass = SC.comdat;
     cd.csym.Sclass = scclass;
     cd.csym.Sfl = FLdata;
 
+    auto dtb = DtBuilder(0);
+
+    ClassInfoToDt(dtb, cd, sinit);
+
+    cd.csym.Sdt = dtb.finish();
+    // ClassInfo cannot be const data, because we use the monitor on it
+    outdata(cd.csym);
+    if (cd.isExport() || driverParams.exportVisibility == ExpVis.public_)
+        objmod.export_symbol(cd.csym, 0);
+}
+
+private void ClassInfoToDt(ref DtBuilder dtb, ClassDeclaration cd, Symbol* sinit)
+{
     /* The layout is:
        {
             void **vptr;
@@ -1239,17 +1269,6 @@ private void genClassInfoForClass(ClassDeclaration cd, Symbol* sinit)
        }
      */
     uint offset = target.classinfosize;    // must be ClassInfo.size
-    if (Type.typeinfoclass)
-    {
-        if (Type.typeinfoclass.structsize != target.classinfosize)
-        {
-            debug printf("target.classinfosize = x%x, Type.typeinfoclass.structsize = x%x\n", offset, Type.typeinfoclass.structsize);
-            .error(cd.loc, "%s `%s` mismatch between dmd and object.d or object.di found. Check installation and import paths with -v compiler switch.", cd.kind, cd.toPrettyChars);
-            fatal();
-        }
-    }
-
-    auto dtb = DtBuilder(0);
 
     if (auto tic = Type.typeinfoclass)
     {
@@ -1439,12 +1458,6 @@ Louter:
     dtb.nbytes(cast(uint)(namelen + 1), name);
     const size_t namepad = -(namelen + 1) & (target.ptrsize - 1); // align
     dtb.nzeros(cast(uint)namepad);
-
-    cd.csym.Sdt = dtb.finish();
-    // ClassInfo cannot be const data, because we use the monitor on it
-    outdata(cd.csym);
-    if (cd.isExport())
-        objmod.export_symbol(cd.csym, 0);
 }
 
 /******************************************************
@@ -1461,6 +1474,19 @@ private void genClassInfoForInterface(InterfaceDeclaration id)
     id.csym.Sclass = scclass;
     id.csym.Sfl = FLdata;
 
+    auto dtb = DtBuilder(0);
+
+    InterfaceInfoToDt(dtb, id);
+
+    id.csym.Sdt = dtb.finish();
+    out_readonly(id.csym);
+    outdata(id.csym);
+    if (id.isExport() || driverParams.exportVisibility == ExpVis.public_)
+        objmod.export_symbol(id.csym, 0);
+}
+
+private void InterfaceInfoToDt(ref DtBuilder dtb, InterfaceDeclaration id)
+{
     /* The layout is:
        {
             void **vptr;
@@ -1481,8 +1507,6 @@ private void genClassInfoForInterface(InterfaceDeclaration id)
             //TypeInfo typeinfo;
        }
      */
-    auto dtb = DtBuilder(0);
-
     if (auto tic = Type.typeinfoclass)
     {
         dtb.xoff(toVtblSymbol(tic), 0, TYnptr); // vtbl for ClassInfo
@@ -1594,10 +1618,4 @@ private void genClassInfoForInterface(InterfaceDeclaration id)
     dtb.nbytes(cast(uint)(namelen + 1), name);
     const size_t namepad =  -(namelen + 1) & (target.ptrsize - 1); // align
     dtb.nzeros(cast(uint)namepad);
-
-    id.csym.Sdt = dtb.finish();
-    out_readonly(id.csym);
-    outdata(id.csym);
-    if (id.isExport())
-        objmod.export_symbol(id.csym, 0);
 }

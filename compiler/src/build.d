@@ -576,7 +576,7 @@ alias dmdPGO = makeRule!((builder, rule) {
             // Run phobos unittests
             //TODO makefiles
             //generated/linux/release/64/unittest/test_runner builds the unittests without running them.
-            const scope cmd = ["make", "-C", "../phobos", "-j" ~ jobs.to!string, "-fposix.mak", "generated/linux/release/64/unittest/test_runner", "DMD_DIR="~compilerDir];
+            const scope cmd = ["make", "-C", "../phobos", "-j" ~ jobs.to!string, "generated/linux/release/64/unittest/test_runner", "DMD_DIR="~compilerDir];
             log("%-(%s %)", cmd);
             if (spawnProcess(cmd, null, Config.init, compilerDir).wait())
                 stderr.writeln("Phobos Tests failed! This will not end the PGO build because some data may have been gathered");
@@ -1576,7 +1576,7 @@ auto sourceFiles()
             stringtable.d utf.d
         "),
         common: fileArray(env["COMMON"], "
-            bitfields.d file.d int128.d outbuffer.d smallbuffer.d
+            bitfields.d file.d int128.d md5.d outbuffer.d smallbuffer.d
         "),
         commonHeaders: fileArray(env["COMMON"], "
             outbuffer.h
@@ -1593,7 +1593,7 @@ auto sourceFiles()
             dout.d inliner.d
             gloop.d compress.d cgelem.d cgcs.d ee.d cod4.d cod5.d eh.d nteh.d blockopt.d mem.d cg.d cgreg.d
             dtype.d debugprint.d fp.d symbol.d symtab.d elem.d dcode.d cgsched.d cg87.d cgxmm.d cgcod.d cod1.d cod2.d
-            cod3.d cv8.d dcgcv.d pdata.d util2.d var.d md5.d backconfig.d drtlsym.d dwarfeh.d ptrntab.d
+            cod3.d cv8.d dcgcv.d pdata.d util2.d var.d backconfig.d drtlsym.d dwarfeh.d ptrntab.d
             dvarstats.d dwarfdbginf.d cgen.d goh.d barray.d cgcse.d elpicpie.d
             machobj.d elfobj.d mscoffobj.d filespec.d cgobj.d aarray.d disasm86.d
             "
