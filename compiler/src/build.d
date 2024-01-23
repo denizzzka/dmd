@@ -1537,16 +1537,16 @@ auto sourceFiles()
         "),
         frontend: fileArray(env["D"], "
             access.d aggregate.d aliasthis.d argtypes_x86.d argtypes_sysv_x64.d argtypes_aarch64.d arrayop.d
-            arraytypes.d astenums.d ast_node.d astcodegen.d asttypename.d attrib.d blockexit.d builtin.d canthrow.d chkformat.d
+            arraytypes.d astenums.d ast_node.d astcodegen.d asttypename.d attrib.d basicmangle.d blockexit.d builtin.d canthrow.d chkformat.d
             cli.d clone.d compiler.d cond.d constfold.d cppmangle.d cppmanglewin.d cpreprocess.d ctfeexpr.d
             ctorflow.d dcast.d dclass.d declaration.d delegatize.d denum.d dimport.d
             dinterpret.d dmacro.d dmangle.d dmodule.d doc.d dscope.d dstruct.d dsymbol.d dsymbolsem.d
-            dtemplate.d dtoh.d dversion.d escape.d expression.d expressionsem.d func.d hdrgen.d impcnvtab.d
+            dtemplate.d dtoh.d dversion.d escape.d expression.d expressionsem.d func.d funcsem.d hdrgen.d impcnvtab.d
             imphint.d importc.d init.d initsem.d inline.d inlinecost.d intrange.d json.d lambdacomp.d
             mtype.d mustuse.d nogc.d nspace.d ob.d objc.d opover.d optimize.d
             parse.d parsetimevisitor.d permissivevisitor.d postordervisitor.d printast.d rootobject.d safe.d sapply.d
             semantic2.d semantic3.d sideeffect.d statement.d statement_rewrite_walker.d
-            statementsem.d staticassert.d staticcond.d stmtstate.d target.d templateparamsem.d traits.d
+            statementsem.d staticassert.d staticcond.d stmtstate.d target.d templatesem.d templateparamsem.d traits.d
             transitivevisitor.d typesem.d typinf.d utils.d visitor.d foreachvar.d
             cparse.d
         "),

@@ -430,6 +430,123 @@ private Dsymbol searchX(Dsymbol dsym, const ref Loc loc, Scope* sc, RootObject i
     return sm;
 }
 
+/***************************************************
+ * Determine if type t is copyable.
+ * Params:
+ *      t = type to check
+ * Returns:
+ *      true if we can copy it
+ */
+bool isCopyable(Type t)
+{
+    //printf("isCopyable() %s\n", t.toChars());
+    if (auto ts = t.isTypeStruct())
+    {
+        if (ts.sym.postblit &&
+            ts.sym.postblit.storage_class & STC.disable)
+            return false;
+        if (ts.sym.hasCopyCtor)
+        {
+            // check if there is a matching overload of the copy constructor and whether it is disabled or not
+            // `assert(ctor)` fails on Win32 and Win_32_64. See: https://auto-tester.puremagic.com/pull-history.ghtml?projectid=1&repoid=1&pullid=10575
+            Dsymbol ctor = search_function(ts.sym, Id.ctor);
+            assert(ctor);
+            scope el = new IdentifierExp(Loc.initial, Id.p); // dummy lvalue
+            el.type = cast() ts;
+            Expressions* args = new Expressions();
+            args.push(el);
+            FuncDeclaration f = resolveFuncCall(Loc.initial, null, ctor, null, cast()ts, ArgumentList(args), FuncResolveFlag.quiet);
+            if (!f || f.storage_class & STC.disable)
+                return false;
+        }
+    }
+    return true;
+}
+
+/************************************
+ * Determine mutability of indirections in (ref) t.
+ *
+ * Returns: When the type has any mutable indirections, returns 0.
+ * When all indirections are immutable, returns 2.
+ * Otherwise, when the type has const/inout indirections, returns 1.
+ *
+ * Params:
+ *      isref = if true, check `ref t`; otherwise, check just `t`
+ *      t = the type that is being checked
+ */
+int mutabilityOfType(bool isref, Type t)
+{
+    if (isref)
+    {
+        if (t.mod & MODFlags.immutable_)
+            return 2;
+        if (t.mod & (MODFlags.const_ | MODFlags.wild))
+            return 1;
+        return 0;
+    }
+
+    t = t.baseElemOf();
+
+    if (!t.hasPointers() || t.mod & MODFlags.immutable_)
+        return 2;
+
+    /* Accept immutable(T)[] and immutable(T)* as being strongly pure
+     */
+    if (t.ty == Tarray || t.ty == Tpointer)
+    {
+        Type tn = t.nextOf().toBasetype();
+        if (tn.mod & MODFlags.immutable_)
+            return 2;
+        if (tn.mod & (MODFlags.const_ | MODFlags.wild))
+            return 1;
+    }
+
+    /* The rest of this is too strict; fix later.
+     * For example, the only pointer members of a struct may be immutable,
+     * which would maintain strong purity.
+     * (Just like for dynamic arrays and pointers above.)
+     */
+    if (t.mod & (MODFlags.const_ | MODFlags.wild))
+        return 1;
+
+    /* Should catch delegates and function pointers, and fold in their purity
+     */
+    return 0;
+}
+
+/********************************************
+ * Set 'purity' field of 'typeFunction'.
+ * Do this lazily, as the parameter types might be forward referenced.
+ */
+extern(C++) void purityLevel(TypeFunction typeFunction)
+{
+    TypeFunction tf = typeFunction;
+    if (tf.purity != PURE.fwdref)
+        return;
+
+    typeFunction.purity = PURE.const_; // assume strong until something weakens it
+
+    /* Evaluate what kind of purity based on the modifiers for the parameters
+     */
+    foreach (i, fparam; tf.parameterList)
+    {
+        Type t = fparam.type;
+        if (!t)
+            continue;
+
+        if (fparam.storageClass & (STC.lazy_ | STC.out_))
+        {
+            typeFunction.purity = PURE.weak;
+            break;
+        }
+        const pref = (fparam.storageClass & STC.ref_) != 0;
+        if (mutabilityOfType(pref, t) == 0)
+            typeFunction.purity = PURE.weak;
+    }
+
+    tf.purity = typeFunction.purity;
+}
+
 /******************************************
  * We've mistakenly parsed `t` as a type.
  * Redo `t` as an Expression only if there are no type modifiers.
@@ -484,6 +601,77 @@ Expression typeToExpression(Type t)
         case Tmixin:    return visitMixin(t.isTypeMixin());
         default:        return null;
     }
+}
+
+/*************************************
+ * https://issues.dlang.org/show_bug.cgi?id=14488
+ * Check if the inner most base type is complex or imaginary.
+ * Should only give alerts when set to emit transitional messages.
+ * Params:
+ *  type = type to check
+ *  loc = The source location.
+ *  sc = scope of the type
+ */
+extern (D) bool checkComplexTransition(Type type, const ref Loc loc, Scope* sc)
+{
+    if (sc.isDeprecated())
+        return false;
+    // Don't complain if we're inside a template constraint
+    // https://issues.dlang.org/show_bug.cgi?id=21831
+    if (sc.flags & SCOPE.constraint)
+        return false;
+
+    Type t = type.baseElemOf();
+    while (t.ty == Tpointer || t.ty == Tarray)
+        t = t.nextOf().baseElemOf();
+
+    // Basetype is an opaque enum, nothing to check.
+    if (t.ty == Tenum && !(cast(TypeEnum)t).sym.memtype)
+        return false;
+
+    if (t.isimaginary() || t.iscomplex())
+    {
+        if (sc.flags & SCOPE.Cfile)
+            return true;            // complex/imaginary not deprecated in C code
+        Type rt;
+        switch (t.ty)
+        {
+        case Tcomplex32:
+        case Timaginary32:
+            rt = Type.tfloat32;
+            break;
+
+        case Tcomplex64:
+        case Timaginary64:
+            rt = Type.tfloat64;
+            break;
+
+        case Tcomplex80:
+        case Timaginary80:
+            rt = Type.tfloat80;
+            break;
+
+        default:
+            assert(0);
+        }
+        // @@@DEPRECATED_2.117@@@
+        // Deprecated in 2.097 - Can be made an error from 2.117.
+        // The deprecation period is longer than usual as `cfloat`,
+        // `cdouble`, and `creal` were quite widely used.
+        if (t.iscomplex())
+        {
+            deprecation(loc, "use of complex type `%s` is deprecated, use `std.complex.Complex!(%s)` instead",
+                type.toChars(), rt.toChars());
+            return true;
+        }
+        else
+        {
+            deprecation(loc, "use of imaginary type `%s` is deprecated, use `%s` instead",
+                type.toChars(), rt.toChars());
+            return true;
+        }
+    }
+    return false;
 }
 
 /********************************
@@ -698,7 +886,7 @@ private extern(D) bool isCopyConstructorCallable (StructDeclaration argStruct,
     Expression e = new DotIdExp(arg.loc, ve, Id.ctor);
     e = new CallExp(arg.loc, e, arg);
     //printf("e = %s\n", e.toChars());
-    if (.trySemantic(e, sc))
+    if (dmd.expressionsem.trySemantic(e, sc))
         return true;
 
     if (pMessage)
@@ -2631,6 +2819,31 @@ extern(C++) Type typeSemantic(Type type, const ref Loc loc, Scope* sc)
     }
 }
 
+extern(C++) Type trySemantic(Type type, const ref Loc loc, Scope* sc)
+{
+    //printf("+trySemantic(%s) %d\n", toChars(), global.errors);
+
+    // Needed to display any deprecations that were gagged
+    auto tcopy = type.syntaxCopy();
+
+    const errors = global.startGagging();
+    Type t = typeSemantic(type, loc, sc);
+    if (global.endGagging(errors) || t.ty == Terror) // if any errors happened
+    {
+        t = null;
+    }
+    else
+    {
+        // If `typeSemantic` succeeded, there may have been deprecations that
+        // were gagged due the `startGagging` above.  Run again to display
+        // those deprecations.  https://issues.dlang.org/show_bug.cgi?id=19107
+        if (global.gaggedWarnings > 0)
+            typeSemantic(tcopy, loc, sc);
+    }
+    //printf("-trySemantic(%s) %d\n", toChars(), global.errors);
+    return t;
+}
+
 /************************************
  * If an identical type to `type` is in `type.stringtable`, return
  * the latter one. Otherwise, add it to `type.stringtable`.
@@ -2704,6 +2917,29 @@ extern (C++) Type merge(Type type)
         }
     }
     return type;
+}
+
+/*************************************
+ * This version does a merge even if the deco is already computed.
+ * Necessary for types that have a deco, but are not merged.
+ */
+extern(C++) Type merge2(Type type)
+{
+    //printf("merge2(%s)\n", toChars());
+    Type t = type;
+    assert(t);
+    if (!t.deco)
+        return t.merge();
+
+    auto sv = Type.stringtable.lookup(t.deco, strlen(t.deco));
+    if (sv && sv.value)
+    {
+        t = sv.value;
+        assert(t.deco);
+    }
+    else
+        assert(0);
+    return t;
 }
 
 /***************************************

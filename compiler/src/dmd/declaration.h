@@ -30,6 +30,8 @@ class StructDeclaration;
 struct IntRange;
 struct AttributeViolation;
 
+bool functionSemantic(FuncDeclaration* fd);
+
 //enum STC : ulong from astenums.d:
 
     #define STCundefined          0ULL
@@ -698,14 +700,13 @@ public:
     FuncDeclaration *fdensure(FuncDeclaration *fde);
     Expressions *fdrequireParams(Expressions *fdrp);
     Expressions *fdensureParams(Expressions *fdep);
-    bool functionSemantic();
     bool functionSemantic3();
     bool equals(const RootObject * const o) const override final;
 
     int findVtblIndex(Dsymbols *vtbl, int dim);
     bool overloadInsert(Dsymbol *s) override;
     bool inUnittest();
-    MATCH leastAsSpecialized(FuncDeclaration *g, Identifiers *names);
+    static MATCH leastAsSpecialized(FuncDeclaration *f, FuncDeclaration *g, Identifiers *names);
     LabelDsymbol *searchLabel(Identifier *ident, const Loc &loc);
     const char *toPrettyChars(bool QualifyTypes = false) override;
     const char *toFullSignature();  // for diagnostics, e.g. 'int foo(int x, int y) pure'

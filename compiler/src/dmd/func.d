@@ -39,6 +39,7 @@ import dmd.dtemplate;
 import dmd.errors;
 import dmd.escape;
 import dmd.expression;
+import dmd.funcsem;
 import dmd.globals;
 import dmd.hdrgen;
 import dmd.id;
@@ -467,65 +468,6 @@ extern (C++) class FuncDeclaration : Declaration
     }
 
     /****************************************************
-     * Resolve forward reference of function signature -
-     * parameter types, return type, and attributes.
-     * Returns:
-     *  false if any errors exist in the signature.
-     */
-    final bool functionSemantic()
-    {
-        //printf("functionSemantic() %p %s\n", this, toChars());
-        if (!_scope)
-            return !errors;
-
-        this.cppnamespace = _scope.namespace;
-
-        if (!originalType) // semantic not yet run
-        {
-            TemplateInstance spec = isSpeculative();
-            uint olderrs = global.errors;
-            uint oldgag = global.gag;
-            if (global.gag && !spec)
-                global.gag = 0;
-            dsymbolSemantic(this, _scope);
-            global.gag = oldgag;
-            if (spec && global.errors != olderrs)
-                spec.errors = (global.errors - olderrs != 0);
-            if (olderrs != global.errors) // if errors compiling this function
-                return false;
-        }
-
-        // if inferring return type, sematic3 needs to be run
-        // - When the function body contains any errors, we cannot assume
-        //   the inferred return type is valid.
-        //   So, the body errors should become the function signature error.
-        if (inferRetType && type && !type.nextOf())
-            return functionSemantic3();
-
-        TemplateInstance ti;
-        if (isInstantiated() && !isVirtualMethod() &&
-            ((ti = parent.isTemplateInstance()) is null || ti.isTemplateMixin() || ti.tempdecl.ident == ident))
-        {
-            AggregateDeclaration ad = isMemberLocal();
-            if (ad && ad.sizeok != Sizeok.done)
-            {
-                /* Currently dmd cannot resolve forward references per methods,
-                 * then setting SIZOKfwd is too conservative and would break existing code.
-                 * So, just stop method attributes inference until ad.dsymbolSemantic() done.
-                 */
-                //ad.sizeok = Sizeok.fwd;
-            }
-            else
-                return functionSemantic3() || !errors;
-        }
-
-        if (storage_class & STC.inference)
-            return functionSemantic3() || !errors;
-
-        return !errors;
-    }
-
-    /****************************************************
      * Resolve forward reference of function body.
      * Returns false if any errors exist in the body.
      */
@@ -562,7 +504,7 @@ extern (C++) class FuncDeclaration : Declaration
      */
     extern (D) final bool checkForwardRef(const ref Loc loc)
     {
-        if (!functionSemantic())
+        if (!functionSemantic(this))
             return true;
 
         /* No deco means the functionSemantic() call could not resolve
@@ -1104,20 +1046,24 @@ extern (C++) class FuncDeclaration : Declaration
     }
 
     /*************************************
-     * Determine partial specialization order of 'this' vs g.
+     * Determine partial specialization order of functions `f` vs `g`.
      * This is very similar to TemplateDeclaration::leastAsSpecialized().
+     * Params:
+     *  f = first function
+     *  g = second function
+     *  names = names of parameters
      * Returns:
      *      match   'this' is at least as specialized as g
      *      0       g is more specialized than 'this'
      */
-    final MATCH leastAsSpecialized(FuncDeclaration g, Identifiers* names)
+    static MATCH leastAsSpecialized(FuncDeclaration f, FuncDeclaration g, Identifiers* names)
     {
         enum LOG_LEASTAS = 0;
         static if (LOG_LEASTAS)
         {
             import core.stdc.stdio : printf;
-            printf("%s.leastAsSpecialized(%s, %s)\n", toChars(), g.toChars(), names ? names.toChars() : "null");
-            printf("%s, %s\n", type.toChars(), g.type.toChars());
+            printf("leastAsSpecialized(%s, %s, %s)\n", f.toChars(), g.toChars(), names ? names.toChars() : "null");
+            printf("%s, %s\n", f.type.toChars(), g.type.toChars());
         }
 
         /* This works by calling g() with f()'s parameters, and
@@ -1125,15 +1071,15 @@ extern (C++) class FuncDeclaration : Declaration
          * as g() is.
          */
 
-        TypeFunction tf = type.toTypeFunction();
+        TypeFunction tf = f.type.toTypeFunction();
         TypeFunction tg = g.type.toTypeFunction();
 
         /* If both functions have a 'this' pointer, and the mods are not
          * the same and g's is not const, then this is less specialized.
          */
-        if (needThis() && g.needThis() && tf.mod != tg.mod)
+        if (f.needThis() && g.needThis() && tf.mod != tg.mod)
         {
-            if (isCtorDeclaration())
+            if (f.isCtorDeclaration())
             {
                 if (!MODimplicitConv(tg.mod, tf.mod))
                     return MATCH.nomatch;
@@ -1471,6 +1417,9 @@ extern (C++) class FuncDeclaration : Declaration
     final PURE isPure()
     {
         //printf("FuncDeclaration::isPure() '%s'\n", toChars());
+
+        import dmd.typesem : purityLevel;
+
         TypeFunction tf = type.toTypeFunction();
         if (purityInprocess)
             setImpure();
@@ -3034,7 +2983,7 @@ Expression addInvariant(AggregateDeclaration ad, VarDeclaration vthis)
             // Workaround for https://issues.dlang.org/show_bug.cgi?id=13394
             // For the correct mangling,
             // run attribute inference on inv if needed.
-            inv.functionSemantic();
+            functionSemantic(inv);
         }
 
         //e = new DsymbolExp(Loc.initial, inv);
@@ -3313,7 +3262,7 @@ FuncDeclaration resolveFuncCall(const ref Loc loc, Scope* sc, Dsymbol s,
         if (m.count == 1) // exactly one match
         {
             if (!(flags & FuncResolveFlag.quiet))
-                m.lastf.functionSemantic();
+                functionSemantic(m.lastf);
             return m.lastf;
         }
         if ((flags & FuncResolveFlag.overloadOnly) && !tthis && m.lastf.needThis())
@@ -3383,12 +3332,18 @@ FuncDeclaration resolveFuncCall(const ref Loc loc, Scope* sc, Dsymbol s,
         // all of overloads are templates
         if (td)
         {
-            const(char)* msg = "none of the overloads of %s `%s.%s` are callable using argument types `!(%s)%s`";
             if (!od && !td.overnext)
-                msg = "%s `%s.%s` is not callable using argument types `!(%s)%s`";
-            .error(loc, msg,
+            {
+                .error(loc, "%s `%s` is not callable using argument types `!(%s)%s`",
+                   td.kind(), td.ident.toChars(), tiargsBuf.peekChars(), fargsBuf.peekChars());
+            }
+            else
+            {
+                .error(loc, "none of the overloads of %s `%s.%s` are callable using argument types `!(%s)%s`",
                    td.kind(), td.parent.toPrettyChars(), td.ident.toChars(),
                    tiargsBuf.peekChars(), fargsBuf.peekChars());
+            }
+
 
             if (!global.gag || global.params.v.showGaggedErrors)
                 printCandidates(loc, td, sc.isDeprecated());
@@ -3571,7 +3526,11 @@ if (is(Decl == TemplateDeclaration) || is(Decl == FuncDeclaration))
 
             if (!print)
                 return true;
-            const tmsg = td.toCharsNoConstraints();
+            OutBuffer buf;
+            HdrGenState hgs;
+            hgs.skipConstraints = true;
+            toCharsMaybeConstraints(td, buf, hgs);
+            const tmsg = buf.peekChars();
             const cmsg = td.getConstraintEvalError(constraintsTip);
 
             // add blank space if there are multiple candidates

@@ -60,6 +60,7 @@ struct HdrGenState
     bool importcHdr;    /// true if generating a .di file from an ImportC file
     bool doFuncBodies;  /// include function bodies in output
     bool vcg_ast;       /// write out codegen-ast
+    bool skipConstraints;  // skip constraints when doing templates
 
     bool fullQual;      /// fully qualify types when printing
     int tpltMember;
@@ -1957,6 +1958,47 @@ void toCBuffer(Dsymbol s, ref OutBuffer buf, ref HdrGenState hgs)
     s.accept(v);
 }
 
+// Note: this function is not actually `const`, because iterating the
+// function parameter list may run dsymbolsemantic on enum types
+public
+void toCharsMaybeConstraints(const TemplateDeclaration td, ref OutBuffer buf, ref HdrGenState hgs)
+{
+    buf.writestring(td.ident == Id.ctor ? "this" : td.ident.toString());
+    buf.writeByte('(');
+    foreach (i, const tp; *td.parameters)
+    {
+        if (i)
+            buf.writestring(", ");
+        toCBuffer(tp, buf, hgs);
+    }
+    buf.writeByte(')');
+
+    if (td.onemember)
+    {
+        if (const fd = td.onemember.isFuncDeclaration())
+        {
+            if (TypeFunction tf = cast(TypeFunction)fd.type.isTypeFunction())
+            {
+                // !! Casted away const
+                buf.writestring(parametersTypeToChars(tf.parameterList));
+                if (tf.mod)
+                {
+                    buf.writeByte(' ');
+                    buf.MODtoBuffer(tf.mod);
+                }
+            }
+        }
+    }
+
+    if (!hgs.skipConstraints &&
+        td.constraint)
+    {
+        buf.writestring(" if (");
+        toCBuffer(td.constraint, buf, hgs);
+        buf.writeByte(')');
+    }
+}
+
 
 /*****************************************
  * Pretty-print a template parameter list to a buffer.
@@ -2245,6 +2287,37 @@ private void expressionPrettyPrint(Expression e, ref OutBuffer buf, ref HdrGenSt
         buf.writeByte('"');
         if (e.postfix)
             buf.writeByte(e.postfix);
+    }
+
+    void visitInterpolation(InterpExp e)
+    {
+        buf.writeByte('i');
+        buf.writeByte('"');
+        const o = buf.length;
+
+        foreach (idx, str; e.interpolatedSet.parts)
+        {
+            if (idx % 2 == 0)
+            {
+                foreach(ch; str)
+                    writeCharLiteral(buf, ch);
+            }
+            else
+            {
+                buf.writeByte('$');
+                buf.writeByte('(');
+                foreach(ch; str)
+                    buf.writeByte(ch);
+                buf.writeByte(')');
+            }
+        }
+
+        if (hgs.ddoc)
+            escapeDdocString(buf, o);
+        buf.writeByte('"');
+        if (e.postfix)
+            buf.writeByte(e.postfix);
+
     }
 
     void visitArrayLiteral(ArrayLiteralExp e)
@@ -2827,6 +2900,7 @@ private void expressionPrettyPrint(Expression e, ref OutBuffer buf, ref HdrGenSt
         case EXP.super_:        return visitSuper(e.isSuperExp());
         case EXP.null_:         return visitNull(e.isNullExp());
         case EXP.string_:       return visitString(e.isStringExp());
+        case EXP.interpolated:  return visitInterpolation(e.isInterpExp());
         case EXP.arrayLiteral:  return visitArrayLiteral(e.isArrayLiteralExp());
         case EXP.assocArrayLiteral:     return visitAssocArrayLiteral(e.isAssocArrayLiteralExp());
         case EXP.structLiteral: return visitStructLiteral(e.isStructLiteralExp());

@@ -1316,7 +1316,7 @@ public:
             FuncDeclaration *fd = d->vtbl[i]->isFuncDeclaration();
             if (!fd || (!fd->fbody && d->isAbstract()))
                 continue;
-            if (!fd->functionSemantic())
+            if (!functionSemantic(fd))
                 return;
             if (!d->isFuncHidden(fd) || fd->isFuture())
                 continue;
@@ -1329,8 +1329,8 @@ public:
                     continue;
                 if (fd2->isFuture())
                     continue;
-                if (fd->leastAsSpecialized(fd2, NULL) != MATCH::nomatch ||
-                    fd2->leastAsSpecialized(fd, NULL) != MATCH::nomatch)
+                if (FuncDeclaration::leastAsSpecialized(fd, fd2, NULL) != MATCH::nomatch ||
+                    FuncDeclaration::leastAsSpecialized(fd2, fd, NULL) != MATCH::nomatch)
                 {
                     return;
                 }
@@ -1452,7 +1452,7 @@ public:
         }
         if (FuncDeclaration *fd = decl->isFuncDeclaration())
         {
-            if (!fd->functionSemantic())
+            if (!functionSemantic(fd))
                 return;
             if (fd->needThis() && !fd->isMember2())
                 return;
