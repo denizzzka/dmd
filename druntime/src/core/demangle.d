@@ -212,14 +212,16 @@ pure @safe:
     }
 
 
-    void popFront()
+    void popFront() nothrow
     {
-        if ( pos++ >= buf.length )
-            error();
+        //~ if(empty)
+            //~ error();
+
+        pos++;
     }
 
 
-    void popFront(int i)
+    void popFront(int i) nothrow
     {
         while (i--)
             popFront();
