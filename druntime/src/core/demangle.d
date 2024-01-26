@@ -186,12 +186,12 @@ pure @safe:
     // Parsing Utility
     //////////////////////////////////////////////////////////////////////////
 
-    @property bool empty()
+    @property bool empty() nothrow
     {
         return pos >= buf.length;
     }
 
-    @property char front()
+    @property char front() nothrow
     {
         if ( pos < buf.length )
             return buf[pos];
