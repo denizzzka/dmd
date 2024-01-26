@@ -229,7 +229,7 @@ pure @safe:
     {
         import core.exception : RangeError;
 
-        if (empty) throw new RangeError();
+        version (assert) if (empty) throw new RangeError();
 
         pos++;
     }
