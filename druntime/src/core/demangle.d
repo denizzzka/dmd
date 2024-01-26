@@ -260,7 +260,7 @@ pure @safe:
             popFront();
     }
 
-    bool isSymbolNameFront()
+    bool isSymbolNameFront() nothrow
     {
         char val = front;
         if ( isDigit( val ) || val == '_' )
@@ -270,21 +270,23 @@ pure @safe:
 
         // check the back reference encoding after 'Q'
         val = peekBackref();
+        if(!val) return false;
+
         return isDigit( val ); // identifier ref
     }
 
     // return the first character at the back reference
-    char peekBackref()
+    char peekBackref() nothrow
     {
         assert( front == 'Q' );
         auto n = decodeBackref!1();
         if (!n || n > pos)
-            error("invalid back reference");
+            return 0; // invalid back reference
 
         return buf[pos - n];
     }
 
-    size_t decodeBackref(size_t peekAt = 0)()
+    size_t decodeBackref(size_t peekAt = 0)() nothrow
     {
         enum base = 26;
         size_t n = 0;
@@ -303,7 +305,8 @@ pure @safe:
             if (t < 'A' || t > 'Z')
             {
                 if (t < 'a' || t > 'z')
-                    error("invalid back reference");
+                    return 0; // invalid back reference
+
                 n = base * n + t - 'a';
                 return n;
             }
