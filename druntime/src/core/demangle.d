@@ -2922,7 +2922,7 @@ private struct Buffer
         return this.dst[from .. to];
     }
 
-    static bool contains(scope const(char)[] a, scope const(char)[] b) @trusted
+    static bool contains(scope const(char)[] a, scope const(char)[] b) @trusted nothrow
     {
         if (a.length && b.length)
         {
