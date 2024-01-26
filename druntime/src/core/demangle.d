@@ -2974,16 +2974,17 @@ private struct Buffer
             assert( !contains( dst[0 .. len], val ) );
             debug(info) printf( "appending (%.*s)\n", cast(int) val.length, val.ptr );
 
-            if ( dst.length - len >= val.length )
+            if ( dst.length - len < val.length )
             {
-                // data is already in place?
-                if ( &dst[len] != &val[0] )
-                    dst[len .. len + val.length] = val[];
-
-                len += val.length;
+                // dst overflow, increase
+                dst.length = dst.length + val.length;
             }
-            else
-                overflow();
+
+            // data is already not in place?
+            if ( &dst[len] != &val[0] )
+                dst[len .. len + val.length] = val[];
+
+            len += val.length;
         }
     }
 }
