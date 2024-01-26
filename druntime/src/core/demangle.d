@@ -254,9 +254,9 @@ pure @safe:
     }
 
 
-    void eat( char val )
+    void eat( char val ) nothrow
     {
-        if ( val == front )
+        if ( test(val) )
             popFront();
     }
 
