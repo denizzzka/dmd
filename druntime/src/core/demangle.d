@@ -152,7 +152,12 @@ pure @safe:
 
     private template putOrF(string v)
     {
-        enum putOrF = "if(!put(`"~v~"`)) return false;";
+        enum putOrF = putOrF2!(`"`~v~`"`);
+    }
+
+    private template putOrF2(alias V)
+    {
+        enum putOrF2 = "if(!put("~V~")) return false;";
     }
 
     void putAsHex( size_t val, int width = 0 )
@@ -412,11 +417,9 @@ pure @safe:
             {
                 if(match( "AN" ))
                 {
-                    put( "real.nan" );
+                    mixin(putOrF!"real.nan");
                     return true;
                 }
-                else
-                    return false;
             }
             tbuf[tlen++] = '-';
         }
