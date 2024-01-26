@@ -106,8 +106,7 @@ pure @safe:
                ('A' <= val && 'F' >= val);
     }
 
-
-    static ubyte ascii2hex( char val )
+    static ubyte ascii2hex( char val, out bool err_status ) nothrow
     {
         if (val >= 'a' && val <= 'f')
             return cast(ubyte)(val - 'a' + 10);
@@ -115,7 +114,9 @@ pure @safe:
             return cast(ubyte)(val - 'A' + 10);
         if (val >= '0' && val <= '9')
             return cast(ubyte)(val - '0');
-        error();
+
+        err_status = true;
+        return 0xff;
     }
 
     char[] shift(scope const(char)[] val) return scope
@@ -1297,7 +1298,7 @@ pure @safe:
         E
         F
     */
-    void parseValue(scope  char[] name = null, char type = '\0' ) scope
+    void parseValue( out bool err_status, scope  char[] name = null, char type = '\0' ) scope
     {
         debug(trace) printf( "parseValue+\n" );
         debug(trace) scope(success) printf( "parseValue-\n" );
@@ -1342,8 +1343,14 @@ pure @safe:
             put( '"' );
             foreach (i; 0..n)
             {
-                auto a = ascii2hex( front ); popFront();
-                auto b = ascii2hex( front ); popFront();
+                auto a = ascii2hex( front, err_status );
+                if(err_status) return;
+                popFront();
+
+                auto b = ascii2hex( front, err_status );
+                if(err_status) return;
+                popFront();
+
                 auto v = cast(char)((a << 4) | b);
                 if (' ' <= v && v <= '~')   // ASCII printable
                 {
@@ -1377,7 +1384,8 @@ pure @safe:
             foreach ( i; 0 .. n )
             {
                 putComma(i);
-                parseValue();
+                parseValue(err_status);
+                if(err_status) return;
             }
             put( ']' );
             return;
@@ -1391,9 +1399,11 @@ pure @safe:
             foreach ( i; 0 .. n )
             {
                 putComma(i);
-                parseValue();
+                parseValue(err_status);
+                if(err_status) return;
                 put(':');
-                parseValue();
+                parseValue(err_status);
+                if(err_status) return;
             }
             put( ']' );
             return;
@@ -1408,7 +1418,8 @@ pure @safe:
             foreach ( i; 0 .. n )
             {
                 putComma(i);
-                parseValue();
+                parseValue(err_status);
+                if(err_status) return;
             }
             put( ')' );
             return;
@@ -1563,7 +1574,10 @@ pure @safe:
                 if ( t == 'Q' )
                     t = peekBackref();
                 char[] name; silent( delegate void() { name = parseType(); } );
-                parseValue( name, t );
+
+                bool err_status;
+                parseValue( err_status, name, t );
+                if(err_status) error(); //FIXME: remove
                 continue;
             case 'S':
                 popFront();
