@@ -228,7 +228,7 @@ pure @safe:
     }
 
 
-    bool match( char val )
+    bool match( char val ) nothrow
     {
         if(!test( val ))
             return false;
@@ -239,13 +239,17 @@ pure @safe:
     }
 
 
-    void match( const(char)[] val )
+    bool match( const(char)[] val ) nothrow
     {
         foreach (char e; val )
         {
-            test( e ); //FIXME: check return value
+            if(!test( e ))
+                return false;
+
             popFront();
         }
+
+        return true;
     }
 
 
@@ -364,7 +368,7 @@ pure @safe:
     }
 
 
-    void parseReal() scope
+    bool parseReal() scope
     {
         debug(trace) printf( "parseReal+\n" );
         debug(trace) scope(success) printf( "parseReal-\n" );
@@ -375,24 +379,36 @@ pure @safe:
 
         if ( 'I' == front )
         {
-            match( "INF" );
-            put( "real.infinity" );
-            return;
+            if(match( "INF" ))
+            {
+                put( "real.infinity" );
+                return true;
+            }
+            else
+                return false;
         }
         if ( 'N' == front )
         {
             popFront();
             if ( 'I' == front )
             {
-                match( "INF" );
-                put( "-real.infinity" );
-                return;
+                if(match( "INF" ))
+                {
+                    put( "-real.infinity" );
+                    return true;
+                }
+                else
+                    return false;
             }
             if ( 'A' == front )
             {
-                match( "AN" );
-                put( "real.nan" );
-                return;
+                if(match( "AN" ))
+                {
+                    put( "real.nan" );
+                    return true;
+                }
+                else
+                    return false;
             }
             tbuf[tlen++] = '-';
         }
@@ -410,7 +426,7 @@ pure @safe:
             tbuf[tlen++] = front;
             popFront();
         }
-        match( 'P' );
+        if(!match( 'P' )) return false;
         tbuf[tlen++] = 'p';
         if ( 'N' == front )
         {
@@ -432,6 +448,8 @@ pure @safe:
         pureReprintReal( tbuf[] );
         debug(info) printf( "converted (%.*s)\n", cast(int) tlen, tbuf.ptr );
         put( tbuf[0 .. tlen] );
+
+        return true;
     }
 
 
@@ -1330,21 +1348,27 @@ pure @safe:
             return;
         case 'e':
             popFront();
-            parseReal();
-            return;
+            if(parseReal())
+                return;
+            else
+                error(); //FIXME: remove
         case 'c':
             popFront();
-            parseReal();
+            if(!parseReal())
+                error(); //FIXME: remove
             put( '+' );
-            match( 'c' );
-            parseReal();
+            if(!match( 'c' ))
+                error(); //FIXME: remove
+            if(!parseReal())
+                error(); //FIXME: remove
             put( 'i' );
             return;
         case 'a': case 'w': case 'd':
             char t = front;
             popFront();
             auto n = decodeNumber();
-            match( '_' );
+            if(!match( '_' ))
+                error(); //FIXME: remove
             put( '"' );
             foreach (i; 0..n)
             {
@@ -1701,11 +1725,13 @@ pure @safe:
         }
         auto n = hasNumber ? decodeNumber() : 0;
         auto beg = pos;
-        match( "__T" );
+        if(!match( "__T" ))
+            error(); //FIXME: remove
         parseLName();
         put( "!(" );
         parseTemplateArgs();
-        match( 'Z' );
+        if(!match( 'Z' ))
+            error(); //FIXME: remove
         if ( hasNumber && pos - beg != n )
             error( "Template name length mismatch" );
         put( ')' );
@@ -1863,7 +1889,8 @@ pure @safe:
         auto end = pos + n;
 
         eat( '_' );
-        match( 'D' );
+        if(!match( 'D' ))
+            error(); //FIXME: remove
         do
         {
             size_t  beg = dst.length;
