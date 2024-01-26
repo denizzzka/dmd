@@ -214,8 +214,9 @@ pure @safe:
 
     void popFront() nothrow
     {
-        //~ if(empty)
-            //~ error();
+        import core.exception : RangeError;
+
+        if (empty) throw new RangeError();
 
         pos++;
     }
