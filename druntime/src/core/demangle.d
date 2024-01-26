@@ -119,11 +119,11 @@ pure @safe:
         return 0xff;
     }
 
-    char[] shift(scope const(char)[] val) return scope
+    char[] shift(scope const(char)[] val, out bool overflow) return scope nothrow
     {
         if (mute)
             return null;
-        return dst.shift(val);
+        return dst.shift(val, overflow);
     }
 
     void putComma(size_t n)
@@ -821,7 +821,9 @@ pure @safe:
             auto tx = parseType();
             parseType();
             put( '[' );
-            shift(tx);
+            bool overflow;
+            shift(tx, overflow);
+            if(overflow) .overflow(); //FIXME: remove
             put( ']' );
             return dst[beg .. $];
         case 'P': // TypePointer (P Type)
@@ -1274,7 +1276,9 @@ pure @safe:
             auto retbeg = dst.length;
             parseType();
             put(' ');
-            shift(dst[argbeg .. retbeg]);
+            bool overflow;
+            shift(dst[argbeg .. retbeg], overflow);
+            if(overflow) .overflow(); //FIXME: remove
         }
 
         return dst[beg .. $];
@@ -1886,8 +1890,10 @@ pure @safe:
     MangledName:
         _D QualifiedName Type
         _D QualifiedName M Type
+
+    Returns: false if buffer overflow occured
     */
-    void parseMangledName( bool displayType, size_t n = 0 ) scope
+    bool parseMangledName( bool displayType, size_t n = 0 ) scope
     {
         debug(trace) printf( "parseMangledName+\n" );
         debug(trace) scope(success) printf( "parseMangledName-\n" );
@@ -1903,6 +1909,8 @@ pure @safe:
             size_t  beg = dst.length;
             size_t  nameEnd = dst.length;
             char[] attr;
+            bool overflow;
+
             do
             {
                 if ( attr )
@@ -1917,7 +1925,9 @@ pure @safe:
 
             if ( displayType )
             {
-                attr = shift( attr );
+                attr = shift( attr, overflow );
+                if(overflow) return false;
+
                 nameEnd = dst.length - attr.length;  // name includes function arguments
             }
             name = dst[beg .. nameEnd];
@@ -1933,7 +1943,8 @@ pure @safe:
                 if ( type.length )
                     put( ' ' );
                 // sort (name,attr,type) -> (attr,type,name)
-                shift( name );
+                shift( name, overflow );
+                if(overflow) return false;
             }
             else
             {
@@ -1942,7 +1953,7 @@ pure @safe:
                 dst.len = lastlen;
             }
             if ( pos >= buf.length || (n != 0 && pos >= end) )
-                return;
+                return true;
 
             switch ( front )
             {
@@ -1950,7 +1961,7 @@ pure @safe:
             case 'V':
             case 'S':
             case 'Z':
-                return;
+                return true;
             default:
             }
             put( '.' );
@@ -1960,7 +1971,9 @@ pure @safe:
 
     void parseMangledName()
     {
-        parseMangledName( AddType.yes == addType );
+        auto r = parseMangledName( AddType.yes == addType );
+
+        if(r == false) .overflow(); //FIXME: remove
     }
 
     char[] doDemangle(alias FUNC)() return scope
@@ -2978,7 +2991,7 @@ private struct Buffer
     }
 
     // move val to the end of the dst buffer
-    char[] shift(scope const(char)[] val) return scope
+    char[] shift(scope const(char)[] val, out bool overflow) return scope nothrow
     {
         version (DigitalMars) pragma(inline, false); // tame dmd inliner
 
@@ -2988,7 +3001,10 @@ private struct Buffer
             debug(info) printf( "shifting (%.*s)\n", cast(int) val.length, val.ptr );
 
             if (len + val.length > dst.length)
-                overflow();
+            {
+                overflow = true;
+                return null;
+            }
             size_t v = &val[0] - &dst[0];
             dst[len .. len + val.length] = val[];
             for (size_t p = v; p < len; p++)
