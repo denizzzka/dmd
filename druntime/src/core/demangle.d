@@ -206,10 +206,9 @@ pure @safe:
     }
 
 
-    void test( char val )
+    bool test( char val ) nothrow
     {
-        if ( val != front )
-            error();
+        return val == front;
     }
 
 
@@ -227,10 +226,14 @@ pure @safe:
     }
 
 
-    void match( char val )
+    bool match( char val )
     {
-        test( val );
+        if(!test( val ))
+            return false;
+
         popFront();
+
+        return true;
     }
 
 
@@ -238,7 +241,7 @@ pure @safe:
     {
         foreach (char e; val )
         {
-            test( e );
+            test( e ); //FIXME: check return value
             popFront();
         }
     }
