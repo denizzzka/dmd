@@ -139,13 +139,21 @@ pure @safe:
         put(val[]);
     }
 
-    void put(scope const(char)[] val) return scope
+    bool put(scope const(char)[] val) return scope nothrow
     {
         if (mute)
-            return;
-        dst.append(val);
+            return true;
+
+        bool overflow;
+        dst.append(val, overflow);
+
+        return !overflow;
     }
 
+    private template putOrF(string v)
+    {
+        enum putOrF = "if(!put(`"~v~"`)) return false;";
+    }
 
     void putAsHex( size_t val, int width = 0 )
     {
@@ -385,11 +393,9 @@ pure @safe:
         {
             if(match( "INF" ))
             {
-                put( "real.infinity" );
+                mixin(putOrF!"real.infinity");
                 return true;
             }
-            else
-                return false;
         }
         if ( 'N' == front )
         {
@@ -398,11 +404,9 @@ pure @safe:
             {
                 if(match( "INF" ))
                 {
-                    put( "-real.infinity" );
+                    mixin(putOrF!"-real.infinity");
                     return true;
                 }
-                else
-                    return false;
             }
             if ( 'A' == front )
             {
@@ -3032,7 +3036,7 @@ private struct Buffer
         }
     }
 
-    char[] append(scope const(char)[] val) return scope
+    char[] append(scope const(char)[] val, out bool overflow) return scope nothrow
     {
         version (DigitalMars) pragma(inline, false); // tame dmd inliner
 
@@ -3057,7 +3061,9 @@ private struct Buffer
                 len += val.length;
                 return t;
             }
-            overflow();
+
+            overflow = true;
+            return null;
         }
         return null;
     }
