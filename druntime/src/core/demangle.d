@@ -2924,6 +2924,14 @@ private struct Buffer
         return r;
     }
 
+    private void checkAndStretchBuf(scope const(char)[] val) scope
+    {
+        const required = len + val.length;
+
+        if (required > dst.length)
+            dst.length = dst.length + (required - dst.length);
+    }
+
     // move val to the end of the dst buffer
     char[] shift(scope const(char)[] val) return scope
     {
@@ -2976,11 +2984,7 @@ private struct Buffer
             assert( !contains( dst[0 .. len], val ) );
             debug(info) printf( "appending (%.*s)\n", cast(int) val.length, val.ptr );
 
-            if ( dst.length - len < val.length )
-            {
-                // dst overflow, increase
-                dst.length = dst.length + val.length;
-            }
+            checkAndStretchBuf(val);
 
             // data is already not in place?
             if ( &dst[len] != &val[0] )
