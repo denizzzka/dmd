@@ -2971,11 +2971,9 @@ private struct Buffer
         }
     }
 
-    BufSlice append(scope const(char)[] val) scope
+    void append(scope const(char)[] val) scope
     {
         version (DigitalMars) pragma(inline, false); // tame dmd inliner
-
-        BufSlice ret;
 
         if (val.length)
         {
@@ -2990,18 +2988,7 @@ private struct Buffer
             if ( &dst[len] != &val[0] )
                 dst[len .. len + val.length] = val[];
 
-            ret.idx = len;
-            ret.len = val.length;
-
             len += val.length;
         }
-
-        return ret;
     }
-}
-
-private struct BufSlice
-{
-    size_t idx;
-    size_t len;
 }
