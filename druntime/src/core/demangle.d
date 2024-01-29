@@ -212,13 +212,6 @@ pure @safe:
     }
 
 
-    //FIXME: remove?
-    void test( char val )
-    {
-        if ( val != front )
-            error();
-    }
-
     bool _test(char val) nothrow
     {
         return val == front;
@@ -240,21 +233,7 @@ pure @safe:
     }
 
 
-    void match( char val )
-    {
-        if(!_match(val))
-            error();
-    }
-
-
-    //FIXME: remove?
-    void match( const(char)[] val )
-    {
-        if(!_match(val))
-            error();
-    }
-
-    bool _match(char val) nothrow
+    bool match(char val) nothrow
     {
         if(!_test(val))
             return false;
@@ -265,10 +244,10 @@ pure @safe:
         }
     }
 
-    bool _match(const(char)[] val) nothrow
+    bool match(const(char)[] val) nothrow
     {
         foreach (char e; val )
-            if(!_match( e ))
+            if(!match( e ))
                 return false;
 
         return true;
@@ -428,7 +407,7 @@ pure @safe:
 
     private template matchOrF(alias s)
     {
-        enum matchOrF = "err_status = !_match("~s.stringof~");"~
+        enum matchOrF = "err_status = !match("~s.stringof~");"~
                         "if (err_status) return;";
     }
 
@@ -1946,7 +1925,7 @@ pure @safe:
         }
 
         auto beg = pos;
-        err_status = !_match( "__T" );
+        err_status = !match( "__T" );
         mixin(check4err!());
 
         {
@@ -1961,7 +1940,7 @@ pure @safe:
         parseTemplateArgs(err_status);
         mixin(check4err!());
 
-        err_status = !_match( 'Z' );
+        err_status = !match( 'Z' );
         mixin(check4err!());
 
         if ( hasNumber && pos - beg != n )
@@ -2152,7 +2131,7 @@ pure @safe:
         auto end = pos + n;
 
         eat( '_' );
-        if(!_match( 'D' )) { err_status = true; return; } //FIXME: replace by mixin
+        if(!match( 'D' )) { err_status = true; return; } //FIXME: replace by mixin
 
         do
         {
