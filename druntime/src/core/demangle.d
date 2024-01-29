@@ -348,25 +348,6 @@ pure @safe:
     }
 
 
-    //FIXME: remove
-    size_t decodeNumber() scope
-    {
-        debug(trace) printf( "decodeNumber+\n" );
-        debug(trace) scope(success) printf( "decodeNumber-\n" );
-
-        return decodeNumber( sliceNumber() );
-    }
-
-
-    //FIXME: remove
-    size_t decodeNumber( scope const(char)[] num ) scope
-    {
-        bool err_status;
-        auto r = decodeNumber(err_status, num);
-        if(err_status) error();
-        return r;
-    }
-
     size_t decodeNumber(out bool err_status) scope nothrow
     {
         debug(trace) printf( "decodeNumber+\n" );
