@@ -419,8 +419,23 @@ pure @safe:
         return val;
     }
 
-
     void parseReal() scope
+    {
+        bool err_status;
+        parseReal(err_status);
+        if(err_status) error();
+    }
+
+    private template matchOrF(string s)
+    {
+        enum matchOrF =
+        "if (!_match(`"~s~"`)) {"~
+        "   err_status = true;"~
+        "   return;"~
+        "}";
+    }
+
+    void parseReal(out bool err_status) scope nothrow
     {
         debug(trace) printf( "parseReal+\n" );
         debug(trace) scope(success) printf( "parseReal-\n" );
@@ -431,7 +446,7 @@ pure @safe:
 
         if ( 'I' == front )
         {
-            match( "INF" );
+            mixin(matchOrF!( "INF" ));
             put( "real.infinity" );
             return;
         }
@@ -440,13 +455,13 @@ pure @safe:
             popFront();
             if ( 'I' == front )
             {
-                match( "INF" );
+                mixin(matchOrF!( "INF" ));
                 put( "-real.infinity" );
                 return;
             }
             if ( 'A' == front )
             {
-                match( "AN" );
+                mixin(matchOrF!( "AN" ));
                 put( "real.nan" );
                 return;
             }
@@ -455,8 +470,9 @@ pure @safe:
 
         tbuf[tlen++] = '0';
         tbuf[tlen++] = 'X';
-        if ( !isHexDigit( front ) )
-            error( "Expected hex digit" );
+        err_status = !isHexDigit( front );
+        if (err_status) return; // Expected hex digit
+
         tbuf[tlen++] = front;
         tbuf[tlen++] = '.';
         popFront();
@@ -466,7 +482,10 @@ pure @safe:
             tbuf[tlen++] = front;
             popFront();
         }
-        match( 'P' );
+
+        err_status = !_match( 'P' );
+        if (err_status) return;
+
         tbuf[tlen++] = 'p';
         if ( 'N' == front )
         {
