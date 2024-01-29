@@ -1492,13 +1492,6 @@ pure @safe:
         parseValue(err_status, dst.bslice_empty);
     }
 
-    void parseValue(scope BufSlice name, char type = '\0' ) scope
-    {
-        bool err_status;
-        parseValue(err_status, name, type);
-        if(err_status) error();
-    }
-
     void parseValue(out bool err_status, scope BufSlice name, char type = '\0' ) scope nothrow
     {
         debug(trace) printf( "parseValue+\n" );
