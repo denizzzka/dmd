@@ -515,6 +515,7 @@ pure @safe:
         if(err_flag)
         {
             err_status = "Number overflow";
+            return;
         }
 
         if ( n == 0 )
