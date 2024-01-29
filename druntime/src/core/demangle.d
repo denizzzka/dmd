@@ -476,14 +476,6 @@ pure @safe:
         Namechar
         Namechar Namechars
     */
-    void parseLName() scope
-    {
-        string err_status;
-        parseLName(err_status);
-        if(err_status !is null)
-            error(err_status);
-    }
-
     void parseLName(out string err_status) scope nothrow
     {
         debug(trace) printf( "parseLName+\n" );
