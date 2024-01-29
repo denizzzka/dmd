@@ -107,7 +107,7 @@ pure @safe:
     }
 
 
-    static ubyte ascii2hex( char val, out bool err_status ) nothrow
+    static ubyte ascii2hex( out bool err_status, char val ) nothrow
     {
         if (val >= 'a' && val <= 'f')
             return cast(ubyte)(val - 'a' + 10);
@@ -1540,11 +1540,11 @@ pure @safe:
             put( '"' );
             foreach (i; 0..n)
             {
-                auto a = ascii2hex( front, err_status );
+                auto a = ascii2hex( err_status, front );
                 if(err_status) return;
                 popFront();
 
-                auto b = ascii2hex( front, err_status );
+                auto b = ascii2hex( err_status, front );
                 if(err_status) return;
                 popFront();
 
