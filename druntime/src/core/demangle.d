@@ -323,16 +323,6 @@ pure @safe:
         return buf[pos - n];
     }
 
-    size_t decodeBackref(size_t peekAt = 0)()
-    {
-        auto r = decodeBackref!peekAt(false);
-
-        if(r == 0)
-            error("invalid back reference");
-
-        return r;
-    }
-
     size_t decodeBackref(size_t peekAt = 0)(bool unused_FIXME_remove) nothrow
     {
         enum base = 26;
@@ -2448,7 +2438,7 @@ char[] reencodeMangled(return scope const(char)[] mangled) nothrow pure @safe
 
             auto refPos = d.pos;
             d.popFront();
-            auto n = d.decodeBackref();
+            auto n = d.decodeBackref(false);
             if (n == 0 || n > refPos)
                 error("invalid back reference");
 
