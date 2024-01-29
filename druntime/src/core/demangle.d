@@ -1638,13 +1638,6 @@ pure @safe:
         }
     }
 
-    void parseIntegerValue() scope
-    {
-        bool err_status;
-        parseIntegerValue(err_status, dst.bslice_empty);
-        if (err_status) error();
-    }
-
     void parseIntegerValue( out bool err_status, scope BufSlice name, char type = '\0' ) scope nothrow
     {
         debug(trace) printf( "parseIntegerValue+\n" );
