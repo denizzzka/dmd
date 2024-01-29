@@ -281,17 +281,6 @@ pure @safe:
             popFront();
     }
 
-    bool isSymbolNameFront()
-    {
-        bool err_status;
-        auto r = isSymbolNameFront(err_status);
-
-        if(err_status)
-            error("invalid back reference");
-
-        return r;
-    }
-
     bool isSymbolNameFront(out bool err_status) nothrow
     {
         char val = front;
@@ -1847,26 +1836,32 @@ pure @safe:
     }
 
 
-    bool mayBeMangledNameArg()
+    bool mayBeMangledNameArg() nothrow
     {
         debug(trace) printf( "mayBeMangledNameArg+\n" );
         debug(trace) scope(success) printf( "mayBeMangledNameArg-\n" );
 
+        bool err_status;
         auto p = pos;
         scope(exit) pos = p;
+
         if ( isDigit( buf[pos] ) )
         {
-            auto n = decodeNumber();
-            return n >= 4 &&
+            auto n = decodeNumber(err_status);
+
+            return !err_status && n >= 4 &&
                 pos < buf.length && '_' == buf[pos++] &&
                 pos < buf.length && 'D' == buf[pos++] &&
                 isDigit( buf[pos] );
         }
         else
         {
-            return pos < buf.length && '_' == buf[pos++] &&
+            const isSNF = isSymbolNameFront(err_status);
+
+            return !err_status &&
+                   pos < buf.length && '_' == buf[pos++] &&
                    pos < buf.length && 'D' == buf[pos++] &&
-                   isSymbolNameFront();
+                   isSNF;
         }
     }
 
