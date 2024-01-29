@@ -117,7 +117,7 @@ pure @safe:
             return cast(ubyte)(val - '0');
 
         err_status = true;
-        return 0xff;
+        return 0;
     }
 
     BufSlice shift(scope const BufSlice val) return scope
@@ -212,7 +212,7 @@ pure @safe:
     }
 
 
-    bool _test(char val) nothrow
+    bool test(char val) nothrow
     {
         return val == front;
     }
@@ -235,7 +235,7 @@ pure @safe:
 
     bool match(char val) nothrow
     {
-        if(!_test(val))
+        if(!test(val))
             return false;
         else
         {
