@@ -1520,12 +1520,14 @@ pure @safe:
                 error( "Number expected" );
             goto case;
         case '0': .. case '9':
-            parseIntegerValue( name, type );
+            bool err_status;
+            parseIntegerValue( err_status, name, type );
             return;
         case 'N':
             popFront();
             put( '-' );
-            parseIntegerValue( name, type );
+            bool err_status;
+            parseIntegerValue( err_status, name, type );
             return;
         case 'e':
             popFront();
@@ -1638,10 +1640,12 @@ pure @safe:
 
     void parseIntegerValue() scope
     {
-        parseIntegerValue(dst.bslice_empty);
+        bool err_status;
+        parseIntegerValue(err_status, dst.bslice_empty);
+        if (err_status) error();
     }
 
-    void parseIntegerValue( scope BufSlice name, char type = '\0' ) scope
+    void parseIntegerValue( out bool err_status, scope BufSlice name, char type = '\0' ) scope nothrow
     {
         debug(trace) printf( "parseIntegerValue+\n" );
         debug(trace) scope(success) printf( "parseIntegerValue-\n" );
@@ -1653,7 +1657,8 @@ pure @safe:
         case 'w': // dchar
         {
             auto val = sliceNumber();
-            auto num = decodeNumber( val );
+            auto num = decodeNumber( err_status, val );
+            if (err_status) return;
 
             switch ( num )
             {
@@ -1715,7 +1720,9 @@ pure @safe:
             }
         }
         case 'b': // bool
-            put( decodeNumber() ? "true" : "false" );
+            auto d = decodeNumber(err_status);
+            if (err_status) return;
+            put( d ? "true" : "false" );
             return;
         case 'h', 't', 'k': // ubyte, ushort, uint
             put( sliceNumber() );
