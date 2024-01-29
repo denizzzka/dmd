@@ -379,13 +379,6 @@ pure @safe:
         return val;
     }
 
-    void parseReal() scope
-    {
-        bool err_status;
-        parseReal(err_status);
-        if(err_status) error();
-    }
-
     private template matchOrF(alias s)
     {
         enum matchOrF = "err_status = !match("~s.stringof~");"~
