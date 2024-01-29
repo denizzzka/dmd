@@ -1487,11 +1487,6 @@ pure @safe:
         F
     */
 
-    void parseValue() scope
-    {
-        parseValue(dst.bslice_empty);
-    }
-
     void parseValue(out bool err_status) scope nothrow
     {
         parseValue(err_status, dst.bslice_empty);
