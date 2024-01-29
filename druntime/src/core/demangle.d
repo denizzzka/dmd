@@ -426,13 +426,10 @@ pure @safe:
         if(err_status) error();
     }
 
-    private template matchOrF(string s)
+    private template matchOrF(alias s)
     {
-        enum matchOrF =
-        "if (!_match(`"~s~"`)) {"~
-        "   err_status = true;"~
-        "   return;"~
-        "}";
+        enum matchOrF = "err_status = !_match("~s.stringof~");"~
+                        "if (err_status) return;";
     }
 
     void parseReal(out bool err_status) scope nothrow
@@ -483,9 +480,7 @@ pure @safe:
             popFront();
         }
 
-        err_status = !_match( 'P' );
-        if (err_status) return;
-
+        mixin(matchOrF!( 'P' ));
         tbuf[tlen++] = 'p';
         if ( 'N' == front )
         {
