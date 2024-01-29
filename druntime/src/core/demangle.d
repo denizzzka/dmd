@@ -316,14 +316,14 @@ pure @safe:
     char peekBackref() nothrow
     {
         assert( front == 'Q' );
-        auto n = decodeBackref!1(false);
+        auto n = decodeBackref!1();
         if (!n || n > pos)
             return 0; // invalid back reference
 
         return buf[pos - n];
     }
 
-    size_t decodeBackref(size_t peekAt = 0)(bool unused_FIXME_remove) nothrow
+    size_t decodeBackref(size_t peekAt = 0)() nothrow
     {
         enum base = 26;
         size_t n = 0;
@@ -547,7 +547,7 @@ pure @safe:
             // back reference to LName
             auto refPos = pos;
             popFront();
-            size_t n = decodeBackref(false);
+            size_t n = decodeBackref();
             if ( !n || n > refPos )
             {
                 err_status = "Invalid LName back reference";
@@ -843,7 +843,7 @@ pure @safe:
 
             auto refPos = pos;
             popFront();
-            auto n = decodeBackref(false);
+            auto n = decodeBackref();
             if (n == 0 || n > pos)
             {
                 err_status = "invalid back reference";
@@ -2358,7 +2358,7 @@ char[] reencodeMangled(return scope const(char)[] mangled) nothrow pure @safe
                     scope(exit) result.length = reslen; // remove all intermediate additions
                     // only support identifier back references
                     d.popFront();
-                    size_t n = d.decodeBackref(false);
+                    size_t n = d.decodeBackref();
                     if (!n || n > refpos)
                     {
                         err_msg = "invalid back reference";
@@ -2438,7 +2438,7 @@ char[] reencodeMangled(return scope const(char)[] mangled) nothrow pure @safe
 
             auto refPos = d.pos;
             d.popFront();
-            auto n = d.decodeBackref(false);
+            auto n = d.decodeBackref();
             if (n == 0 || n > refPos)
                 error("invalid back reference");
 
