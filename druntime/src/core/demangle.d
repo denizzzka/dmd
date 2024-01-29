@@ -180,7 +180,7 @@ pure @safe:
     }
 
 
-    void silent( void delegate() pure @safe dg )
+    void silent( void delegate() pure @safe nothrow dg ) nothrow
     {
         debug(trace) printf( "silent+\n" );
         debug(trace) scope(success) printf( "silent-\n" );
@@ -1492,6 +1492,16 @@ pure @safe:
         parseValue(dst.bslice_empty);
     }
 
+    void parseValue(out bool err_status, scope BufSlice name, char type = '\0' ) scope nothrow
+    {
+        try
+            parseValue(name, type);
+        catch (ParseException)
+            err_status = true;
+        catch (Exception)
+            assert(false);
+    }
+
     void parseValue(scope BufSlice name, char type = '\0' ) scope
     {
         debug(trace) printf( "parseValue+\n" );
@@ -1743,16 +1753,6 @@ pure @safe:
     */
     void parseTemplateArgs(out bool err_status) scope nothrow
     {
-        try
-            parseTemplateArgs();
-        catch(ParseException)
-            err_status = true;
-        catch(Exception)
-            assert(false);
-    }
-
-    void parseTemplateArgs() scope
-    {
         debug(trace) printf( "parseTemplateArgs+\n" );
         debug(trace) scope(success) printf( "parseTemplateArgs-\n" );
 
@@ -1767,7 +1767,8 @@ pure @safe:
             case 'T':
                 popFront();
                 putComma(n);
-                parseType();
+                parseType(err_status);
+                if (err_status) return;
                 continue;
             case 'V':
                 popFront();
@@ -1780,10 +1781,18 @@ pure @safe:
                 if ( t == 'Q' )
                 {
                     t = peekBackref();
-                    if(t == 0) error("invalid back reference");
+                    if(t == 0)
+                    {
+                        // invalid back reference
+                        err_status = true;
+                        return;
+                    }
                 }
-                BufSlice name = dst.bslice_empty; silent( delegate void() { name = parseType(); } );
-                parseValue( name, t );
+                BufSlice name = dst.bslice_empty;
+                silent( delegate void() nothrow { name = parseType(err_status); } );
+                if (err_status) return;
+                parseValue( err_status, name, t );
+                if (err_status) return;
                 continue;
             case 'S':
                 popFront();
@@ -1811,14 +1820,17 @@ pure @safe:
                 {
                     // ambiguity: length followed by qualified name (starting with number)
                     // try all possible pairs of numbers
-                    auto qlen = decodeNumber() / 10; // last digit needed for QualifiedName
+                    auto qlen = decodeNumber(err_status);
+                    if (err_status) return;
+
+                    qlen /= 10; // last digit needed for QualifiedName
                     pos--;
                     auto l = dst.length;
                     auto p = pos;
                     auto b = brp;
                     while ( qlen > 0 )
                     {
-                        bool err_status;
+                        err_status = false;
                         parseQualifiedName(err_status);
 
                         if(!err_status)
@@ -1834,14 +1846,17 @@ pure @safe:
                     }
                 }
 
-                bool err_status;
                 parseQualifiedName(err_status);
                 if(err_status) return;
                 continue;
             case 'X':
                 popFront();
                 putComma(n);
-                parseLName();
+                {
+                    string err_msg;
+                    parseLName(err_msg);
+                    if (err_msg) return;
+                }
                 continue;
             default:
                 return;
