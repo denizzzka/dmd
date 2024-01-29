@@ -1492,17 +1492,19 @@ pure @safe:
         parseValue(dst.bslice_empty);
     }
 
-    void parseValue(out bool err_status, scope BufSlice name, char type = '\0' ) scope nothrow
+    void parseValue(out bool err_status) scope nothrow
     {
-        try
-            parseValue(name, type);
-        catch (ParseException)
-            err_status = true;
-        catch (Exception)
-            assert(false);
+        parseValue(err_status, dst.bslice_empty);
     }
 
     void parseValue(scope BufSlice name, char type = '\0' ) scope
+    {
+        bool err_status;
+        parseValue(err_status, name, type);
+        if(err_status) error();
+    }
+
+    void parseValue(out bool err_status, scope BufSlice name, char type = '\0' ) scope nothrow
     {
         debug(trace) printf( "parseValue+\n" );
         debug(trace) scope(success) printf( "parseValue-\n" );
@@ -1516,41 +1518,40 @@ pure @safe:
             return;
         case 'i':
             popFront();
-            if ( '0' > front || '9' < front )
-                error( "Number expected" );
+            err_status = ( '0' > front || '9' < front );
+            if(err_status) return; // Number expected
             goto case;
         case '0': .. case '9':
-            bool err_status;
             parseIntegerValue( err_status, name, type );
             return;
         case 'N':
             popFront();
             put( '-' );
-            bool err_status;
             parseIntegerValue( err_status, name, type );
             return;
         case 'e':
             popFront();
-            parseReal();
+            parseReal(err_status);
             return;
         case 'c':
             popFront();
-            parseReal();
+            parseReal(err_status);
+            if (err_status) return;
             put( '+' );
-            match( 'c' );
-            parseReal();
+            mixin(matchOrF!( 'c' ));
+            parseReal(err_status);
+            if (err_status) return;
             put( 'i' );
             return;
         case 'a': case 'w': case 'd':
             char t = front;
             popFront();
-            auto n = decodeNumber();
-            match( '_' );
+            auto n = decodeNumber(err_status);
+            if (err_status) return;
+            mixin(matchOrF!( '_' ));
             put( '"' );
             foreach (i; 0..n)
             {
-                bool err_status; //FIXME: move to args
-
                 auto a = ascii2hex( front, err_status );
                 if(err_status) return;
                 popFront();
@@ -1588,11 +1589,13 @@ pure @safe:
             // An array literal. Value is repeated Number times.
             popFront();
             put( '[' );
-            auto n = decodeNumber();
+            auto n = decodeNumber(err_status);
+            if (err_status) return;
             foreach ( i; 0 .. n )
             {
                 putComma(i);
-                parseValue();
+                parseValue(err_status);
+                if (err_status) return;
             }
             put( ']' );
             return;
@@ -1602,13 +1605,16 @@ pure @safe:
             // An associative array literal. Value is repeated 2*Number times.
             popFront();
             put( '[' );
-            auto n = decodeNumber();
+            auto n = decodeNumber(err_status);
+            if (err_status) return;
             foreach ( i; 0 .. n )
             {
                 putComma(i);
-                parseValue();
+                parseValue(err_status);
+                if (err_status) return;
                 put(':');
-                parseValue();
+                parseValue(err_status);
+                if (err_status) return;
             }
             put( ']' );
             return;
@@ -1619,11 +1625,13 @@ pure @safe:
             if ( name.length )
                 put( name );
             put( '(' );
-            auto n = decodeNumber();
+            auto n = decodeNumber(err_status);
+            if (err_status) return;
             foreach ( i; 0 .. n )
             {
                 putComma(i);
-                parseValue();
+                parseValue(err_status);
+                if (err_status) return;
             }
             put( ')' );
             return;
@@ -1631,10 +1639,10 @@ pure @safe:
             // f MangledName
             // A function literal symbol
             popFront();
-            parseMangledName(false, 1);
+            parseMangledName(err_status, false, 1);
             return;
         default:
-            error();
+            err_status = true;
         }
     }
 
