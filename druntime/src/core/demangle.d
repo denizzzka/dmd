@@ -212,7 +212,7 @@ pure @safe:
     }
 
 
-    bool test(char val) nothrow
+    bool test( char val ) nothrow
     {
         return val == front;
     }
@@ -233,7 +233,7 @@ pure @safe:
     }
 
 
-    bool match(char val) nothrow
+    bool match( char val ) nothrow
     {
         if(!test(val))
             return false;
@@ -244,7 +244,7 @@ pure @safe:
         }
     }
 
-    bool match(const(char)[] val) nothrow
+    bool match( const(char)[] val ) nothrow
     {
         foreach (char e; val )
             if(!match( e ))
@@ -309,9 +309,8 @@ pure @safe:
             }
             if (t < 'A' || t > 'Z')
             {
-                // invalid back reference?
                 if (t < 'a' || t > 'z')
-                    return 0;
+                    return 0; // invalid back reference
 
                 n = base * n + t - 'a';
                 return n;
@@ -432,7 +431,6 @@ pure @safe:
             tbuf[tlen++] = front;
             popFront();
         }
-
         mixin(matchOrF!( 'P' ));
         tbuf[tlen++] = 'p';
         if ( 'N' == front )
