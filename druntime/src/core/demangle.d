@@ -3075,32 +3075,6 @@ private char[] demangleCXX(return scope const(char)[] buf, CXX_DEMANGLER __cxa_d
     return dst;
 }
 
-/**
- * Error handling through Exceptions
- *
- * The following types / functions are only used in this module,
- * hence why the functions are `@trusted`.
- * To make things `@nogc`, default-initialized instances are thrown.
- */
-private class ParseException : Exception
-{
-    public this(string msg) @safe pure nothrow
-    {
-        super(msg);
-    }
-}
-
-/// Ditto
-private noreturn error(string msg = "Invalid symbol") @trusted pure
-{
-    version (DigitalMars) pragma(inline, false); // tame dmd inliner
-
-    //throw new ParseException( msg );
-    debug(info) printf( "error: %.*s\n", cast(int) msg.length, msg.ptr );
-    throw __ctfe ? new ParseException(msg)
-        : cast(ParseException) __traits(initSymbol, ParseException).ptr;
-}
-
 private struct Buffer
 {
     enum size_t minSize = 4000;
