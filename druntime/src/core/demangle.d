@@ -2064,15 +2064,7 @@ pure @safe:
         _D QualifiedName Type
         _D QualifiedName M Type
     */
-    void parseMangledName(bool displayType, size_t n = 0) scope
-    {
-        bool err_status;
-        parseMangledName(err_status, displayType, n);
-        if(err_status)
-            error();
-    }
-
-    void parseMangledName(out bool err_status, bool displayType, size_t n = 0) scope nothrow
+    void parseMangledName( out bool err_status, bool displayType, size_t n = 0 ) scope nothrow
     {
         debug(trace) printf( "parseMangledName+\n" );
         debug(trace) scope(success) printf( "parseMangledName-\n" );
@@ -2152,14 +2144,9 @@ pure @safe:
         } while ( true );
     }
 
-    void parseMangledName(out bool err_status)
+    void parseMangledName(out bool err_status) nothrow
     {
         parseMangledName(err_status, AddType.yes == addType);
-    }
-
-    void parseMangledName()
-    {
-        parseMangledName( AddType.yes == addType );
     }
 
     char[] doDemangle(alias FUNC)() return scope nothrow
@@ -2420,18 +2407,14 @@ char[] reencodeMangled(return scope const(char)[] mangled) nothrow pure @safe
     auto d = Demangle!(PrependHooks)(mangled, null);
     d.hooks = PrependHooks();
     d.mute = true; // no demangled output
-    try
-    {
-        d.parseMangledName();
-        if (d.hooks.lastpos < d.pos)
-            d.hooks.result ~= d.buf[d.hooks.lastpos .. d.pos];
-        return d.hooks.result;
-    }
-    catch (Exception)
-    {
-        // overflow exception cannot occur
-        return mangled.dup;
-    }
+
+    bool err_status;
+    d.parseMangledName(err_status);
+    assert(!err_status);
+
+    if (d.hooks.lastpos < d.pos)
+        d.hooks.result ~= d.buf[d.hooks.lastpos .. d.pos];
+    return d.hooks.result;
 }
 
 /**
