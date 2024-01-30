@@ -1976,54 +1976,49 @@ pure @safe:
         auto prevlen = dst.length;
         auto prevbrp = brp;
 
-        try
+        if ( 'M' == front )
         {
-            if ( 'M' == front )
+            // do not emit "needs this"
+            popFront();
+            auto modifiers = parseModifier();
+            while (auto str = typeCtors.toStringConsume(modifiers))
             {
-                // do not emit "needs this"
-                popFront();
-                auto modifiers = parseModifier();
-                while (auto str = typeCtors.toStringConsume(modifiers))
-                {
-                    put(str);
-                    put(' ');
-                }
-            }
-            if ( isCallConvention( front ) )
-            {
-                BufSlice attr = dst.bslice_empty;
-                // we don't want calling convention and attributes in the qualified name
-                bool err_status;
-                parseCallConvention(err_status);
-                if (err_status) error();
-                auto attributes = parseFuncAttr(err_status);
-                if (err_status) error();
-                if (keepAttr) {
-                    while (auto str = funcAttrs.toStringConsume(attributes))
-                    {
-                        put(str);
-                        put(' ');
-                    }
-                    attr = dst[prevlen .. $];
-                }
-
-                put( '(' );
-                parseFuncArguments(err_status);
-                if (err_status) return BufSlice.init;
-                put( ')' );
-                return attr;
+                put(str);
+                put(' ');
             }
         }
-        catch ( ParseException )
+        if ( isCallConvention( front ) )
         {
+            BufSlice attr = dst.bslice_empty;
+            // we don't want calling convention and attributes in the qualified name
+            bool err_status;
+            parseCallConvention(err_status);
+            if (!err_status)
+            {
+                auto attributes = parseFuncAttr(err_status);
+                if (!err_status)
+                {
+                    if (keepAttr) {
+                        while (auto str = funcAttrs.toStringConsume(attributes))
+                        {
+                            put(str);
+                            put(' ');
+                        }
+                        attr = dst[prevlen .. $];
+                    }
+
+                    put( '(' );
+                    parseFuncArguments(err_status);
+                    if (err_status) return BufSlice.init;
+                    put( ')' );
+                    return attr;
+                }
+            }
+
             // not part of a qualified name, so back up
             pos = prevpos;
             dst.len = prevlen;
             brp = prevbrp;
-        }
-        catch ( Exception )
-        {
-            assert(false);
         }
 
         return dst.bslice_empty;
@@ -3232,7 +3227,7 @@ private struct Buffer
 
     private scope bslice_empty() nothrow
     {
-        return BufSlice(null, 0, 0);
+        return BufSlice.init;
     }
 }
 
