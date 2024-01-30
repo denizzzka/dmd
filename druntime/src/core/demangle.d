@@ -803,6 +803,7 @@ pure @safe:
                 err_status = "parseDg error";
                 return BufSlice.init;
             }
+
             return ret;
         }
 
@@ -1191,15 +1192,7 @@ pure @safe:
         return result;
     }
 
-    //FIXME: remove
-    void parseFuncArguments() scope
-    {
-        bool err_status;
-        parseFuncArguments(err_status);
-        if(err_status) error();
-    }
-
-    void parseFuncArguments(out bool err_status) scope
+    void parseFuncArguments(out bool err_status) scope nothrow
     {
         // Arguments
         for ( size_t n = 0; true; n++ )
@@ -2015,7 +2008,8 @@ pure @safe:
                 }
 
                 put( '(' );
-                parseFuncArguments();
+                parseFuncArguments(err_status);
+                if (err_status) return BufSlice.init;
                 put( ')' );
                 return attr;
             }
