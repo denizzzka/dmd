@@ -2410,7 +2410,11 @@ char[] reencodeMangled(return scope const(char)[] mangled) nothrow pure @safe
 
     bool err_status;
     d.parseMangledName(err_status);
-    assert(!err_status);
+    if (err_status)
+    {
+        // Error cannot occur
+        return mangled.dup;
+    }
 
     if (d.hooks.lastpos < d.pos)
         d.hooks.result ~= d.buf[d.hooks.lastpos .. d.pos];
