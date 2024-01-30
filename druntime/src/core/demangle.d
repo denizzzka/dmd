@@ -754,7 +754,7 @@ pure @safe:
         {
             auto n = hooks.parseType(err_status, this, null);
             if (err_status)
-                return BufSlice.init;
+                return dst.bslice_empty;
             else
                 if(n !is null)
                     return BufSlice(n, 0, n.length);
@@ -770,7 +770,7 @@ pure @safe:
             if (pos == brp)
             {
                 err_status = "recursive back reference";
-                return BufSlice.init;
+                return dst.bslice_empty;
             }
 
             auto refPos = pos;
@@ -779,7 +779,7 @@ pure @safe:
             if (n == 0 || n > pos)
             {
                 err_status = "invalid back reference";
-                return BufSlice.init;
+                return dst.bslice_empty;
             }
 
             if ( mute )
@@ -795,7 +795,7 @@ pure @safe:
             if(err_flag)
             {
                 err_status = "parseDg error";
-                return BufSlice.init;
+                return dst.bslice_empty;
             }
 
             return ret;
@@ -804,7 +804,7 @@ pure @safe:
         // call parseType() and return error if occured
         template parseTypeOrF()
         {
-            enum parseTypeOrF = "parseType(err_status); if(err_status) return BufSlice.init;";
+            enum parseTypeOrF = "parseType(err_status); if(err_status) return dst.bslice_empty;";
         }
 
         switch ( t )
@@ -812,7 +812,7 @@ pure @safe:
         case 'Q': // Type back reference
             string err_msg;
             auto r = parseBackrefType(err_msg, (e_flag) => parseType(e_flag));
-            if(err_msg !is null) return BufSlice.init;
+            if(err_msg !is null) return dst.bslice_empty;
             return r;
         case 'O': // Shared (O Type)
             popFront();
@@ -855,7 +855,7 @@ pure @safe:
                 return dst[beg .. $];
             default:
                 err_status = true;
-                return BufSlice.init;
+                return dst.bslice_empty;
             }
         case 'A': // TypeArray (A Type)
             popFront();
@@ -874,7 +874,7 @@ pure @safe:
             popFront();
             // skip t1
             auto tx = parseType(err_status);
-            if(err_status) return BufSlice.init;
+            if(err_status) return dst.bslice_empty;
             mixin(parseTypeOrF!());
             put( '[' );
             shift(tx);
@@ -887,7 +887,7 @@ pure @safe:
             return dst[beg .. $];
         case 'F': case 'U': case 'W': case 'V': case 'R': // TypeFunction
             auto r = parseTypeFunction(err_status);
-            if(err_status) return BufSlice.init;
+            if(err_status) return dst.bslice_empty;
             return r;
         case 'C': // TypeClass (C LName)
         case 'S': // TypeStruct (S LName)
@@ -895,7 +895,7 @@ pure @safe:
         case 'T': // TypeTypedef (T LName)
             popFront();
             parseQualifiedName(err_status);
-            if(err_status) return BufSlice.init;
+            if(err_status) return dst.bslice_empty;
             return dst[beg .. $];
         case 'D': // TypeDelegate (D TypeFunction)
             popFront();
@@ -904,13 +904,13 @@ pure @safe:
             {
                 string err_msg;
                 auto r = parseBackrefType(err_msg, (e_flag) => parseTypeFunction(e_flag, IsDelegate.yes));
-                if(err_msg !is null) return BufSlice.init;
+                if(err_msg !is null) return dst.bslice_empty;
                 return r;
             }
             else
             {
                 parseTypeFunction(err_status, IsDelegate.yes);
-                if(err_status) return BufSlice.init;
+                if(err_status) return dst.bslice_empty;
             }
 
             if (modifiers)
@@ -963,11 +963,11 @@ pure @safe:
                     return dst[beg .. $];
                 default:
                     err_status = true;
-                    return BufSlice.init;
+                    return dst.bslice_empty;
                 }
             }
             err_status = true;
-            return BufSlice.init;
+            return dst.bslice_empty;
         }
     }
 
@@ -1328,16 +1328,16 @@ pure @safe:
         auto beg = dst.length;
 
         parseCallConvention(err_status);
-        if (err_status) return BufSlice.init;
+        if (err_status) return dst.bslice_empty;
 
         auto attributes = parseFuncAttr(err_status);
-        if (err_status) return BufSlice.init;
+        if (err_status) return dst.bslice_empty;
 
         auto argbeg = dst.length;
         put(IsDelegate.yes == isdg ? "delegate" : "function");
         put( '(' );
         parseFuncArguments(err_status);
-        if (err_status) return BufSlice.init;
+        if (err_status) return dst.bslice_empty;
         put( ')' );
         if (attributes)
         {
@@ -1355,7 +1355,7 @@ pure @safe:
         {
             auto retbeg = dst.length;
             parseType(err_status);
-            if (err_status) return BufSlice.init;
+            if (err_status) return dst.bslice_empty;
             put(' ');
             shift(dst[argbeg .. retbeg]);
         }
@@ -2003,7 +2003,7 @@ pure @safe:
 
                     put( '(' );
                     parseFuncArguments(err_status);
-                    if (err_status) return BufSlice.init;
+                    if (err_status) return dst.bslice_empty;
                     put( ')' );
                     return attr;
                 }
