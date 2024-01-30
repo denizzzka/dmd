@@ -505,7 +505,6 @@ pure @safe:
                 scope(exit) pos = savePos;
                 pos = refPos - n;
                 parseLName(err_status);
-                if(err_status) return; //FIXME: redundant?
             }
             return;
         }
@@ -2062,7 +2061,8 @@ pure @safe:
         auto end = pos + n;
 
         eat( '_' );
-        if(!match( 'D' )) { err_status = true; return; } //FIXME: replace by mixin
+        err_status = !match( 'D' );
+        if (err_status) return;
 
         do
         {
