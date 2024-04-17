@@ -1050,6 +1050,7 @@ public int runProgram(const char[] exefile, const char*[] runargs, bool verbose,
  *    loc = source location where preprocess is requested from
  *    cpp = name of C preprocessor program
  *    filename = C source file name
+ *    alreadyPreprocessed = source file is already preprocessed
  *    importc_h = filename of importc.h
  *    cppswitches = array of switches to pass to C preprocessor
  *    verbose = print progress to eSink
