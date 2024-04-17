@@ -274,7 +274,7 @@ dmd -cov -unittest myprog.d
             "use filename as the name of the C preprocessor to use for ImportC files",
             `Normally the C preprocessor used by the associated C compiler is used to
             preprocess ImportC files, this is overridden by the $(TT -cpp) switch.
-            Preprocessing disabled if <filename> is empty.`
+            Preprocessing disabled if specified with empty <filename>.`
         ),
         Option("D",
             "generate documentation",
