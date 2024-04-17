@@ -88,7 +88,12 @@ DArray!(const ubyte) preprocess(FileName csrcfile, ref const Loc loc, bool alrea
 
                 auto src = global.fileManager.getFileContents(csrcfile);
 
-                tmp_filename = FileName(csrcfile.toString ~ ".tmp.i");
+                // sppn.exe don't accepts files with .i extension or with two dots
+                // MS VS compiler accepts .tmp files as .i files
+                version (Windows)
+                    tmp_filename = FileName(FileName.removeExt(csrcfile.toString) ~ ".tmp");
+                else
+                    tmp_filename = FileName(csrcfile.toString ~ ".tmp.i");
 
                 string dst;
                 foreach (line; (cast(char[]) src).splitLines)
