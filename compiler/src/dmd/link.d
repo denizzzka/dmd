@@ -1389,9 +1389,9 @@ public int runPreprocessor(ref const Loc loc, const(char)[] cpp, const(char)[] f
         // need to redefine some macros in importc.h
         argv.push("-Wno-builtin-macro-redefined");
 
-        // Supported only C preprocessed files
         if (alreadyPreprocessed)
         {
+            // Supported only C preprocessed files
             argv.push("-x"); argv.push("c");
         }
 

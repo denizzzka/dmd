@@ -1,4 +1,4 @@
-// Checks that D compiler successfully consumes current .i file using preprocessor
+// Checks that D compiler successfully consumes .i files using preprocessor
 
 # 0 "/blah-blah/components/driver/gpio/gpio.c"
 # 1 "/blah-blah/build//"
