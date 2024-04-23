@@ -8297,6 +8297,7 @@ struct Global final
     CompileEnv compileEnv;
     Param params;
     uint32_t errors;
+    uint32_t deprecations;
     uint32_t warnings;
     uint32_t gag;
     uint32_t gaggedErrors;
@@ -8327,6 +8328,7 @@ struct Global final
         compileEnv(),
         params(),
         errors(),
+        deprecations(),
         warnings(),
         gag(),
         gaggedErrors(),
@@ -8351,6 +8353,7 @@ struct Global final
         compileEnv(compileEnv),
         params(params),
         errors(errors),
+        deprecations(deprecations),
         warnings(warnings),
         gag(gag),
         gaggedErrors(gaggedErrors),
