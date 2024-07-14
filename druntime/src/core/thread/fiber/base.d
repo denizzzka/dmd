@@ -1074,4 +1074,3 @@ unittest
     fiber = new Fiber(() { recurse(20); });
     fiber.call();
 }
-
