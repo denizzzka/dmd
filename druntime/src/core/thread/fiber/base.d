@@ -21,29 +21,6 @@ import core.thread.context;
 
 import core.memory : pageSize;
 
-///////////////////////////////////////////////////////////////////////////////
-// Fiber Platform Detection
-///////////////////////////////////////////////////////////////////////////////
-
-version (GNU)
-{
-    import gcc.builtins;
-    version (GNU_StackGrowsDown)
-        version = StackGrowsDown;
-}
-else
-{
-    // this should be true for most architectures
-    version = StackGrowsDown;
-}
-
-version (Windows)
-{
-    import core.stdc.stdlib : malloc, free;
-    import core.sys.windows.winbase;
-    import core.sys.windows.winnt;
-}
-
 package
 {
     import core.atomic : atomicStore, cas, MemoryOrder;
