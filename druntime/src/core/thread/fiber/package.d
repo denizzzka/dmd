@@ -569,7 +569,6 @@ class Fiber : FiberBase
      */
     this( void function() fn, size_t sz = pageSize * defaultStackPages,
           size_t guardPageSize = pageSize ) nothrow
-    in
     {
         super( fn, sz, guardPageSize );
     }
@@ -633,7 +632,7 @@ class Fiber : FiberBase
         }
     }
 
-private:
+protected:
     ///////////////////////////////////////////////////////////////////////////
     // Stack Management
     ///////////////////////////////////////////////////////////////////////////
