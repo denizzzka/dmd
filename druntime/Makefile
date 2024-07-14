@@ -317,6 +317,9 @@ $(DOC_OUTPUT_DIR)/core_thread_%.html : import/core/thread/%.d $(DMD)
 $(DOC_OUTPUT_DIR)/core_thread_fiber.html : import/core/thread/fiber/package.d $(DMD)
 	$(DMD) $(DDOCFLAGS) -Df$@ project.ddoc $(DOCFMT) $<
 
+$(DOC_OUTPUT_DIR)/core_thread_fiber_%.html : import/core/thread/fiber/%.d $(DMD)
+	$(DMD) $(DDOCFLAGS) -Df$@ project.ddoc $(DOCFMT) $<
+
 $(DOC_OUTPUT_DIR)/core_builtins.html : import/core/builtins.d $(DMD)
 	$(DMD) $(DDOCFLAGS) -Df$@ project.ddoc $(DOCFMT) $<
 
