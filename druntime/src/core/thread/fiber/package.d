@@ -192,7 +192,7 @@ package
             extern (C) void fiber_trampoline() nothrow;
         version (RISCV_Any)
         {
-            // External asm stack  initialization is used to support different register
+            // External asm stack initialization is used to support different register
             // storage sizes that the D compiler does not know about
             extern (C) void* fiber_initStack(void* stack, void* entry) nothrow @nogc;
             extern (C) void fiber_trampoline() nothrow;
