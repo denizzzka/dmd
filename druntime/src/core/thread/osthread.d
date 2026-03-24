@@ -230,7 +230,6 @@ class Thread : ThreadBase
      */
     this( void function() fn, size_t sz = 0 ) @safe pure nothrow @nogc
     {
-        //~ super(fn, sz);
     }
 
 
@@ -247,12 +246,10 @@ class Thread : ThreadBase
      */
     this( void delegate() dg, size_t sz = 0 ) @safe pure nothrow @nogc
     {
-        //~ super(dg, sz);
     }
 
     package this( size_t sz = 0 ) @safe pure nothrow @nogc
     {
-        //~ super(sz);
     }
 
     /**
@@ -430,9 +427,6 @@ class Thread : ThreadBase
 version (CoreDdoc) {} else
 class Thread : ThreadBase
 {
-    //
-    // Standard thread data
-    //
     version (Windows)
     {
         private HANDLE          m_hndl;
@@ -453,9 +447,6 @@ class Thread : ThreadBase
         private __gshared bool m_isRTClass;
     }
 
-    //
-    // Standard types
-    //
     version (Windows)
     {
         alias TLSKey = uint;
@@ -467,22 +458,6 @@ class Thread : ThreadBase
     else
         static assert(0, "unsupported os");
 
-    ///////////////////////////////////////////////////////////////////////////
-    // Initialization
-    ///////////////////////////////////////////////////////////////////////////
-
-
-    /**
-     * Initializes a thread object which is associated with a static
-     * D function.
-     *
-     * Params:
-     *  fn = The thread function.
-     *  sz = The stack size for this thread.
-     *
-     * In:
-     *  fn must not be null.
-     */
     this( void function() fn, size_t sz = 0 ) @safe pure nothrow @nogc
     {
         super(fn, sz);
