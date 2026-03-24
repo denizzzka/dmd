@@ -463,18 +463,6 @@ class Thread : ThreadBase
         super(fn, sz);
     }
 
-
-    /**
-     * Initializes a thread object which is associated with a dynamic
-     * D function.
-     *
-     * Params:
-     *  dg = The thread function.
-     *  sz = The stack size for this thread.
-     *
-     * In:
-     *  dg must not be null.
-     */
     this( void delegate() dg, size_t sz = 0 ) @safe pure nothrow @nogc
     {
         super(dg, sz);
@@ -485,9 +473,6 @@ class Thread : ThreadBase
         super(sz);
     }
 
-    /**
-     * Cleans up any remaining resources used by this object.
-     */
     ~this() nothrow @nogc
     {
         if (super.destructBeforeDtor())
@@ -513,32 +498,15 @@ class Thread : ThreadBase
             static assert(0, "unsupported OS");
     }
 
-    //
-    // Thread entry point.  Invokes the function or delegate passed on
-    // construction (if any).
-    //
     private final void run()
     {
         super.run();
     }
 
-    /**
-     * Provides a reference to the calling thread.
-     *
-     * Returns:
-     *  The thread object representing the calling thread.  The result of
-     *  deleting this object is undefined.  If the current thread is not
-     *  attached to the runtime, a null reference is returned.
-     */
     static Thread getThis() @safe nothrow @nogc
     {
         return ThreadBase.getThis().toThread;
     }
-
-    ///////////////////////////////////////////////////////////////////////////
-    // Thread Context and GC Scanning Support
-    ///////////////////////////////////////////////////////////////////////////
-
 
     version (Windows)
     {
@@ -636,21 +604,6 @@ class Thread : ThreadBase
         }
     }
 
-    ///////////////////////////////////////////////////////////////////////////
-    // General Actions
-    ///////////////////////////////////////////////////////////////////////////
-
-
-    /**
-     * Starts the thread and invokes the function or delegate passed upon
-     * construction.
-     *
-     * In:
-     *  This routine may only be called once per thread instance.
-     *
-     * Throws:
-     *  ThreadException if the thread fails to start.
-     */
     final Thread start() nothrow
     in
     {
@@ -753,22 +706,6 @@ class Thread : ThreadBase
         }
     }
 
-    /**
-     * Waits for this thread to complete.  If the thread terminated as the
-     * result of an unhandled exception, this exception will be rethrown.
-     *
-     * Params:
-     *  rethrow = Rethrow any unhandled exception which may have caused this
-     *            thread to terminate.
-     *
-     * Throws:
-     *  ThreadException if the operation fails.
-     *  Any exception not handled by the joined thread.
-     *
-     * Returns:
-     *  Any exception not handled by this thread if rethrow = false, null
-     *  otherwise.
-     */
     override final Throwable join( bool rethrow = true )
     {
         version (Windows)
@@ -803,11 +740,6 @@ class Thread : ThreadBase
         }
         return null;
     }
-
-
-    ///////////////////////////////////////////////////////////////////////////
-    // Thread Priority Actions
-    ///////////////////////////////////////////////////////////////////////////
 
     version (Windows)
     {
@@ -930,36 +862,18 @@ class Thread : ThreadBase
             return result;
         }
 
-        /**
-         * The minimum scheduling priority that may be set for a thread.  On
-         * systems where multiple scheduling policies are defined, this value
-         * represents the minimum valid priority for the scheduling policy of
-         * the process.
-         */
         @property static int PRIORITY_MIN() @nogc nothrow pure @trusted
         {
             return (cast(int function() @nogc nothrow pure @safe)
                 &loadGlobal!"PRIORITY_MIN")();
         }
 
-        /**
-         * The maximum scheduling priority that may be set for a thread.  On
-         * systems where multiple scheduling policies are defined, this value
-         * represents the maximum valid priority for the scheduling policy of
-         * the process.
-         */
         @property static const(int) PRIORITY_MAX() @nogc nothrow pure @trusted
         {
             return (cast(int function() @nogc nothrow pure @safe)
                 &loadGlobal!"PRIORITY_MAX")();
         }
 
-        /**
-         * The default scheduling priority that is set for a thread.  On
-         * systems where multiple scheduling policies are defined, this value
-         * represents the default priority for the scheduling policy of
-         * the process.
-         */
         @property static int PRIORITY_DEFAULT() @nogc nothrow pure @trusted
         {
             return (cast(int function() @nogc nothrow pure @safe)
@@ -977,15 +891,6 @@ class Thread : ThreadBase
         int fakePriority = int.max;
     }
 
-    /**
-     * Gets the scheduling priority for the associated thread.
-     *
-     * Note: Getting the priority of a thread that already terminated
-     * might return the default priority.
-     *
-     * Returns:
-     *  The scheduling priority of this thread.
-     */
     final @property int priority()
     {
         version (Windows)
@@ -1013,16 +918,6 @@ class Thread : ThreadBase
             static assert(0, "unsupported os");
     }
 
-
-    /**
-     * Sets the scheduling priority for the associated thread.
-     *
-     * Note: Setting the priority of a thread that already terminated
-     * might have no effect.
-     *
-     * Params:
-     *  val = The new scheduling priority of this thread.
-     */
     final @property void priority( int val )
     in
     {
@@ -1132,12 +1027,6 @@ class Thread : ThreadBase
         assert(prio >= PRIORITY_MIN && prio <= PRIORITY_MAX);
     }
 
-    /**
-     * Tests whether this thread is running.
-     *
-     * Returns:
-     *  true if the thread is running, false if not.
-     */
     override final @property bool isRunning() nothrow @nogc
     {
         if (!super.isRunning())
@@ -1157,31 +1046,6 @@ class Thread : ThreadBase
             static assert(0, "unsupported os");
     }
 
-
-    ///////////////////////////////////////////////////////////////////////////
-    // Actions on Calling Thread
-    ///////////////////////////////////////////////////////////////////////////
-
-
-    /**
-     * Suspends the calling thread for at least the supplied period.  This may
-     * result in multiple OS calls if period is greater than the maximum sleep
-     * duration supported by the operating system.
-     *
-     * Params:
-     *  val = The minimum duration the calling thread should be suspended.
-     *
-     * In:
-     *  period must be non-negative.
-     *
-     * Example:
-     * ------------------------------------------------------------------------
-     *
-     * Thread.sleep( dur!("msecs")( 50 ) );  // sleep for 50 milliseconds
-     * Thread.sleep( dur!("seconds")( 5 ) ); // sleep for 5 seconds
-     *
-     * ------------------------------------------------------------------------
-     */
     static void sleep( Duration val ) @nogc nothrow @trusted
     in
     {
@@ -1233,10 +1097,6 @@ class Thread : ThreadBase
             static assert(0, "unsupported os");
     }
 
-
-    /**
-     * Forces a context switch to occur away from the calling thread.
-     */
     static void yield() @nogc nothrow
     {
         version (Windows)
