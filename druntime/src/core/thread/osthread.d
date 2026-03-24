@@ -206,10 +206,6 @@ else
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////
-// Thread
-///////////////////////////////////////////////////////////////////////////////
-
 /**
  * This class encapsulates all threading functionality for the D
  * programming language.  As thread manipulation is a required facility
@@ -284,11 +280,13 @@ class Thread : ThreadBase
      */
     static Thread getThis() @safe nothrow @nogc
     {
+        return null;
     }
 
     ///
     override final void[] savedRegisters() nothrow @nogc
     {
+        return null;
     }
 
     /**
@@ -303,6 +301,7 @@ class Thread : ThreadBase
      */
     final Thread start() nothrow
     {
+        return null;
     }
 
     /**
@@ -323,6 +322,7 @@ class Thread : ThreadBase
      */
     override final Throwable join( bool rethrow = true )
     {
+        return null;
     }
 
     /**
@@ -333,6 +333,7 @@ class Thread : ThreadBase
      */
     @property static int PRIORITY_MIN() @nogc nothrow pure @trusted
     {
+        return 0;
     }
 
     /**
@@ -343,6 +344,7 @@ class Thread : ThreadBase
      */
     @property static const(int) PRIORITY_MAX() @nogc nothrow pure @trusted
     {
+        return 0;
     }
 
     /**
@@ -353,8 +355,7 @@ class Thread : ThreadBase
      */
     @property static int PRIORITY_DEFAULT() @nogc nothrow pure @trusted
     {
-        return (cast(int function() @nogc nothrow pure @safe)
-            &loadGlobal!"PRIORITY_DEFAULT")();
+        return 0;
     }
 
     /**
@@ -368,6 +369,7 @@ class Thread : ThreadBase
      */
     final @property int priority()
     {
+        return 0;
     }
 
     /**
@@ -391,6 +393,7 @@ class Thread : ThreadBase
      */
     override final @property bool isRunning() nothrow @nogc
     {
+        return false;
     }
 
     /**
@@ -1471,6 +1474,7 @@ version (Posix)
     private __gshared int resumeSignalNumber;
 }
 
+version (CoreDdoc) {} else
 private extern (D) ThreadBase attachThread(ThreadBase _thisThread) @nogc nothrow
 {
     Thread thisThread = _thisThread.toThread();
@@ -2475,6 +2479,9 @@ private extern (D) void resume(ThreadBase _t) nothrow @nogc
  * garbage collector on startup and before any other thread routines
  * are called.
  */
+version (CoreDdoc)
+    extern (C) void thread_init() @nogc nothrow {}
+else
 extern (C) void thread_init() @nogc nothrow
 {
     // NOTE: If thread_init itself performs any allocations then the thread
@@ -2728,6 +2735,7 @@ else version (Posix)
         //
         // Entry point for POSIX threads
         //
+        version (CoreDdoc) {} else
         extern (C) void* thread_entryPoint( void* arg ) nothrow
         {
             version (Shared)
