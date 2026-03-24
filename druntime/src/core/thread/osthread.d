@@ -218,6 +218,589 @@ else
  * A new thread may be created using either derivation or composition, as
  * in the following example.
  */
+version (CoreDdoc)
+class Thread : ThreadBase
+{
+    /**
+     * Initializes a thread object which is associated with a static
+     * D function.
+     *
+     * Params:
+     *  fn = The thread function.
+     *  sz = The stack size for this thread.
+     *
+     * In:
+     *  fn must not be null.
+     */
+    this( void function() fn, size_t sz = 0 ) @safe pure nothrow @nogc
+    {
+        //~ super(fn, sz);
+    }
+
+
+    /**
+     * Initializes a thread object which is associated with a dynamic
+     * D function.
+     *
+     * Params:
+     *  dg = The thread function.
+     *  sz = The stack size for this thread.
+     *
+     * In:
+     *  dg must not be null.
+     */
+    this( void delegate() dg, size_t sz = 0 ) @safe pure nothrow @nogc
+    {
+        //~ super(dg, sz);
+    }
+
+    package this( size_t sz = 0 ) @safe pure nothrow @nogc
+    {
+        //~ super(sz);
+    }
+
+    /**
+     * Cleans up any remaining resources used by this object.
+     */
+    ~this() nothrow @nogc
+    {
+    }
+
+    //
+    // Thread entry point.  Invokes the function or delegate passed on
+    // construction (if any).
+    //
+    private final void run()
+    {
+    }
+
+    /**
+     * Provides a reference to the calling thread.
+     *
+     * Returns:
+     *  The thread object representing the calling thread.  The result of
+     *  deleting this object is undefined.  If the current thread is not
+     *  attached to the runtime, a null reference is returned.
+     */
+    static Thread getThis() @safe nothrow @nogc
+    {
+    }
+
+    ///
+    override final void[] savedRegisters() nothrow @nogc
+    {
+    }
+
+    /**
+     * Starts the thread and invokes the function or delegate passed upon
+     * construction.
+     *
+     * In:
+     *  This routine may only be called once per thread instance.
+     *
+     * Throws:
+     *  ThreadException if the thread fails to start.
+     */
+    final Thread start() nothrow
+    {
+    }
+
+    /**
+     * Waits for this thread to complete.  If the thread terminated as the
+     * result of an unhandled exception, this exception will be rethrown.
+     *
+     * Params:
+     *  rethrow = Rethrow any unhandled exception which may have caused this
+     *            thread to terminate.
+     *
+     * Throws:
+     *  ThreadException if the operation fails.
+     *  Any exception not handled by the joined thread.
+     *
+     * Returns:
+     *  Any exception not handled by this thread if rethrow = false, null
+     *  otherwise.
+     */
+    override final Throwable join( bool rethrow = true )
+    {
+        version (Windows)
+        {
+            if ( m_addr != m_addr.init && WaitForSingleObject( m_hndl, INFINITE ) != WAIT_OBJECT_0 )
+                throw new ThreadException( "Unable to join thread" );
+            // NOTE: m_addr must be cleared before m_hndl is closed to avoid
+            //       a race condition with isRunning. The operation is done
+            //       with atomicStore to prevent compiler reordering.
+            atomicStore!(MemoryOrder.raw)(*cast(shared)&m_addr, m_addr.init);
+            CloseHandle( m_hndl );
+            m_hndl = m_hndl.init;
+        }
+        else version (Posix)
+        {
+            if ( m_addr != m_addr.init && pthread_join( m_addr, null ) != 0 )
+                throw new ThreadException( "Unable to join thread" );
+            // NOTE: pthread_join acts as a substitute for pthread_detach,
+            //       which is normally called by the dtor.  Setting m_addr
+            //       to zero ensures that pthread_detach will not be called
+            //       on object destruction.
+            m_addr = m_addr.init;
+        }
+        else
+            static assert(0, "unsupported OS");
+
+        if ( m_unhandled )
+        {
+            if ( rethrow )
+                throw m_unhandled;
+            return m_unhandled;
+        }
+        return null;
+    }
+
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Thread Priority Actions
+    ///////////////////////////////////////////////////////////////////////////
+
+    version (Windows)
+    {
+        @property static int PRIORITY_MIN() @nogc nothrow pure @safe
+        {
+            return THREAD_PRIORITY_IDLE;
+        }
+
+        @property static const(int) PRIORITY_MAX() @nogc nothrow pure @safe
+        {
+            return THREAD_PRIORITY_TIME_CRITICAL;
+        }
+
+        @property static int PRIORITY_DEFAULT() @nogc nothrow pure @safe
+        {
+            return THREAD_PRIORITY_NORMAL;
+        }
+    }
+    else version (Posix)
+    {
+        private struct Priority
+        {
+            int PRIORITY_MIN = int.min;
+            int PRIORITY_DEFAULT = int.min;
+            int PRIORITY_MAX = int.min;
+        }
+
+        /*
+        Lazily loads one of the members stored in a hidden global variable of
+        type `Priority`. Upon the first access of either member, the entire
+        `Priority` structure is initialized. Multiple initializations from
+        different threads calling this function are tolerated.
+
+        `which` must be one of `PRIORITY_MIN`, `PRIORITY_DEFAULT`,
+        `PRIORITY_MAX`.
+        */
+        private static shared Priority cache;
+        private static int loadGlobal(string which)()
+        {
+            auto local = atomicLoad(mixin("cache." ~ which));
+            if (local != local.min) return local;
+            // There will be benign races
+            auto loaded = loadPriorities;
+            static foreach (i, _; loaded.tupleof)
+                atomicStore(cache.tupleof[i], loaded.tupleof[i]);
+            return atomicLoad(mixin("cache." ~ which));
+        }
+
+        /*
+        Loads all priorities and returns them as a `Priority` structure. This
+        function is thread-neutral.
+        */
+        private static Priority loadPriorities() @nogc nothrow @trusted
+        {
+            Priority result;
+            version (Solaris)
+            {
+                pcparms_t pcParms;
+                pcinfo_t pcInfo;
+
+                pcParms.pc_cid = PC_CLNULL;
+                if (priocntl(idtype_t.P_PID, P_MYID, PC_GETPARMS, &pcParms) == -1)
+                    assert( 0, "Unable to get scheduling class" );
+
+                pcInfo.pc_cid = pcParms.pc_cid;
+                // PC_GETCLINFO ignores the first two args, use dummy values
+                if (priocntl(idtype_t.P_PID, 0, PC_GETCLINFO, &pcInfo) == -1)
+                    assert( 0, "Unable to get scheduling class info" );
+
+                pri_t* clparms = cast(pri_t*)&pcParms.pc_clparms;
+                pri_t* clinfo = cast(pri_t*)&pcInfo.pc_clinfo;
+
+                result.PRIORITY_MAX = clparms[0];
+
+                if (pcInfo.pc_clname == "RT")
+                {
+                    m_isRTClass = true;
+
+                    // For RT class, just assume it can't be changed
+                    result.PRIORITY_MIN = clparms[0];
+                    result.PRIORITY_DEFAULT = clparms[0];
+                }
+                else
+                {
+                    m_isRTClass = false;
+
+                    // For all other scheduling classes, there are
+                    // two key values -- uprilim and maxupri.
+                    // maxupri is the maximum possible priority defined
+                    // for the scheduling class, and valid priorities
+                    // range are in [-maxupri, maxupri].
+                    //
+                    // However, uprilim is an upper limit that the
+                    // current thread can set for the current scheduling
+                    // class, which can be less than maxupri.  As such,
+                    // use this value for priorityMax since this is
+                    // the effective maximum.
+
+                    // maxupri
+                    result.PRIORITY_MIN = -cast(int)(clinfo[0]);
+                    // by definition
+                    result.PRIORITY_DEFAULT = 0;
+                }
+            }
+            else
+            {
+                int         policy;
+                sched_param param;
+                pthread_getschedparam( pthread_self(), &policy, &param ) == 0
+                    || assert(0, "Internal error in pthread_getschedparam");
+
+                result.PRIORITY_MIN = sched_get_priority_min( policy );
+                result.PRIORITY_MIN != -1
+                    || assert(0, "Internal error in sched_get_priority_min");
+                result.PRIORITY_DEFAULT = param.sched_priority;
+                result.PRIORITY_MAX = sched_get_priority_max( policy );
+                result.PRIORITY_MAX != -1 ||
+                    assert(0, "Internal error in sched_get_priority_max");
+            }
+            return result;
+        }
+
+        /**
+         * The minimum scheduling priority that may be set for a thread.  On
+         * systems where multiple scheduling policies are defined, this value
+         * represents the minimum valid priority for the scheduling policy of
+         * the process.
+         */
+        @property static int PRIORITY_MIN() @nogc nothrow pure @trusted
+        {
+            return (cast(int function() @nogc nothrow pure @safe)
+                &loadGlobal!"PRIORITY_MIN")();
+        }
+
+        /**
+         * The maximum scheduling priority that may be set for a thread.  On
+         * systems where multiple scheduling policies are defined, this value
+         * represents the maximum valid priority for the scheduling policy of
+         * the process.
+         */
+        @property static const(int) PRIORITY_MAX() @nogc nothrow pure @trusted
+        {
+            return (cast(int function() @nogc nothrow pure @safe)
+                &loadGlobal!"PRIORITY_MAX")();
+        }
+
+        /**
+         * The default scheduling priority that is set for a thread.  On
+         * systems where multiple scheduling policies are defined, this value
+         * represents the default priority for the scheduling policy of
+         * the process.
+         */
+        @property static int PRIORITY_DEFAULT() @nogc nothrow pure @trusted
+        {
+            return (cast(int function() @nogc nothrow pure @safe)
+                &loadGlobal!"PRIORITY_DEFAULT")();
+        }
+    }
+    else
+        static assert(0, "unsupported OS");
+
+
+    version (NetBSD)
+    {
+        //NetBSD does not support priority for default policy
+        // and it is not possible change policy without root access
+        int fakePriority = int.max;
+    }
+
+    /**
+     * Gets the scheduling priority for the associated thread.
+     *
+     * Note: Getting the priority of a thread that already terminated
+     * might return the default priority.
+     *
+     * Returns:
+     *  The scheduling priority of this thread.
+     */
+    final @property int priority()
+    {
+        version (Windows)
+        {
+            return GetThreadPriority( m_hndl );
+        }
+        else version (NetBSD)
+        {
+           return fakePriority==int.max? PRIORITY_DEFAULT : fakePriority;
+        }
+        else version (Posix)
+        {
+            int         policy;
+            sched_param param;
+
+            if (auto err = pthread_getschedparam(m_addr, &policy, &param))
+            {
+                // ignore error if thread is not running => Bugzilla 8960
+                if (!atomicLoad(m_isRunning)) return PRIORITY_DEFAULT;
+                throw new ThreadException("Unable to get thread priority");
+            }
+            return param.sched_priority;
+        }
+        else
+            static assert(0, "unsupported os");
+    }
+
+
+    /**
+     * Sets the scheduling priority for the associated thread.
+     *
+     * Note: Setting the priority of a thread that already terminated
+     * might have no effect.
+     *
+     * Params:
+     *  val = The new scheduling priority of this thread.
+     */
+    final @property void priority( int val )
+    in
+    {
+        assert(val >= PRIORITY_MIN);
+        assert(val <= PRIORITY_MAX);
+    }
+    do
+    {
+        version (Windows)
+        {
+            if ( !SetThreadPriority( m_hndl, val ) )
+                throw new ThreadException( "Unable to set thread priority" );
+        }
+        else version (Solaris)
+        {
+            // the pthread_setschedprio(3c) and pthread_setschedparam functions
+            // are broken for the default (TS / time sharing) scheduling class.
+            // instead, we use priocntl(2) which gives us the desired behavior.
+
+            // We hardcode the min and max priorities to the current value
+            // so this is a no-op for RT threads.
+            if (m_isRTClass)
+                return;
+
+            pcparms_t   pcparm;
+
+            pcparm.pc_cid = PC_CLNULL;
+            if (priocntl(idtype_t.P_LWPID, P_MYID, PC_GETPARMS, &pcparm) == -1)
+                throw new ThreadException( "Unable to get scheduling class" );
+
+            pri_t* clparms = cast(pri_t*)&pcparm.pc_clparms;
+
+            // clparms is filled in by the PC_GETPARMS call, only necessary
+            // to adjust the element that contains the thread priority
+            clparms[1] = cast(pri_t) val;
+
+            if (priocntl(idtype_t.P_LWPID, P_MYID, PC_SETPARMS, &pcparm) == -1)
+                throw new ThreadException( "Unable to set scheduling class" );
+        }
+        else version (NetBSD)
+        {
+           fakePriority = val;
+        }
+        else version (Posix)
+        {
+            static if (__traits(compiles, core.sys.posix.pthread.pthread_setschedprio))
+            {
+                import core.sys.posix.pthread : pthread_setschedprio;
+
+                if (auto err = pthread_setschedprio(m_addr, val))
+                {
+                    // ignore error if thread is not running => Bugzilla 8960
+                    if (!atomicLoad(m_isRunning)) return;
+                    throw new ThreadException("Unable to set thread priority");
+                }
+            }
+            else
+            {
+                // NOTE: pthread_setschedprio is not implemented on Darwin, FreeBSD, OpenBSD,
+                //       or DragonFlyBSD, so use the more complicated get/set sequence below.
+                int         policy;
+                sched_param param;
+
+                if (auto err = pthread_getschedparam(m_addr, &policy, &param))
+                {
+                    // ignore error if thread is not running => Bugzilla 8960
+                    if (!atomicLoad(m_isRunning)) return;
+                    throw new ThreadException("Unable to set thread priority");
+                }
+                param.sched_priority = val;
+                if (auto err = pthread_setschedparam(m_addr, policy, &param))
+                {
+                    // ignore error if thread is not running => Bugzilla 8960
+                    if (!atomicLoad(m_isRunning)) return;
+                    throw new ThreadException("Unable to set thread priority");
+                }
+            }
+        }
+        else
+            static assert(0, "unsupported os");
+    }
+
+
+    unittest
+    {
+        auto thr = Thread.getThis();
+        immutable prio = thr.priority;
+        scope (exit) thr.priority = prio;
+
+        assert(prio == PRIORITY_DEFAULT);
+        assert(prio >= PRIORITY_MIN && prio <= PRIORITY_MAX);
+        thr.priority = PRIORITY_MIN;
+        assert(thr.priority == PRIORITY_MIN);
+        thr.priority = PRIORITY_MAX;
+        assert(thr.priority == PRIORITY_MAX);
+    }
+
+    unittest // Bugzilla 8960
+    {
+        import core.sync.semaphore;
+
+        auto thr = new Thread({});
+        thr.start();
+        Thread.sleep(1.msecs);       // wait a little so the thread likely has finished
+        thr.priority = PRIORITY_MAX; // setting priority doesn't cause error
+        auto prio = thr.priority;    // getting priority doesn't cause error
+        assert(prio >= PRIORITY_MIN && prio <= PRIORITY_MAX);
+    }
+
+    /**
+     * Tests whether this thread is running.
+     *
+     * Returns:
+     *  true if the thread is running, false if not.
+     */
+    override final @property bool isRunning() nothrow @nogc
+    {
+        if (!super.isRunning())
+            return false;
+
+        version (Windows)
+        {
+            uint ecode = 0;
+            GetExitCodeThread( m_hndl, &ecode );
+            return ecode == STILL_ACTIVE;
+        }
+        else version (Posix)
+        {
+            return atomicLoad(m_isRunning);
+        }
+        else
+            static assert(0, "unsupported os");
+    }
+
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Actions on Calling Thread
+    ///////////////////////////////////////////////////////////////////////////
+
+
+    /**
+     * Suspends the calling thread for at least the supplied period.  This may
+     * result in multiple OS calls if period is greater than the maximum sleep
+     * duration supported by the operating system.
+     *
+     * Params:
+     *  val = The minimum duration the calling thread should be suspended.
+     *
+     * In:
+     *  period must be non-negative.
+     *
+     * Example:
+     * ------------------------------------------------------------------------
+     *
+     * Thread.sleep( dur!("msecs")( 50 ) );  // sleep for 50 milliseconds
+     * Thread.sleep( dur!("seconds")( 5 ) ); // sleep for 5 seconds
+     *
+     * ------------------------------------------------------------------------
+     */
+    static void sleep( Duration val ) @nogc nothrow @trusted
+    in
+    {
+        assert( !val.isNegative );
+    }
+    do
+    {
+        version (Windows)
+        {
+            auto maxSleepMillis = dur!("msecs")( uint.max - 1 );
+
+            // avoid a non-zero time to be round down to 0
+            if ( val > dur!"msecs"( 0 ) && val < dur!"msecs"( 1 ) )
+                val = dur!"msecs"( 1 );
+
+            // NOTE: In instances where all other threads in the process have a
+            //       lower priority than the current thread, the current thread
+            //       will not yield with a sleep time of zero.  However, unlike
+            //       yield(), the user is not asking for a yield to occur but
+            //       only for execution to suspend for the requested interval.
+            //       Therefore, expected performance may not be met if a yield
+            //       is forced upon the user.
+            while ( val > maxSleepMillis )
+            {
+                Sleep( cast(uint)
+                       maxSleepMillis.total!"msecs" );
+                val -= maxSleepMillis;
+            }
+            Sleep( cast(uint) val.total!"msecs" );
+        }
+        else version (Posix)
+        {
+            timespec tin  = void;
+            timespec tout = void;
+
+            val.split!("seconds", "nsecs")(tin.tv_sec, tin.tv_nsec);
+            if ( val.total!"seconds" > tin.tv_sec.max )
+                tin.tv_sec  = tin.tv_sec.max;
+            while ( true )
+            {
+                if ( !nanosleep( &tin, &tout ) )
+                    return;
+                if ( errno != EINTR )
+                    assert(0, "Unable to sleep for the specified duration");
+                tin = tout;
+            }
+        }
+        else
+            static assert(0, "unsupported os");
+    }
+
+
+    /**
+     * Forces a context switch to occur away from the calling thread.
+     */
+    static void yield() @nogc nothrow
+    {
+        version (Windows)
+            SwitchToThread();
+        else version (Posix)
+            sched_yield();
+        else
+            static assert(0, "unsupported os");
+    }
+}
+
+version (CoreDdoc) {} else
 class Thread : ThreadBase
 {
     //
