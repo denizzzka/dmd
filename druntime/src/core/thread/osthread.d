@@ -664,6 +664,8 @@ in (fn)
     return callWithStackShellImpl(fn);
 }
 
+version (CoreDdoc)
+{
 /**
  * Returns the process ID of the calling process, which is guaranteed to be
  * unique on the system. This call is always successful.
@@ -673,17 +675,10 @@ in (fn)
  * writefln("Current process id: %s", getpid());
  * ---
  */
-version (Posix)
-{
-    alias getpid = imported!"core.sys.posix.unistd".getpid;
-}
-else version (Windows)
-{
-    alias getpid = imported!"core.sys.windows.winbase".GetCurrentProcessId;
-}
-else
-    static assert(0, "unsupported os");
 
+version (Posix)
+alias getpid = imported!"core.sys.posix.unistd".getpid;
+}
 
 private extern(D) void* getStackTop() nothrow @nogc
 {
