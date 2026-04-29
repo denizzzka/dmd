@@ -75,7 +75,7 @@ else version (Posix)
     static import core.sys.posix.pthread;
     static import core.sys.posix.signal;
     import core.stdc.errno : EINTR, errno;
-    import core.sys.posix.pthread : pthread_atfork, pthread_attr_destroy, pthread_attr_getstack, pthread_attr_init,
+    public /*TODO: <- remove*/ import core.sys.posix.pthread : pthread_atfork, pthread_attr_destroy, pthread_attr_getstack, pthread_attr_init,
         pthread_attr_setstacksize, pthread_create, pthread_detach, pthread_getschedparam, pthread_join, pthread_self,
         pthread_setschedparam, sched_get_priority_max, sched_get_priority_min, sched_param, sched_yield;
     import core.sys.posix.semaphore : sem_init, sem_post, sem_t, sem_wait;

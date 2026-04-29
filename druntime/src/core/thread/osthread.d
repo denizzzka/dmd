@@ -557,6 +557,7 @@ private extern (D) ThreadBase attachThread(ThreadBase _thisThread) @nogc nothrow
     StackContext* thisContext = &thisThread.m_main;
     assert( thisContext == thisThread.m_curr );
 
+    //TODO: remove version branching here
     version (Windows)
     {
         thisThread.m_addr  = GetCurrentThreadId();
