@@ -1682,9 +1682,9 @@ private extern(D) void* getStackTop() nothrow @nogc
 }
 
 
-private extern(D) void* getStackBottom() nothrow @nogc
+package void* getStackBottomImpl() nothrow @nogc
 {
-    version (Windows)
+    version (none)
     {
         version (D_InlineAsm_X86)
             asm pure nothrow @nogc { naked; mov EAX, FS:4; ret; }

@@ -906,6 +906,10 @@ private extern(D) void* getStackTop() nothrow @nogc
         static assert(false, "Architecture not supported.");
 }
 
+private extern(D) void* getStackBottom() nothrow @nogc
+{
+    return getStackBottomImpl();
+}
 
 /**
  * Suspend the specified thread and load stack and register information for
