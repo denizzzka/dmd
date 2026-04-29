@@ -887,22 +887,6 @@ else version (Windows)
 else
     static assert(0, "unsupported os");
 
-extern (C) @nogc nothrow
-{
-    version (CRuntime_Glibc)  version = PThread_Getattr_NP;
-    version (CRuntime_Bionic) version = PThread_Getattr_NP;
-    version (CRuntime_Musl)   version = PThread_Getattr_NP;
-    version (CRuntime_UClibc) version = PThread_Getattr_NP;
-
-    version (FreeBSD)         version = PThread_Attr_Get_NP;
-    version (NetBSD)          version = PThread_Attr_Get_NP;
-    version (DragonFlyBSD)    version = PThread_Attr_Get_NP;
-
-    version (PThread_Getattr_NP)  int pthread_getattr_np(pthread_t thread, pthread_attr_t* attr);
-    version (PThread_Attr_Get_NP) int pthread_attr_get_np(pthread_t thread, pthread_attr_t* attr);
-    version (OpenBSD) int pthread_stackseg_np(pthread_t thread, stack_t* sinfo);
-}
-
 
 private extern(D) void* getStackTop() nothrow @nogc
 {
