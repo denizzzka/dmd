@@ -17,6 +17,7 @@ import core.exception : onOutOfMemoryError;
 import core.internal.traits : externDFunc;
 import core.memory : GC, pageSize;
 import core.thread.context;
+import core.thread.osthread;
 import core.thread.threadbase;
 import core.thread.types;
 import core.time;
@@ -1433,7 +1434,7 @@ version (Windows)
 
 
 // Calls the given delegate, passing the current thread's stack pointer to it.
-package extern(D) void callWithStackShell(scope callWithStackShellDg fn) nothrow
+package void callWithStackShellImpl(scope callWithStackShellDg fn) nothrow
 in (fn)
 {
     // The purpose of the 'shell' is to ensure all the registers get
