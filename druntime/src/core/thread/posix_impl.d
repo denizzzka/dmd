@@ -434,7 +434,7 @@ class Thread : ThreadBase
 
     version (Posix)
     {
-        private shared bool     m_isRunning;
+        package /*TODO: private*/ shared bool     m_isRunning;
     }
 
     version (Darwin)
