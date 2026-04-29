@@ -557,24 +557,8 @@ private extern (D) ThreadBase attachThread(ThreadBase _thisThread) @nogc nothrow
     StackContext* thisContext = &thisThread.m_main;
     assert( thisContext == thisThread.m_curr );
 
-    //TODO: remove version branching here
-    version (Windows)
-    {
-        thisThread.m_addr  = GetCurrentThreadId();
-        thisThread.m_hndl  = GetCurrentThreadHandle();
-        thisContext.bstack = getStackBottom();
-        thisContext.tstack = thisContext.bstack;
-    }
-    else version (Posix)
-    {
-        thisThread.m_addr  = pthread_self();
-        thisContext.bstack = getStackBottom();
-        thisContext.tstack = thisContext.bstack;
+    acquireThisThreadContext(thisThread, thisContext);
 
-        atomicStore!(MemoryOrder.raw)(thisThread.toThread.m_isRunning, true);
-    }
-    else
-        static assert(0, "unsupported os");
     thisThread.m_isDaemon = true;
     thisThread.tlsRTdataInit();
     Thread.setThis( thisThread );

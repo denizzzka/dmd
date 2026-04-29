@@ -1351,6 +1351,15 @@ private extern (D) ThreadBase attachThread(ThreadBase _thisThread) @nogc nothrow
     return thisThread;
 }
 
+version (Windows)
+package void acquireThisThreadContext(Thread thisThread, StackContext* thisContext) @nogc nothrow
+{
+    thisThread.m_addr  = GetCurrentThreadId();
+    thisThread.m_hndl  = GetCurrentThreadHandle();
+    thisContext.bstack = getStackBottom();
+    thisContext.tstack = thisContext.bstack;
+}
+
 /**
  * Registers the calling thread for use with the D Runtime.  If this routine
  * is called for a thread which is already registered, no action is performed.
