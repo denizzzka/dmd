@@ -47,3 +47,71 @@ struct Sys
             Sys.abort();
     }
 }
+
+private void __printf(scope const char[] fmt, ...) nothrow @nogc
+{
+    import core.vararg;
+
+    bool specState;
+    size_t start;
+
+    foreach(i, c; fmt)
+    {
+        void skipWord() { start = i; }
+
+        void wordIsDone()
+        {
+            Sys.print(fmt[start .. i]);
+            skipWord();
+        }
+
+        if(!specState)
+        {
+            if(c == '%')
+            {
+                specState = true;
+                wordIsDone();
+                start++; // skips % symbol
+            }
+        }
+        else // specifier processing
+        {
+            assert(i > 0);
+            assert(start > 0);
+            assert(i - start <= 3, fmt[start .. i]);
+
+            void specifierFound(alias Func, T)()
+            {
+                specState = false;
+                skipWord();
+                Func(va_arg!T(_argptr));
+            }
+
+            switch(fmt[start .. i])
+            {
+                case "%":
+                    specState = false;
+                    wordIsDone(); // prints % symbol
+                    break;
+
+                case "s":
+                    specifierFound!(Sys.print, const char[]);
+                    break;
+
+                default:
+                    break;
+            }
+        }
+    }
+
+    assert(!specState, fmt[start .. $]);
+
+    if(start < fmt.length-1)
+        Sys.print(fmt[start .. $]);
+}
+
+unittest
+{
+    __printf(">>>> 111 %s 222 %s 333\n", "(test arg)", "(another one)");
+    //~ __printf(">>>> aaa %s ab%%c%def%d5", "test arg");
+}
