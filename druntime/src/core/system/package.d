@@ -33,6 +33,8 @@ struct Sys
 
 private void __printf(TL...)(scope const char[] fmt, TL args) nothrow
 {
+    // This is nogc code, but calls miniFormat() which uses GC
+
     bool specState;
     size_t start;
     size_t currSpec;
@@ -72,53 +74,59 @@ private void __printf(TL...)(scope const char[] fmt, TL args) nothrow
 
     foreach(i, c; fmt)
     {
-        void skipWord() { start = i; }
+        const end = i + 1;
 
-        void wordIsDone()
+        void printPrevWord()
         {
             Sys.print(fmt[start .. i]);
-            skipWord();
+            start = i; // also starts new word
         }
 
         if(!specState)
         {
             if(c == '%')
             {
+                printPrevWord();
                 specState = true;
-                wordIsDone();
-                start++; // skips % symbol
             }
         }
-        else // specifier processing
+        else // specifier word processing
         {
             assert(i > 0);
-            assert(start > 0);
-            assert(i - start <= 3, fmt[start .. i]); // unknown specifier
 
-            void specifierFound(const char[] specName) nothrow
+            const word = fmt[start+1 .. end]; // skips % escape symbol
+            assert(word.length <= 3, fmt[start .. end]); // is too long for a specifier
+
+            void startNewWord() { start = end; }
+
+            void specRecognized(const char[] specName) nothrow
             {
                 assert(currSpec < args.length, "Specifiers number is bigger than arguments provided");
 
-                specState = false;
-                skipWord();
                 ref h = handlers[currSpec];
                 h.func(specName, h.val);
                 currSpec++;
+
+                specState = false;
+                startNewWord();
             }
 
-            switch(fmt[start .. i])
+            switch(word)
             {
                 case "%":
                     specState = false;
-                    wordIsDone(); // prints % symbol
+                    Sys.print(word);
+                    startNewWord();
                     break;
 
                 case "s":
-                    specifierFound("s");
-                    break;
-
+                case "g":
+                case "x":
                 case "d":
-                    specifierFound("d");
+                case "u":
+                case "lld":
+                case "llu":
+                    specRecognized(word);
                     break;
 
                 default:
@@ -127,8 +135,8 @@ private void __printf(TL...)(scope const char[] fmt, TL args) nothrow
         }
     }
 
-    // unexpected end of a specifier
-    assert(!specState, fmt[start .. $]);
+    // unexpected end of format string
+    assert(specState == false, fmt[start .. $]);
 
     if(start < fmt.length-1)
         Sys.print(fmt[start .. $]);
@@ -138,7 +146,17 @@ private void __printf(TL...)(scope const char[] fmt, TL args) nothrow
 
 unittest
 {
+    static void lf() => Sys.print("\n");
+
     __printf(">>>> 111 %s 222 %s 333\n", "(test arg)", "(another one)");
-    __printf(">>>> %d ====", 123.45);
+
+    __printf("Print percent symbol: %%"); lf;
+    __printf("%g", 123.45); lf;
+    //~ __printf("%x", 123.45); lf;
+    //~ __printf("%d", 123.45); lf;
+    __printf("%u", 123); lf;
+    //~ __printf("%lld", 123.45); lf;
+    //~ __printf("%llu", 123.45); lf;
+
     //~ __printf(">>>> aaa %s ab%%c%def%d5", "test arg");
 }
