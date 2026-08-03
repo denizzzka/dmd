@@ -61,7 +61,7 @@ private void __printf(scope const char[] fmt, ...) nothrow @nogc
         {
             assert(i > 0);
             assert(start > 0);
-            assert(i - start <= 3, fmt[start .. i]);
+            assert(i - start <= 3, fmt[start .. i]); // unknown specifier
 
             void specifierFound(alias Func, T)()
             {
@@ -87,6 +87,7 @@ private void __printf(scope const char[] fmt, ...) nothrow @nogc
         }
     }
 
+    // unexpected end of a specifier
     assert(!specState, fmt[start .. $]);
 
     if(start < fmt.length-1)
