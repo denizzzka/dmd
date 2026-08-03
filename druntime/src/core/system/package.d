@@ -31,12 +31,34 @@ struct Sys
     }
 }
 
-private void __printf(scope const char[] fmt, ...) nothrow @nogc
+private void __printf(TL...)(scope const char[] fmt, TL args) nothrow @nogc
 {
-    import core.vararg;
-
     bool specState;
     size_t start;
+    size_t currSpec;
+
+    struct Handler
+    {
+        void function(scope const char[] specName, void* val) nothrow @nogc func;
+        void* val;
+    }
+
+    Handler[args.length] handlers;
+
+    static void printS(T)(scope const char[] specName, void* val)
+    {
+        assert(specName == "s", specName); // Unsupported specifier
+        Sys.print(*(cast(string*) val));
+    };
+
+    // Convert args list to functions calls
+    static foreach(i, T; TL)
+    {
+        static if(is(T == string))
+            handlers[i] = Handler(&printS!T, &args[i]);
+    }
+
+    assert(handlers.length == args.length);
 
     foreach(i, c; fmt)
     {
@@ -63,11 +85,15 @@ private void __printf(scope const char[] fmt, ...) nothrow @nogc
             assert(start > 0);
             assert(i - start <= 3, fmt[start .. i]); // unknown specifier
 
-            void specifierFound(alias Func, T)()
+            void specifierFound(const char[] specName) nothrow @nogc
             {
+                assert(currSpec < args.length, "Specifiers number is bigger than arguments provided");
+
                 specState = false;
                 skipWord();
-                Func(va_arg!T(_argptr));
+                ref h = handlers[currSpec];
+                h.func(specName, h.val);
+                currSpec++;
             }
 
             switch(fmt[start .. i])
@@ -78,7 +104,7 @@ private void __printf(scope const char[] fmt, ...) nothrow @nogc
                     break;
 
                 case "s":
-                    specifierFound!(Sys.print, const char[]);
+                    specifierFound("s");
                     break;
 
                 default:
@@ -92,6 +118,8 @@ private void __printf(scope const char[] fmt, ...) nothrow @nogc
 
     if(start < fmt.length-1)
         Sys.print(fmt[start .. $]);
+
+    assert(currSpec == args.length, "Processed specifiers number isn't equal to arguments number");
 }
 
 unittest
