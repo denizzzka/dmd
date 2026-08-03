@@ -34,6 +34,7 @@ struct Sys
 private void __printf(TL...)(scope const char[] fmt, TL args) nothrow
 {
     // This is nogc code, but calls miniFormat() which uses GC
+    // TODO: miniFormat() uses libc - remove rely on it and revert @nogc
 
     bool specState;
     size_t start;

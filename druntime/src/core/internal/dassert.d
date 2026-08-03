@@ -128,7 +128,7 @@ private string combine(const scope string[] valA, const scope string token,
 }
 
 /// Yields the appropriate `printf` format token for a type `T`
-private template getPrintfFormat(T)
+private template getPrintfFormat__(T)
 {
     static if (is(T == long))
     {
