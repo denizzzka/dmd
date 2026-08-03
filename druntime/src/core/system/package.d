@@ -31,7 +31,7 @@ struct Sys
     }
 }
 
-private void __printf(TL...)(scope const char[] fmt, TL args) nothrow @nogc
+private void __printf(TL...)(scope const char[] fmt, TL args) nothrow
 {
     bool specState;
     size_t start;
@@ -39,23 +39,33 @@ private void __printf(TL...)(scope const char[] fmt, TL args) nothrow @nogc
 
     struct Handler
     {
-        void function(scope const char[] specName, void* val) nothrow @nogc func;
+        void function(scope const char[] specName, void* val) nothrow func;
         void* val;
     }
 
     Handler[args.length] handlers;
 
-    static void printS(T)(scope const char[] specName, void* val)
+    static void printS(scope const char[] specName, void* val)
     {
         assert(specName == "s", specName); // Unsupported specifier
         Sys.print(*(cast(string*) val));
+    };
+
+    static void miniFmtCall(T)(scope const char[] specName, void* valPtr)
+    {
+        import core.internal.dassert: miniFormat;
+
+        auto p = cast(T*) valPtr;
+        Sys.print(miniFormat(*p));
     };
 
     // Convert args list to functions calls
     static foreach(i, T; TL)
     {
         static if(is(T == string))
-            handlers[i] = Handler(&printS!T, &args[i]);
+            handlers[i] = Handler(&printS, &args[i]);
+        else
+            handlers[i] = Handler(&miniFmtCall!T, &args[i]);
     }
 
     assert(handlers.length == args.length);
@@ -85,7 +95,7 @@ private void __printf(TL...)(scope const char[] fmt, TL args) nothrow @nogc
             assert(start > 0);
             assert(i - start <= 3, fmt[start .. i]); // unknown specifier
 
-            void specifierFound(const char[] specName) nothrow @nogc
+            void specifierFound(const char[] specName) nothrow
             {
                 assert(currSpec < args.length, "Specifiers number is bigger than arguments provided");
 
@@ -107,6 +117,10 @@ private void __printf(TL...)(scope const char[] fmt, TL args) nothrow @nogc
                     specifierFound("s");
                     break;
 
+                case "d":
+                    specifierFound("d");
+                    break;
+
                 default:
                     break;
             }
@@ -125,5 +139,6 @@ private void __printf(TL...)(scope const char[] fmt, TL args) nothrow @nogc
 unittest
 {
     __printf(">>>> 111 %s 222 %s 333\n", "(test arg)", "(another one)");
+    __printf(">>>> %d ====", 123.45);
     //~ __printf(">>>> aaa %s ab%%c%def%d5", "test arg");
 }

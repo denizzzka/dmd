@@ -173,7 +173,7 @@ private template getPrintfFormat(T)
  *
  * Returns: a string representing `v` or `V.stringof` if `V` is not supported
  */
-private string miniFormat(V)(const scope ref V v)
+package(core) string miniFormat(V)(const scope ref V v)
 {
     import core.internal.traits: isAggregateType;
 
