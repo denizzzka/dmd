@@ -10,6 +10,9 @@ scope auto integer2ascii(ubyte maxLen = 7, T)(T num) //TODO: nothrow @nogc
 
         void appendSliceWidth(size_t append_len)
         {
+            const nlen = slice.length + append_len;
+            assert(nlen <= buf.length);
+
             slice = buf[0 .. slice.length + append_len];
         }
 
@@ -22,12 +25,12 @@ scope auto integer2ascii(ubyte maxLen = 7, T)(T num) //TODO: nothrow @nogc
             appendSliceWidth(str.length);
         }
 
-        void append(char str)
+        void append(char c)
         {
-            //TODO: implement faster append
+            assert(slice.length + 1 <= buf.length);
 
-            char[1] s = str;
-            appendStr(s);
+            buf[slice.length] = c;
+            appendSliceWidth(1);
         }
     }
 
