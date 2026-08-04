@@ -1,7 +1,21 @@
 ///
 module core.internal.format;
 
+//TODO: add module-wide nothrow @nogc
+
 import core.system: Sys;
+
+private auto integer2ascii(/*FIXME*/ T = int)(T v) nothrow @nogc
+{
+    static struct Res
+    {
+        private char[7] buf;
+        char[] slice;
+        alias this = slice;
+    }
+
+    return Res();
+}
 
 void __printf(TL...)(scope const char[] fmt, TL args) nothrow
 {
