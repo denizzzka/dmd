@@ -1,5 +1,7 @@
 import std;
 
+//TODO: about maxLen: dig is short for "digits" and specifies the number of digits that signify the precision of the type.
+
 scope auto integer2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num) //TODO: nothrow @nogc
 {
     static struct Res
@@ -44,6 +46,16 @@ scope auto integer2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T 
         if(num != num)
         {
             r.append("nan");
+            return r;
+        }
+        else if(num > T.max)
+        {
+            r.append("inf");
+            return r;
+        }
+        else if(num < -T.max)
+        {
+            r.append("-inf");
             return r;
         }
     }
@@ -148,6 +160,8 @@ void main()
 
         float nan_val;
         assert(nan_val.integer2ascii == "nan");
+        assert(float.infinity.integer2ascii == "inf");
+        assert((-float.infinity).integer2ascii == "-inf");
     }
 
     assert(false); //TODO: remove
