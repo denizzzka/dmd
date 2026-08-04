@@ -39,6 +39,15 @@ scope auto integer2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T 
 
     Res r;
 
+    static if(__traits(isFloating, T))
+    {
+        if(num != num)
+        {
+            r.append("nan");
+            return r;
+        }
+    }
+
     if(num < 0)
     {
         num = -num;
@@ -136,6 +145,9 @@ void main()
 
         const r = float(-123.45678).integer2ascii;
         assert(r == "-123.456779", r.to!string);
+
+        float nan_val;
+        assert(nan_val.integer2ascii == "nan");
     }
 
     assert(false); //TODO: remove
