@@ -1,4 +1,4 @@
-import std.stdio;
+import std;
 
 //TODO: use external buf
 
@@ -34,7 +34,7 @@ void main()
 {
     const r = long(-12345).integer2ascii;
     writeln(r);
-    assert(r == "-", r);
+    assert(r == "-", r.to!string);
 
     assert(false); //TODO: remove
 }
