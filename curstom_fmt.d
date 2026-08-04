@@ -7,38 +7,36 @@ scope auto integer2ascii(ubyte maxLen = 7, T)(T num) //TODO: nothrow @nogc
         private char[maxLen] buf = 'b'; //void;
         const(char)[] slice;
         alias this = slice;
+
+        void appendSliceWidth(size_t append_len)
+        {
+            slice = buf[0 .. slice.length + append_len];
+        }
+
+        void appendStr(const char[] str)
+        {
+            const nlen = slice.length + str.length;
+            assert(nlen <= buf.length);
+
+            buf[slice.length .. nlen] = str;
+            appendSliceWidth(str.length);
+        }
+
+        void append(char str)
+        {
+            //TODO: implement faster append
+
+            char[1] s = str;
+            appendStr(s);
+        }
     }
 
     Res r;
 
-    void appendSliceWidth(size_t append_len)
-    {
-        r.slice = r.buf[0 .. r.slice.length + append_len];
-    }
-
-    void appendStr(const char[] str)
-    {
-    with(r)
-    {
-        const nlen = slice.length + str.length;
-        assert(nlen <= buf.length);
-
-        buf[slice.length .. nlen] = str;
-        appendSliceWidth(str.length);
-    }}
-
-    void append(char str)
-    {
-        //TODO: implement faster append
-
-        char[1] s = str;
-        appendStr(s);
-    }
-
     if(num < 0)
     {
         num = -num;
-        append('-');
+        r.append('-');
     }
 
     // TODO: use smaller types if it's worth it
@@ -46,7 +44,7 @@ scope auto integer2ascii(ubyte maxLen = 7, T)(T num) //TODO: nothrow @nogc
     double fracPart = num - cast(double) intPart;
 
     if(intPart == 0)
-        append('0');
+        r.append('0');
     else
     {
         // Using unused part of the return buffer to store numbers
@@ -65,7 +63,7 @@ scope auto integer2ascii(ubyte maxLen = 7, T)(T num) //TODO: nothrow @nogc
 
         intNumbers.reverseSmallArray();
 
-        appendSliceWidth(intNumbers.length);
+        r.appendSliceWidth(intNumbers.length);
     }
 
     return r;
