@@ -165,6 +165,4 @@ void main()
         assert(float.infinity.integer2ascii == "inf");
         assert((-float.infinity).integer2ascii == "-inf");
     }
-
-    assert(false); //TODO: remove
 }
