@@ -18,19 +18,19 @@ scope auto integer2ascii(ubyte maxLen = 7, T)(T num) //TODO: nothrow @nogc
 
         void appendStr(const char[] str)
         {
-            const nlen = slice.length + str.length;
-            assert(nlen <= buf.length);
+            const s = slice.length;
+            const e = slice.length + str.length;
 
-            buf[slice.length .. nlen] = str;
             appendSliceWidth(str.length);
+            buf[s .. e] = str;
         }
 
         void append(char c)
         {
-            assert(slice.length + 1 <= buf.length);
+            const idx = slice.length;
 
-            buf[slice.length] = c;
             appendSliceWidth(1);
+            buf[idx] = c;
         }
     }
 
