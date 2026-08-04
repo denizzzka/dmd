@@ -11,6 +11,11 @@ scope auto integer2ascii(ubyte maxLen = 7, T)(T num) //TODO: nothrow @nogc
 
     Res r;
 
+    void appendSliceWidth(size_t append_len)
+    {
+        r.slice = r.buf[0 .. r.slice.length + append_len];
+    }
+
     void appendStr(const char[] str)
     {
     with(r)
@@ -19,7 +24,7 @@ scope auto integer2ascii(ubyte maxLen = 7, T)(T num) //TODO: nothrow @nogc
         assert(nlen <= buf.length);
 
         buf[slice.length .. nlen] = str;
-        slice = buf[0 .. nlen];
+        appendSliceWidth(str.length);
     }}
 
     void append(char str)
@@ -60,8 +65,7 @@ scope auto integer2ascii(ubyte maxLen = 7, T)(T num) //TODO: nothrow @nogc
 
         intNumbers.reverseSmallArray();
 
-        //TODO: replace by slice resizing
-        appendStr(intNumbers.dup);
+        appendSliceWidth(intNumbers.length);
     }
 
     return r;
