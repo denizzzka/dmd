@@ -1,12 +1,15 @@
 import std;
 
-scope auto integer2ascii(ubyte maxLen = 7, T)(T num) //TODO: nothrow @nogc
+scope auto integer2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num) //TODO: nothrow @nogc
 {
     static struct Res
     {
         private char[maxLen] buf = 'b'; //void;
         const(char)[] slice;
         alias this = slice;
+
+        // Returns: unused part of the return buffer
+        char[] getFreeBuf() => buf[slice.length .. $];
 
         void appendSliceWidth(size_t append_len)
         {
@@ -16,7 +19,7 @@ scope auto integer2ascii(ubyte maxLen = 7, T)(T num) //TODO: nothrow @nogc
             slice = buf[0 .. slice.length + append_len];
         }
 
-        void appendStr(const char[] str)
+        void append(const char[] str)
         {
             const s = slice.length;
             const e = slice.length + str.length;
@@ -42,6 +45,8 @@ scope auto integer2ascii(ubyte maxLen = 7, T)(T num) //TODO: nothrow @nogc
         r.append('-');
     }
 
+    enum asciiNumStart = '0';
+
     // TODO: use smaller types if it's worth it
     ulong intPart = cast(ulong) num;
     double fracPart = num - cast(double) intPart;
@@ -51,22 +56,44 @@ scope auto integer2ascii(ubyte maxLen = 7, T)(T num) //TODO: nothrow @nogc
     else
     {
         // Using unused part of the return buffer to store numbers
-        char[] freeBuf = r.buf[r.slice.length .. $];
+        char[] freeBuf = r.getFreeBuf();
 
         ubyte i = 0;
         while(intPart > 0)
         {
-            freeBuf[i] = intPart % 10 + '0' /* ASCII start code */;
+            freeBuf[i] = asciiNumStart + intPart % 10;
             intPart /= 10;
             i++;
         }
 
-        // Cut a part filled with numbers
-        char[] intNumbers = freeBuf[0 .. i];
+        // Cut a part filled with digits
+        char[] intDigits = freeBuf[0 .. i];
 
-        intNumbers.reverseSmallArray();
+        intDigits.reverseSmallArray();
 
-        r.appendSliceWidth(intNumbers.length);
+        r.appendSliceWidth(intDigits.length);
+    }
+
+    enum fracPrecision = 6;
+
+    if(true /* TODO: add "is float" check */)
+    {
+        r.append('.');
+
+        char[] freeBuf = r.getFreeBuf();
+
+        ubyte i = 0;
+        while(i < fracPrecision)
+        {
+            fracPart *= 10;
+            ubyte digit = cast(ubyte) fracPart;
+            freeBuf[i] = cast(char)(asciiNumStart + digit);
+            fracPart -= digit;
+
+            i++;
+        }
+
+        r.appendSliceWidth(i);
     }
 
     return r;
@@ -108,7 +135,7 @@ void main()
         //TODO: add test with leading zero
 
         const r = float(-123.45678).integer2ascii;
-        assert(r == "-12345", r.to!string);
+        assert(r == "-123.456779", r.to!string);
     }
 
     assert(false); //TODO: remove
