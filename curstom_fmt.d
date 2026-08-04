@@ -10,6 +10,8 @@ scope auto integer2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T 
         const(char)[] slice;
         alias this = slice;
 
+        private:
+
         // Returns: unused part of the return buffer
         char[] getFreeBuf() => buf[slice.length .. $];
 
