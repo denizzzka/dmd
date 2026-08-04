@@ -160,8 +160,7 @@ void main()
         const r = float(-123.45678).integer2ascii;
         assert(r == "-123.456779", r.to!string);
 
-        float nan_val;
-        assert(nan_val.integer2ascii == "nan");
+        assert(float.nan.integer2ascii == "nan");
         assert(float.infinity.integer2ascii == "inf");
         assert((-float.infinity).integer2ascii == "-inf");
     }
