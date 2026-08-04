@@ -156,6 +156,7 @@ void main()
     //~ unittest
     {
         //TODO: add test with leading zero
+        //TODO: add tests for all numeric types (use templates)
 
         const r = float(-123.45678).integer2ascii;
         assert(r == "-123.456779", r.to!string);
