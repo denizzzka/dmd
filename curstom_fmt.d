@@ -80,8 +80,7 @@ scope auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num)
             return r.getResult;
         }
 
-        // Calculate the exponent with the appropriate shift of the decimal point
-        short exponent = calcExp(num, num);
+        byte exponent = calcExp(num, num);
     }
 
     // TODO: use smaller types if it's worth it
@@ -148,12 +147,13 @@ scope auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num)
         {
             if(exponent < 0)
             {
-                exponent = cast(short) -exponent;
+                exponent = cast(byte) -exponent;
                 r.append("e-");
             }
             else
                 r.append("e+");
 
+            //TODO: always display two digits of exponent value
             const expLen = addDigits(r.getFreeBuf, exponent);
             r.appendSliceWidth(expLen);
         }
@@ -163,14 +163,14 @@ scope auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num)
 }
 
 /// Calculates the exponent with the appropriate shift of the decimal point
-private auto calcExp(T)(in T num, out T shifted)
+private byte calcExp(T)(in T num, out T shifted)
 if(__traits(isFloating, T))
 {
     enum thresUpper = T(1000);
     enum thresLower = T(1) / thresUpper;
 
     shifted = num;
-    short exponent;
+    byte exponent;
 
     //TODO: early stop to ignore non-displayed part
     if(num >= thresUpper)
@@ -246,10 +246,10 @@ void main()
 
     //~ unittest
     {
-        static void testIt(T)(T val, const char[] expected)
+        static void testIt(T)(T val, const char[] expected, size_t line = __LINE__)
         {
             auto res = val.num2ascii;
-            assert(res == expected, res.idup);
+            assert(res == expected, /*"Line:"~line.num2ascii.idup~" "~*/ res.idup);
         }
 
         //TODO: add test with leading zero
