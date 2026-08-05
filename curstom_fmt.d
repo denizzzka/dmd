@@ -120,10 +120,10 @@ scope auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num)
             char[] freeBuf = r.getFreeBuf();
             assert(freeBuf.length > 0);
 
-            freeBuf[0] = '.';
-
-            ubyte i = 1; /// freeBuf index
-            while(i < fracPrecision && fracPart <= T.epsilon)
+            /// freeBuf index
+            /// zero is reserved for decimal dot
+            ubyte i = 1;
+            while(i < fracPrecision)
             {
                 fracPart *= 10;
                 const digit = cast(ubyte) fracPart;
@@ -137,16 +137,22 @@ scope auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num)
             if(i > 1)
                 foreach_reverse(c; freeBuf[1 .. i])
                 {
-                    // Zero found
+                    // Zero digit found
                     if(c == asciiNumStart)
                         i--;
                     else
                         break;
                 }
 
-            // Decimal dot only remained? Removes it
+            // Decimal dot only remained? Removes it too
             if(i == 1)
                 i = 0;
+            else
+            {
+                // Finally, dot is need, adding
+                assert(i > 1);
+                freeBuf[0] = '.';
+            }
 
             r.appendSliceWidth(i);
         }
@@ -226,9 +232,16 @@ void main()
 
     //~ unittest
     {
-        writeln(float(-1));
+        static void testIt(T)(T val, const char[] expected)
+        {
+            auto res = val.num2ascii;
+            assert(res == expected, res.idup);
+        }
+
         //TODO: add test with leading zero
         //TODO: add tests for all numeric types (use templates)
+
+        testIt(float(-123.45678), "-123.456779");
 
         //~ const r = float(-123.45678).num2ascii;
         //~ const r = float(-0.0012).num2ascii;
