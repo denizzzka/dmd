@@ -2,7 +2,9 @@ import std;
 
 //TODO: about maxLen: dig is short for "digits" and specifies the number of digits that signify the precision of the type.
 
-scope auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num) //TODO: nothrow @nogc
+private enum asciiNumStart = ubyte(48); // '0'
+
+scope auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num) //TODO: nothrow @nogc pure
 {
     static struct Res
     {
@@ -86,8 +88,6 @@ scope auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num)
             }
     }
 
-    enum asciiNumStart = ubyte(48); // '0'
-
     // TODO: use smaller types if it's worth it
     ulong intPart = cast(ulong) num;
     double fracPart = num - cast(double) intPart;
@@ -99,20 +99,8 @@ scope auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num)
         // Using unused part of the return buffer to store numbers
         char[] freeBuf = r.getFreeBuf();
 
-        ubyte i = 0;
-        while(intPart > 0)
-        {
-            freeBuf[i] = asciiNumStart + intPart % 10;
-            intPart /= 10;
-            i++;
-        }
-
-        // Cut a part filled with digits
-        char[] intDigits = freeBuf[0 .. i];
-
-        intDigits.reverseArray();
-
-        r.appendSliceWidth(intDigits.length);
+        const intDigitsLen = addDigits(freeBuf, intPart);
+        r.appendSliceWidth(intDigitsLen);
     }
 
     enum fracPrecision = 6;
@@ -148,12 +136,38 @@ scope auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num)
             else
                 r.append("e+");
 
-            //TODO: implement exponent output
+            const expLen = addDigits(r.getFreeBuf, exponent);
+            r.appendSliceWidth(expLen);
         }
     }
 
     return r;
 }
+
+/// Appends the digits of a positive integer to the buffer
+///
+/// Returns: number of digits
+private size_t addDigits(char[] buf, ulong integer) pure
+in(integer > 0)
+{
+    ubyte i = 0;
+    while(integer > 0)
+    {
+        assert(i < buf.length);
+
+        buf[i] = asciiNumStart + integer % 10;
+        integer /= 10;
+        i++;
+    }
+
+    // Cut a part filled with digits
+    char[] digits = buf[0 .. i];
+
+    digits.reverseArray();
+
+    return digits.length;
+}
+
 
 private void reverseArray(T)(ref T arr) pure
 {
