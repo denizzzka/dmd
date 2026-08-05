@@ -4,7 +4,7 @@ import std;
 
 private enum asciiNumStart = ubyte(48); // '0'
 
-scope auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num) //TODO: nothrow @nogc pure
+scope auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num, const bool expForm = false) //TODO: nothrow @nogc pure
 {
     static struct Ret
     {
@@ -80,7 +80,10 @@ scope auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num)
             return r.getResult;
         }
 
-        byte exponent = calcExp(num, num);
+        byte exponent;
+
+        if(expForm)
+            exponent = calcExp(num, num);
     }
 
     // TODO: use smaller types if it's worth it
@@ -166,8 +169,8 @@ scope auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num)
 private byte calcExp(T)(in T num, out T shifted)
 if(__traits(isFloating, T))
 {
-    enum thresUpper = T(1000);
-    enum thresLower = T(1) / thresUpper;
+    enum thresUpper = 10.0f;
+    enum thresLower = 1.0f / thresUpper;
 
     shifted = num;
     byte exponent;
