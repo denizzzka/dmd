@@ -116,7 +116,7 @@ scope auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num)
             while(i < fracPrecision)
             {
                 fracPart *= 10;
-                ubyte digit = cast(ubyte) fracPart;
+                const digit = cast(ubyte) fracPart;
                 freeBuf[i] = cast(char)(asciiNumStart + digit);
                 fracPart -= digit;
 
