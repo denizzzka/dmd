@@ -2,7 +2,7 @@ import std;
 
 //TODO: about maxLen: dig is short for "digits" and specifies the number of digits that signify the precision of the type.
 
-scope auto integer2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num) //TODO: nothrow @nogc
+scope auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num) //TODO: nothrow @nogc
 {
     static struct Res
     {
@@ -158,11 +158,11 @@ void main()
         //TODO: add test with leading zero
         //TODO: add tests for all numeric types (use templates)
 
-        const r = float(-123.45678).integer2ascii;
+        const r = float(-123.45678).num2ascii;
         assert(r == "-123.456779", r.to!string);
 
-        assert(float.nan.integer2ascii == "nan");
-        assert(float.infinity.integer2ascii == "inf");
-        assert((-float.infinity).integer2ascii == "-inf");
+        assert(float.nan.num2ascii == "nan");
+        assert(float.infinity.num2ascii == "inf");
+        assert((-float.infinity).num2ascii == "-inf");
     }
 }
