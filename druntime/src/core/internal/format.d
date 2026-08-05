@@ -71,6 +71,8 @@ void __printf(TL...)(scope const char[] fmt, TL args) nothrow
 
         if(!specState)
         {
+            //TODO: add support for \r \n \t
+
             if(c == '%')
             {
                 printPrevWord();
