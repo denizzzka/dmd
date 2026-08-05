@@ -68,7 +68,7 @@ scope auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num)
         r.append('-');
     }
 
-    enum asciiNumStart = '0';
+    enum asciiNumStart = ubyte(48); // '0'
 
     // TODO: use smaller types if it's worth it
     ulong intPart = cast(ulong) num;
