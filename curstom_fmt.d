@@ -70,7 +70,8 @@ scope auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num)
         }
 
         // Calculate the exponent with the appropriate shift of the decimal point
-        int exponent;
+        short exponent;
+        //TODO: early stop to ignore non-displayed part
         if(num >= 10)
             while(num >= 10)
             {
@@ -120,20 +121,35 @@ scope auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num)
     {
         r.append('.');
 
-        char[] freeBuf = r.getFreeBuf();
-
-        ubyte i = 0;
-        while(i < fracPrecision)
         {
-            fracPart *= 10;
-            ubyte digit = cast(ubyte) fracPart;
-            freeBuf[i] = cast(char)(asciiNumStart + digit);
-            fracPart -= digit;
+            char[] freeBuf = r.getFreeBuf();
 
-            i++;
+            ubyte i = 0;
+            while(i < fracPrecision)
+            {
+                fracPart *= 10;
+                ubyte digit = cast(ubyte) fracPart;
+                freeBuf[i] = cast(char)(asciiNumStart + digit);
+                fracPart -= digit;
+
+                i++;
+            }
+
+            r.appendSliceWidth(i);
         }
 
-        r.appendSliceWidth(i);
+        if(exponent != 0)
+        {
+            if(exponent < 0)
+            {
+                exponent = cast(short) -exponent;
+                r.append("e-");
+            }
+            else
+                r.append("e+");
+
+            //TODO: implement exponent output
+        }
     }
 
     return r;
