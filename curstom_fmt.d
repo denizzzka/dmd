@@ -43,7 +43,9 @@ scope auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num)
 
     Res r;
 
-    static if(__traits(isFloating, T))
+    enum isFloat = __traits(isFloating, T);
+
+    static if(isFloat)
     {
         if(num != num)
         {
@@ -99,7 +101,7 @@ scope auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num)
 
     enum fracPrecision = 6;
 
-    if(true /* TODO: add "is float" check */)
+    if(isFloat)
     {
         r.append('.');
 
