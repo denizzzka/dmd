@@ -45,6 +45,12 @@ scope auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num)
 
     enum isFloat = __traits(isFloating, T);
 
+    if(num < 0)
+    {
+        num = -num;
+        r.append('-');
+    }
+
     static if(isFloat)
     {
         if(num != num)
@@ -62,12 +68,21 @@ scope auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num)
             r.append("-inf");
             return r;
         }
-    }
 
-    if(num < 0)
-    {
-        num = -num;
-        r.append('-');
+        // Calculate the exponent with the appropriate shift of the decimal point
+        int exponent;
+        if(num >= 10)
+            while(num >= 10)
+            {
+                num /= 10;
+                exponent++;
+            }
+        else if (num < 1)
+            while(num < 1)
+            {
+                num *= 10;
+                exponent--;
+            }
     }
 
     enum asciiNumStart = ubyte(48); // '0'
@@ -159,7 +174,8 @@ void main()
         //TODO: add test with leading zero
         //TODO: add tests for all numeric types (use templates)
 
-        const r = float(-123.45678).num2ascii;
+        //~ const r = float(-123.45678).num2ascii;
+        const r = float(-0.0012).num2ascii;
         assert(r == "-123.456779", r.to!string);
 
         assert(float.nan.num2ascii == "nan");
