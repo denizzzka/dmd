@@ -6,44 +6,53 @@ private enum asciiNumStart = ubyte(48); // '0'
 
 scope auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num) //TODO: nothrow @nogc pure
 {
-    static struct Res
+    static struct Ret
     {
         private char[maxLen] buf = 'b'; //void;
         const(char)[] slice;
         alias this = slice;
+    }
 
-        private:
+    Ret ret;
 
-        // Returns: unused part of the return buffer
-        char[] getFreeBuf() => buf[slice.length .. $];
+    struct BufDeal
+    {
+        size_t currIdx;
+
+        auto getResult()
+        {
+            ret.slice = ret.buf[0 .. currIdx];
+            return ret;
+        }
+
+        /// Returns: unused part of the return buffer
+        char[] getFreeBuf() => ret.buf[currIdx .. $];
 
         void appendSliceWidth(size_t append_len)
         {
-            const nlen = slice.length + append_len;
-            assert(nlen <= buf.length);
-
-            slice = buf[0 .. slice.length + append_len];
+            currIdx += append_len;
+            assert(currIdx <= ret.buf.length);
         }
 
         void append(const char[] str)
         {
-            const s = slice.length;
-            const e = slice.length + str.length;
+            const s = currIdx;
+            const e = currIdx + str.length;
 
             appendSliceWidth(str.length);
-            buf[s .. e] = str;
+            ret.buf[s .. e] = str;
         }
 
         void append(char c)
         {
-            const idx = slice.length;
+            const idx = currIdx;
 
             appendSliceWidth(1);
-            buf[idx] = c;
+            ret.buf[idx] = c;
         }
     }
 
-    Res r;
+    BufDeal r;
 
     enum isFloat = __traits(isFloating, T);
 
@@ -58,17 +67,17 @@ scope auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num)
         if(num != num)
         {
             r.append("nan");
-            return r;
+            return r.getResult;
         }
         else if(num > T.max)
         {
             r.append("inf");
-            return r;
+            return r.getResult;
         }
         else if(num < -T.max)
         {
             r.append("-inf");
-            return r;
+            return r.getResult;
         }
 
         // Calculate the exponent with the appropriate shift of the decimal point
@@ -141,7 +150,7 @@ scope auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num)
         }
     }
 
-    return r;
+    return r.getResult;
 }
 
 /// Appends the digits of a positive integer to the buffer
