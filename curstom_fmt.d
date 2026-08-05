@@ -92,7 +92,7 @@ scope auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num)
         // Cut a part filled with digits
         char[] intDigits = freeBuf[0 .. i];
 
-        intDigits.reverseSmallArray();
+        intDigits.reverseArray();
 
         r.appendSliceWidth(intDigits.length);
     }
@@ -122,13 +122,12 @@ scope auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num)
     return r;
 }
 
-// "Small" is because ubyte used for indeces
-private void reverseSmallArray(T)(ref T arr) pure
+private void reverseArray(T)(ref T arr) pure
 {
     assert(arr.length <= ubyte.max);
 
-    ubyte left = 0;
-    ubyte right = cast(ubyte)(arr.length - 1);
+    size_t left = 0;
+    size_t right = cast(ubyte)(arr.length - 1);
 
     while(left < right)
     {
@@ -149,7 +148,7 @@ void main()
     //~ unittest
     {
         char[] arr = "1234567".dup;
-        arr.reverseSmallArray;
+        arr.reverseArray;
         assert(arr == "7654321".dup);
     }
 
