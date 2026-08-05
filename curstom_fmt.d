@@ -81,20 +81,7 @@ scope auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num)
         }
 
         // Calculate the exponent with the appropriate shift of the decimal point
-        short exponent;
-        //TODO: early stop to ignore non-displayed part
-        if(num >= 10)
-            while(num >= 10)
-            {
-                num /= 10;
-                exponent++;
-            }
-        else if (num < 1)
-            while(num < 1)
-            {
-                num *= 10;
-                exponent--;
-            }
+        short exponent = calcExp(num, num);
     }
 
     // TODO: use smaller types if it's worth it
@@ -112,7 +99,7 @@ scope auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num)
         r.appendSliceWidth(intDigitsLen);
     }
 
-    enum fracPrecision = 6;
+    enum fracPrecision = 7;
 
     if(isFloat)
     {
@@ -173,6 +160,33 @@ scope auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num)
     }
 
     return r.getResult;
+}
+
+/// Calculates the exponent with the appropriate shift of the decimal point
+private auto calcExp(T)(in T num, out T shifted)
+if(__traits(isFloating, T))
+{
+    enum thresUpper = T(1000);
+    enum thresLower = T(1) / thresUpper;
+
+    shifted = num;
+    short exponent;
+
+    //TODO: early stop to ignore non-displayed part
+    if(num >= thresUpper)
+        while(shifted >= thresUpper)
+        {
+            shifted /= 10;
+            exponent++;
+        }
+    else if (num < thresLower)
+        while(shifted < thresLower)
+        {
+            shifted *= 10;
+            exponent--;
+        }
+
+    return exponent;
 }
 
 /// Appends the digits of a positive integer to the buffer
