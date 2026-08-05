@@ -34,7 +34,7 @@ scope auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num,
             assert(currIdx <= ret.buf.length);
         }
 
-        void append(const char[] str)
+        void append(Arr)(const Arr str)
         {
             const s = currIdx;
             const e = currIdx + str.length;
@@ -156,9 +156,13 @@ scope auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num,
             else
                 r.append("e+");
 
-            //TODO: always display two digits of exponent value
-            const expLen = addDigits(r.getFreeBuf, exponent);
-            r.appendSliceWidth(expLen);
+            // Add two digits of exponent value
+            assert(exponent <= 99);
+            char[2] expBuf = [
+                asciiNumStart + exponent / 10,
+                asciiNumStart + exponent % 10,
+            ];
+            r.append(expBuf);
         }
     }
 
@@ -249,26 +253,21 @@ void main()
 
     //~ unittest
     {
-        static void testIt(T)(T val, const char[] expected, size_t line = __LINE__)
+        assert(float(1).num2ascii == "1");
+        assert(float.nan.num2ascii == "nan");
+        assert(float.infinity.num2ascii == "inf");
+        assert((-float.infinity).num2ascii == "-inf");
+
+        static void testIt(T)(T val, const bool expForm, const char[] expected, size_t line = __LINE__)
         {
-            auto res = val.num2ascii;
+            auto res = num2ascii(val, expForm);
             assert(res == expected, /*"Line:"~line.num2ascii.idup~" "~*/ res.idup);
         }
 
         //TODO: add test with leading zero
         //TODO: add tests for all numeric types (use templates)
 
-        testIt(float(-123.45678), "-123.456779");
-
-        //~ const r = float(-123.45678).num2ascii;
-        //~ const r = float(-0.0012).num2ascii;
-        //~ const r = float(-1).num2ascii;
-        //~ assert(r == "-123.456779", r.to!string);
-
-        assert(float(1).num2ascii == "1");
-
-        assert(float.nan.num2ascii == "nan");
-        assert(float.infinity.num2ascii == "inf");
-        assert((-float.infinity).num2ascii == "-inf");
+        testIt(float(-123.45678), false, "-123.456779");
+        testIt(float(-123.45678), true,  "-1.234567e+02");
     }
 }
