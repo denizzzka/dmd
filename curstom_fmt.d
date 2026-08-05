@@ -116,13 +116,14 @@ scope auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num)
 
     if(isFloat)
     {
-        r.append('.');
-
         {
             char[] freeBuf = r.getFreeBuf();
+            assert(freeBuf.length > 0);
 
-            ubyte i = 0; /// freeBuf index
-            while(i < fracPrecision)
+            freeBuf[0] = '.';
+
+            ubyte i = 1; /// freeBuf index
+            while(i < fracPrecision && fracPart <= T.epsilon)
             {
                 fracPart *= 10;
                 const digit = cast(ubyte) fracPart;
@@ -133,7 +134,7 @@ scope auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num)
             }
 
             // Remove insignificant zeros
-            if(i > 0)
+            if(i > 1)
                 foreach_reverse(c; freeBuf[1 .. i])
                 {
                     // Zero found
@@ -142,6 +143,10 @@ scope auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num)
                     else
                         break;
                 }
+
+            // Decimal dot only remained? Removes it
+            if(i == 1)
+                i = 0;
 
             r.appendSliceWidth(i);
         }
