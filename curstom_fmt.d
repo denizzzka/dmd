@@ -121,7 +121,7 @@ scope auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num)
         {
             char[] freeBuf = r.getFreeBuf();
 
-            ubyte i = 0;
+            ubyte i = 0; /// freeBuf index
             while(i < fracPrecision)
             {
                 fracPart *= 10;
@@ -131,6 +131,17 @@ scope auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num)
 
                 i++;
             }
+
+            // Remove insignificant zeros
+            if(i > 0)
+                foreach_reverse(c; freeBuf[1 .. i])
+                {
+                    // Zero found
+                    if(c == asciiNumStart)
+                        i--;
+                    else
+                        break;
+                }
 
             r.appendSliceWidth(i);
         }
@@ -210,12 +221,16 @@ void main()
 
     //~ unittest
     {
+        writeln(float(-1));
         //TODO: add test with leading zero
         //TODO: add tests for all numeric types (use templates)
 
         //~ const r = float(-123.45678).num2ascii;
-        const r = float(-0.0012).num2ascii;
-        assert(r == "-123.456779", r.to!string);
+        //~ const r = float(-0.0012).num2ascii;
+        //~ const r = float(-1).num2ascii;
+        //~ assert(r == "-123.456779", r.to!string);
+
+        assert(float(1).num2ascii == "1");
 
         assert(float.nan.num2ascii == "nan");
         assert(float.infinity.num2ascii == "inf");
