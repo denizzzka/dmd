@@ -24,8 +24,13 @@ void main()
             {
                 import core.stdc.stdio: snprintf;
 
+                static if(__traits(isIntegral, T))
+                    const fmt = "%i";
+                else
+                    const fmt = expForm ? "%e" : "%f";
+
                 char[256] buf = 'a';
-                const len = snprintf(buf.ptr, buf.length, expForm ? "%e" : "%f", val);
+                const len = snprintf(buf.ptr, buf.length, &fmt[0], val);
                 const stdc_str = buf[0 .. len];
 
                 //TODO: remove line num
@@ -41,7 +46,7 @@ void main()
 
         testIt(float(-123.45678), false, "-123.456779");
         testIt(float(-123.45678), true,  "-1.234568e+02");
-        testIt(int(-123), true,  "-1.234568e+02");
+        testIt(int(-123), true,  "-123");
         testIt(double(-1.0e-308), true,  "-1e-308");
     }
 }
