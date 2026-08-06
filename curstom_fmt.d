@@ -25,16 +25,7 @@ void main()
 
                 char[256] buf = 'a';
                 const len = snprintf(buf.ptr, buf.length, expForm ? "%e" : "%f", val);
-                size_t end;
-
-                foreach(i, c; buf)
-                    if(c == '\0')
-                    {
-                        end = i;
-                        break;
-                    }
-
-                const stdc_str = buf[0 .. end];
+                const stdc_str = buf[0 .. len];
 
                 //TODO: line num conversion using more mature unsignedToTempString()
                 assert(res.slice == stdc_str, "Test at line "~line.num2ascii~`: "`~res.slice~`" but stdc returns: "`~stdc_str~`"`);
