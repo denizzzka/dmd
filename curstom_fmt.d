@@ -19,7 +19,7 @@ void main()
         static void testIt(T)(T val, const bool expForm, const char[] expected, size_t line = __LINE__)
         {
             auto res = num2ascii(val, expForm);
-            assert(res == expected, /*"Line:"~line.num2ascii.idup~" "~*/ res.idup);
+            assert(res == expected, "Test at line "~line.num2ascii~": "~res);
         }
 
         //TODO: add test with leading zero
