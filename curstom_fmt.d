@@ -43,15 +43,16 @@ scope auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num,
         private char[maxLen] buf = 'b'; //void;
         const(char)[] slice;
         alias this = slice;
+
+        @disable this(ref Ret);
     }
 
     Ret ret;
     auto m = BufMethods(ret.buf);
 
-    auto getResult()
+    void setResult()
     {
         ret.slice = ret.buf[0 .. m.currIdx];
-        return ret;
     }
 
     enum isFloat = __traits(isFloating, T);
@@ -67,17 +68,20 @@ scope auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num,
         if(num != num)
         {
             m.append("nan");
-            return getResult();
+            setResult();
+            return ret;
         }
         else if(num > T.max)
         {
             m.append("inf");
-            return getResult();
+            setResult();
+            return ret;
         }
         else if(num < -T.max)
         {
             m.append("-inf");
-            return getResult();
+            setResult();
+            return ret;
         }
 
         byte exponent;
@@ -166,7 +170,8 @@ scope auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num,
         }
     }
 
-    return getResult();
+    setResult();
+    return ret;
 }
 
 private struct BufMethods
