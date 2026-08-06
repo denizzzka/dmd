@@ -1,10 +1,40 @@
 import std;
 
+void main()
+{
+    //~ unittest
+    {
+        char[] arr = "1234567".dup;
+        arr.reverseArray;
+        assert(arr == "7654321".dup);
+    }
+
+    //~ unittest
+    {
+        assert(float(1).num2ascii == "1");
+        assert(float.nan.num2ascii == "nan");
+        assert(float.infinity.num2ascii == "inf");
+        assert((-float.infinity).num2ascii == "-inf");
+
+        static void testIt(T)(T val, const bool expForm, const char[] expected, size_t line = __LINE__)
+        {
+            auto res = num2ascii(val, expForm);
+            assert(res == expected, /*"Line:"~line.num2ascii.idup~" "~*/ res.idup);
+        }
+
+        //TODO: add test with leading zero
+        //TODO: add tests for all numeric types (use templates)
+
+        testIt(float(-123.45678), false, "-123.456779");
+        testIt(float(-123.45678), true,  "-1.234567e+02");
+    }
+}
+
 //TODO: about maxLen: dig is short for "digits" and specifies the number of digits that signify the precision of the type.
 
 private enum asciiNumStart = ubyte(48); // '0'
 
-scope auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num, const bool expForm = false) //TODO: nothrow @nogc pure
+scope auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num, const bool expForm = false) pure nothrow @nogc
 {
     static struct Ret
     {
@@ -139,6 +169,10 @@ scope auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num,
 
 private struct BufMethods
 {
+    nothrow:
+    @nogc:
+    pure:
+
     char[] buf;
     size_t currIdx;
 
@@ -173,6 +207,10 @@ private struct BufMethods
         buf[idx] = c;
     }
 }
+
+pure:
+nothrow:
+@nogc:
 
 /// Calculates the exponent with the appropriate shift of the decimal point
 private byte calcExp(T)(in T num, out T shifted)
@@ -244,35 +282,5 @@ private void reverseArray(T)(ref T arr) pure
 
         left++;
         right--;
-    }
-}
-
-void main()
-{
-    //~ unittest
-    {
-        char[] arr = "1234567".dup;
-        arr.reverseArray;
-        assert(arr == "7654321".dup);
-    }
-
-    //~ unittest
-    {
-        assert(float(1).num2ascii == "1");
-        assert(float.nan.num2ascii == "nan");
-        assert(float.infinity.num2ascii == "inf");
-        assert((-float.infinity).num2ascii == "-inf");
-
-        static void testIt(T)(T val, const bool expForm, const char[] expected, size_t line = __LINE__)
-        {
-            auto res = num2ascii(val, expForm);
-            assert(res == expected, /*"Line:"~line.num2ascii.idup~" "~*/ res.idup);
-        }
-
-        //TODO: add test with leading zero
-        //TODO: add tests for all numeric types (use templates)
-
-        testIt(float(-123.45678), false, "-123.456779");
-        testIt(float(-123.45678), true,  "-1.234567e+02");
     }
 }
