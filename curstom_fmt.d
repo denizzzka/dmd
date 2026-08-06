@@ -20,32 +20,32 @@ scope auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num,
     }
 
     Ret ret;
-    auto r = BufMethods(ret.buf);
+    auto m = BufMethods(ret.buf);
 
     enum isFloat = __traits(isFloating, T);
 
     if(num < 0)
     {
         num = -num;
-        r.append('-');
+        m.append('-');
     }
 
     static if(isFloat)
     {
         if(num != num)
         {
-            r.append("nan");
-            return ret.getResult(r);
+            m.append("nan");
+            return ret.getResult(m);
         }
         else if(num > T.max)
         {
-            r.append("inf");
-            return ret.getResult(r);
+            m.append("inf");
+            return ret.getResult(m);
         }
         else if(num < -T.max)
         {
-            r.append("-inf");
-            return ret.getResult(r);
+            m.append("-inf");
+            return ret.getResult(m);
         }
 
         byte exponent;
@@ -59,14 +59,14 @@ scope auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num,
     double fracPart = num - cast(double) intPart;
 
     if(intPart == 0)
-        r.append('0');
+        m.append('0');
     else
     {
         // Using unused part of the return buffer to store numbers
-        char[] freeBuf = r.getFreeBuf();
+        char[] freeBuf = m.getFreeBuf();
 
         const intDigitsLen = addDigits(freeBuf, intPart);
-        r.appendSliceWidth(intDigitsLen);
+        m.appendSliceWidth(intDigitsLen);
     }
 
     enum fracPrecision = 7;
@@ -74,7 +74,7 @@ scope auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num,
     if(isFloat)
     {
         {
-            char[] freeBuf = r.getFreeBuf();
+            char[] freeBuf = m.getFreeBuf();
             assert(freeBuf.length > 0);
 
             /// freeBuf index
@@ -111,7 +111,7 @@ scope auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num,
                 freeBuf[0] = '.';
             }
 
-            r.appendSliceWidth(i);
+            m.appendSliceWidth(i);
         }
 
         if(exponent != 0)
@@ -119,10 +119,10 @@ scope auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num,
             if(exponent < 0)
             {
                 exponent = cast(byte) -exponent;
-                r.append("e-");
+                m.append("e-");
             }
             else
-                r.append("e+");
+                m.append("e+");
 
             // Add two digits of exponent value
             assert(exponent <= 99);
@@ -130,11 +130,11 @@ scope auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num,
                 asciiNumStart + exponent / 10,
                 asciiNumStart + exponent % 10,
             ];
-            r.append(expBuf);
+            m.append(expBuf);
         }
     }
 
-    return ret.getResult(r);
+    return ret.getResult(m);
 }
 
 private struct BufMethods
