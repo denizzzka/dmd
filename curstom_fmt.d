@@ -27,6 +27,8 @@ void main()
 
         testIt(float(-123.45678), false, "-123.456779");
         testIt(float(-123.45678), true,  "-1.234567e+02");
+        testIt(float(-123.45678), true,  "-1.234567e+02");
+        testIt(int(-123), true,  "-123");
     }
 }
 
@@ -144,7 +146,7 @@ scope auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num,
             m.appendSliceWidth(i);
         }
 
-        if(exponent != 0)
+        static if(isFloat) if(exponent != 0)
         {
             if(exponent < 0)
             {
