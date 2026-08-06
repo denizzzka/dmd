@@ -18,8 +18,32 @@ void main()
 
         static void testIt(T)(T val, const bool expForm, const char[] expected, size_t line = __LINE__)
         {
-            auto res = num2ascii(val, expForm);
-            assert(res == expected, "Test at line "~line.num2ascii~`: "`~res~`", but expected: "`~expected~`"`);
+            const res = num2ascii(val, expForm);
+            //TODO: line num conversion using more mature unsignedToTempString()
+            assert(res == expected, "Test at line "~line.num2ascii~`: "`~res~`" but expected: "`~expected~`"`);
+
+            {
+                import core.stdc.stdio: snprintf;
+
+                char[256] buf = 'a';
+                const len = snprintf(buf.ptr, buf.length, expForm ? "%e" : "%f", val);
+                size_t end;
+
+                foreach(i, c; buf)
+                    if(c == '\0')
+                    {
+                        end = i+1;
+                        break;
+                    }
+
+                const stdc_str = buf[0 .. end];
+
+                import std.algorithm.comparison: cmp;
+
+                //TODO: line num conversion using more mature unsignedToTempString()
+                //TODO: use core.internal.array.comparison to compare two arrays
+                assert(cmp(res.slice, stdc_str), "Test at line "~line.num2ascii~`: "`~res~`" but stdc returns: "`~stdc_str~`"`);
+            }
         }
 
         //TODO: add test with leading zero
