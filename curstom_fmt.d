@@ -160,20 +160,19 @@ auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num, const
             else
                 m.append("e+");
 
-            // Add 2 or 3 digits of exponent value
-            if(exponent < 100)
+            if(T.max_10_exp >= 100 && exponent >= 100)
+            {
+                const len = addDigits(m.getFreeBuf, exponent);
+                assert(len == 3);
+                m.appendSliceWidth(3);
+            }
+            else
             {
                 char[2] expBuf = [
                     cast(ubyte)(asciiNumStart + exponent / 10),
                     cast(ubyte)(asciiNumStart + exponent % 10),
                 ];
                 m.append(expBuf);
-            }
-            else
-            {
-                const len = addDigits(m.getFreeBuf, exponent);
-                assert(len == 3);
-                m.appendSliceWidth(3);
             }
         }
     }
