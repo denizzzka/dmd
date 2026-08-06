@@ -256,6 +256,7 @@ if(__traits(isFloating, T))
 /// Appends the digits of a positive integer to the buffer
 ///
 /// Returns: number of digits
+//TODO: use core.internal.string.signedToTempString instead
 private size_t addDigits(char[] buf, ulong integer)
 in(integer > 0)
 {
