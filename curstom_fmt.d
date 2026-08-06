@@ -84,7 +84,7 @@ auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num, const
             return ret;
         }
 
-        byte exponent;
+        short exponent;
 
         if(expForm)
             exponent = calcExp(num, num);
@@ -154,19 +154,27 @@ auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num, const
         {
             if(exponent < 0)
             {
-                exponent = cast(byte) -exponent;
+                exponent = cast(short) -exponent;
                 m.append("e-");
             }
             else
                 m.append("e+");
 
-            // Add two digits of exponent value
-            assert(exponent <= 99);
-            char[2] expBuf = [
-                asciiNumStart + exponent / 10,
-                asciiNumStart + exponent % 10,
-            ];
-            m.append(expBuf);
+            // Add 2 or 3 digits of exponent value
+            if(exponent < 100)
+            {
+                char[2] expBuf = [
+                    cast(ubyte)(asciiNumStart + exponent / 10),
+                    cast(ubyte)(asciiNumStart + exponent % 10),
+                ];
+                m.append(expBuf);
+            }
+            else
+            {
+                const len = addDigits(m.getFreeBuf, exponent);
+                assert(len == 3);
+                m.appendSliceWidth(3);
+            }
         }
     }
 
@@ -220,14 +228,14 @@ nothrow:
 @nogc:
 
 /// Calculates the exponent with the appropriate shift of the decimal point
-private byte calcExp(T)(in T num, out T shifted)
+private short calcExp(T)(in T num, out T shifted)
 if(__traits(isFloating, T))
 {
     enum thresUpper = 10.0f;
     enum thresLower = 1.0f / thresUpper;
 
     shifted = num;
-    byte exponent;
+    short exponent;
 
     //TODO: early stop to ignore non-displayed part
     if(num >= thresUpper)
