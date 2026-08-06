@@ -23,7 +23,7 @@ void main()
         }
 
         //TODO: add test with leading zero
-        //TODO: add tests for all numeric types (use templates)
+        //TODO: add tests for all numeric types
 
         testIt(float(-123.45678), false, "-123.456779");
         testIt(float(-123.45678), true,  "-1.234567e+02");
@@ -36,7 +36,7 @@ void main()
 
 private enum asciiNumStart = ubyte(48); // '0'
 
-scope auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num, const bool expForm = false) pure nothrow @nogc
+auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num, const bool expForm = false) pure nothrow @nogc
 {
     static struct Ret
     {
