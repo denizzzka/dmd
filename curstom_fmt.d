@@ -11,48 +11,16 @@ scope auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num,
         private char[maxLen] buf = 'b'; //void;
         const(char)[] slice;
         alias this = slice;
+
+        auto getResult(ref BufMethods m)
+        {
+            slice = buf[0 .. m.currIdx];
+            return this;
+        }
     }
 
     Ret ret;
-
-    struct BufDeal
-    {
-        size_t currIdx;
-
-        auto getResult()
-        {
-            ret.slice = ret.buf[0 .. currIdx];
-            return ret;
-        }
-
-        /// Returns: unused part of the return buffer
-        char[] getFreeBuf() => ret.buf[currIdx .. $];
-
-        void appendSliceWidth(size_t append_len)
-        {
-            currIdx += append_len;
-            assert(currIdx <= ret.buf.length);
-        }
-
-        void append(Arr)(const Arr str)
-        {
-            const s = currIdx;
-            const e = currIdx + str.length;
-
-            appendSliceWidth(str.length);
-            ret.buf[s .. e] = str;
-        }
-
-        void append(char c)
-        {
-            const idx = currIdx;
-
-            appendSliceWidth(1);
-            ret.buf[idx] = c;
-        }
-    }
-
-    BufDeal r;
+    auto r = BufMethods(ret.buf);
 
     enum isFloat = __traits(isFloating, T);
 
@@ -67,17 +35,17 @@ scope auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num,
         if(num != num)
         {
             r.append("nan");
-            return r.getResult;
+            return ret.getResult(r);
         }
         else if(num > T.max)
         {
             r.append("inf");
-            return r.getResult;
+            return ret.getResult(r);
         }
         else if(num < -T.max)
         {
             r.append("-inf");
-            return r.getResult;
+            return ret.getResult(r);
         }
 
         byte exponent;
@@ -166,7 +134,44 @@ scope auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num,
         }
     }
 
-    return r.getResult;
+    return ret.getResult(r);
+}
+
+private struct BufMethods
+{
+    char[] buf;
+    size_t currIdx;
+
+    this(char[] b)
+    {
+        buf = b;
+    }
+
+    /// Returns: unused part of the return buffer
+    char[] getFreeBuf() => buf[currIdx .. $];
+
+    void appendSliceWidth(size_t append_len)
+    {
+        currIdx += append_len;
+        assert(currIdx <= buf.length);
+    }
+
+    void append(Arr)(const Arr str)
+    {
+        const s = currIdx;
+        const e = currIdx + str.length;
+
+        appendSliceWidth(str.length);
+        buf[s .. e] = str;
+    }
+
+    void append(char c)
+    {
+        const idx = currIdx;
+
+        appendSliceWidth(1);
+        buf[idx] = c;
+    }
 }
 
 /// Calculates the exponent with the appropriate shift of the decimal point
