@@ -11,6 +11,7 @@ void main()
 
     //~ unittest
     {
+        assert(float(0).num2ascii == "0");
         assert(float(1).num2ascii == "1");
         assert(float.nan.num2ascii == "nan");
         assert(float.infinity.num2ascii == "inf");
@@ -27,11 +28,11 @@ void main()
                 const len = snprintf(buf.ptr, buf.length, expForm ? "%e" : "%f", val);
                 const stdc_str = buf[0 .. len];
 
-                //TODO: line num conversion using more mature unsignedToTempString()
+                //TODO: remove line num
                 assert(res.slice == stdc_str, "Test at line "~line.num2ascii~`: "`~res.slice~`" but stdc returns: "`~stdc_str~`"`);
             }
 
-            //TODO: line num conversion using more mature unsignedToTempString()
+            //TODO: remove line num
             assert(res == expected, "Test at line "~line.num2ascii~`: "`~res~`" but expected: "`~expected~`"`);
         }
 
@@ -39,9 +40,9 @@ void main()
         //TODO: add tests for all numeric types
 
         testIt(float(-123.45678), false, "-123.456779");
-        testIt(float(-123.45678), true,  "-1.234567e+02");
+        testIt(float(-123.45678), true,  "-1.234568e+02");
+        testIt(int(-123), true,  "-1.234568e+02");
         testIt(double(-1.0e-308), true,  "-1e-308");
-        testIt(int(-123), true,  "-123");
     }
 }
 
@@ -49,7 +50,7 @@ void main()
 
 private enum asciiNumStart = ubyte(48); // '0'
 
-auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num, const bool expForm = false) pure nothrow @nogc
+auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num, const bool expForm = false) //pure nothrow @nogc
 {
     static struct Ret
     {
@@ -118,26 +119,35 @@ auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num, const
         m.appendSliceWidth(intDigitsLen);
     }
 
-    enum fracPrecision = 7;
+    enum fracPrecision = 6;
 
-    if(isFloat)
+    static if(isFloat)
     {
         {
             char[] freeBuf = m.getFreeBuf();
             assert(freeBuf.length > 0);
 
-            /// freeBuf index
-            /// zero is reserved for decimal dot
-            ubyte i = 1;
-            while(i < fracPrecision)
-            {
-                fracPart *= 10;
-                const digit = cast(ubyte) fracPart;
-                freeBuf[i] = cast(char)(asciiNumStart + digit);
-                fracPart -= digit;
+            enum ulong indent = 10 ^^ (fracPrecision + 1 /* additional digit for rounding */);
 
-                i++;
-            }
+            // Scale to integer
+            //TODO: use appropriate integer type
+            auto fracAsInteger = cast(ulong)(fracPart.abs * indent);
+
+            writeln("======");
+            writeln("fracAsInteger before rounding=", fracAsInteger);
+
+            // Rounding
+            if(fracAsInteger % 10 > 5)
+                fracAsInteger += 10;
+
+            writeln("fracAsInteger=", fracAsInteger);
+            writeln("expForm=", expForm);
+            writeln("fracPart=", fracPart);
+            writeln("exponent=", exponent);
+            writeln("indent=", indent);
+            writeln("fracPart * indent=", fracPart * indent);
+
+            auto i = 1 /* dot place */ + addDigits(freeBuf[1 .. $], fracAsInteger / 10);
 
             // Remove insignificant zeros
             if(i > 1)
@@ -163,7 +173,7 @@ auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num, const
             m.appendSliceWidth(i);
         }
 
-        static if(isFloat) if(exponent != 0)
+        static if(isFloat) if(expForm)
         {
             if(exponent < 0)
             {
