@@ -19,8 +19,6 @@ void main()
         static void testIt(T)(T val, const bool expForm, const char[] expected, size_t line = __LINE__)
         {
             const res = num2ascii(val, expForm);
-            //TODO: line num conversion using more mature unsignedToTempString()
-            assert(res == expected, "Test at line "~line.num2ascii~`: "`~res~`" but expected: "`~expected~`"`);
 
             {
                 import core.stdc.stdio: snprintf;
@@ -32,18 +30,18 @@ void main()
                 foreach(i, c; buf)
                     if(c == '\0')
                     {
-                        end = i+1;
+                        end = i;
                         break;
                     }
 
                 const stdc_str = buf[0 .. end];
 
-                import std.algorithm.comparison: cmp;
-
                 //TODO: line num conversion using more mature unsignedToTempString()
-                //TODO: use core.internal.array.comparison to compare two arrays
-                assert(cmp(res.slice, stdc_str), "Test at line "~line.num2ascii~`: "`~res~`" but stdc returns: "`~stdc_str~`"`);
+                assert(res.slice == stdc_str, "Test at line "~line.num2ascii~`: "`~res.slice~`" but stdc returns: "`~stdc_str~`"`);
             }
+
+            //TODO: line num conversion using more mature unsignedToTempString()
+            assert(res == expected, "Test at line "~line.num2ascii~`: "`~res~`" but expected: "`~expected~`"`);
         }
 
         //TODO: add test with leading zero
@@ -51,7 +49,7 @@ void main()
 
         testIt(float(-123.45678), false, "-123.456779");
         testIt(float(-123.45678), true,  "-1.234567e+02");
-        //~ testIt(double(-1.0e-308), true,  "-1e-308");
+        testIt(double(-1.0e-308), true,  "-1e-308");
         testIt(int(-123), true,  "-123");
     }
 }
