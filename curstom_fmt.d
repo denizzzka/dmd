@@ -271,10 +271,9 @@ if(__traits(isFloating, T))
 /// Returns: number of digits
 //TODO: use core.internal.string.signedToTempString instead
 private size_t addDigits(char[] buf, ulong integer)
-in(integer > 0)
 {
     ubyte i = 0;
-    while(integer > 0)
+    do
     {
         assert(i < buf.length);
 
@@ -282,6 +281,7 @@ in(integer > 0)
         integer /= 10;
         i++;
     }
+    while(integer > 0);
 
     // Cut a part filled with digits
     char[] digits = buf[0 .. i];
