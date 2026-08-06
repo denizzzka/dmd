@@ -105,7 +105,7 @@ auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num, const
 
     // TODO: use smaller types if it's worth it
     ulong intPart = cast(ulong) num;
-    double fracPart = num - cast(double) intPart;
+    double fracPart = num - intPart;
 
     if(intPart == 0)
         m.append('0');
