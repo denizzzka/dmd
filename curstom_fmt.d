@@ -242,7 +242,7 @@ if(__traits(isFloating, T))
 /// Appends the digits of a positive integer to the buffer
 ///
 /// Returns: number of digits
-private size_t addDigits(char[] buf, ulong integer) pure
+private size_t addDigits(char[] buf, ulong integer)
 in(integer > 0)
 {
     ubyte i = 0;
@@ -264,7 +264,7 @@ in(integer > 0)
 }
 
 
-private void reverseArray(T)(ref T arr) pure
+private void reverseArray(T)(ref T arr)
 {
     assert(arr.length <= ubyte.max);
 
