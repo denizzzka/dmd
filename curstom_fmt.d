@@ -27,7 +27,7 @@ void main()
 
         testIt(float(-123.45678), false, "-123.456779");
         testIt(float(-123.45678), true,  "-1.234567e+02");
-        testIt(float(-123.45678), true,  "-1.234567e+02");
+        //~ testIt(double(-1.0e-308), true,  "-1e-308");
         testIt(int(-123), true,  "-123");
     }
 }
@@ -43,16 +43,16 @@ scope auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num,
         private char[maxLen] buf = 'b'; //void;
         const(char)[] slice;
         alias this = slice;
-
-        auto getResult(ref BufMethods m)
-        {
-            slice = buf[0 .. m.currIdx];
-            return this;
-        }
     }
 
     Ret ret;
     auto m = BufMethods(ret.buf);
+
+    auto getResult()
+    {
+        ret.slice = ret.buf[0 .. m.currIdx];
+        return ret;
+    }
 
     enum isFloat = __traits(isFloating, T);
 
@@ -67,17 +67,17 @@ scope auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num,
         if(num != num)
         {
             m.append("nan");
-            return ret.getResult(m);
+            return getResult();
         }
         else if(num > T.max)
         {
             m.append("inf");
-            return ret.getResult(m);
+            return getResult();
         }
         else if(num < -T.max)
         {
             m.append("-inf");
-            return ret.getResult(m);
+            return getResult();
         }
 
         byte exponent;
@@ -166,7 +166,7 @@ scope auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num,
         }
     }
 
-    return ret.getResult(m);
+    return getResult();
 }
 
 private struct BufMethods
