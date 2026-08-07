@@ -17,9 +17,11 @@ void main()
         assert(float.infinity.floatingToTempString == "inf");
         assert((-float.infinity).floatingToTempString == "-inf");
 
-        static void testIt(T)(T val, const bool expForm, const char[] expected, size_t line = __LINE__)
+        static void testIt(T)(T val, const bool expForm, string phobos_expected, size_t line = __LINE__)
         {
             const res = floatingToTempString(val, expForm);
+
+            assert(res == phobos_expected, `"`~res~`" but expected: "`~phobos_expected~`" (as returns std.format)`);
 
             {
                 import core.stdc.stdio: snprintf;
@@ -30,12 +32,8 @@ void main()
                 const len = snprintf(buf.ptr, buf.length, &fmt[0], val);
                 const stdc_str = buf[0 .. len];
 
-                //TODO: remove line num
-                assert(res.slice == stdc_str, `"`~res.slice~`" but stdc returns: "`~stdc_str~`"`);
+                assert(res.slice == stdc_str, `"`~res.slice~`" but stdc snprintf() returns: "`~stdc_str~`"`);
             }
-
-            //TODO: remove line num
-            assert(res == expected, `"`~res~`" but expected: "`~expected~`"`);
         }
 
         // Test on all posible types
@@ -63,7 +61,7 @@ void main()
 
 private enum asciiNumStart = ubyte(48); // '0'
 
-auto floatingToTempString(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num, const bool expForm = false) //pure nothrow @nogc
+auto floatingToTempString(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num, const bool expForm = false, const bool libcCompat = true) //pure nothrow @nogc
 if(__traits(isFloating, T))
 {
     static struct Ret
@@ -178,11 +176,13 @@ if(__traits(isFloating, T))
     {
         freeBuf[0] = '.';
 
-        // complete value with zeros to comply with glibc output
-        // TODO: optional?
-        const len = 1 + fracPrecision;
-        freeBuf[i .. len] = '0';
-        i = len;
+        if(libcCompat)
+        {
+            // complete value with zeros to comply with glibc output
+            const len = 1 + fracPrecision;
+            freeBuf[i .. len] = '0';
+            i = len;
+        }
     }
     else
     {
