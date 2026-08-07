@@ -44,7 +44,7 @@ void main()
         testIt(float(-123.45678), false, "-123.456779");
         testIt(float(-123.45678), true,  "-1.234568e+02");
         testIt(float(1.0e3), true,  "1.000000e+03");
-        testIt(double(-1.0e-308), true,  "-1e-308");
+        testIt(double(-1.0e-308), true,  "-1.000000e-308");
     }
 }
 
@@ -109,6 +109,44 @@ if(__traits(isFloating, T))
     ulong intPart = cast(ulong) num;
     double fracPart = num - intPart;
 
+    //TODO: use appropriate integer types:
+    enum fracPrecision = 6;
+    enum ulong indent = 10 ^^ (fracPrecision + 1 /* additional digit for rounding */);
+
+    // Scale to integer
+    auto fracAsInteger = cast(ulong)(fracPart.abs * indent);
+
+    writeln("======");
+    writeln("fracAsInteger before rounding=", fracAsInteger);
+
+    // Rounding
+    {
+        if(fracAsInteger % 10 > 5)
+            fracAsInteger += 10;
+
+        writeln("fracAsInteger rounded but wo carrying=", fracAsInteger);
+
+        if(fracAsInteger < indent)
+            fracAsInteger /= 10;
+        else
+        {
+            // Carrying to integral part:
+            writeln("carry branch");
+            intPart += 1;
+            writeln("fracAsInteger befor carrying=", fracAsInteger);
+            fracAsInteger -= indent;
+            fracAsInteger /= 100;
+        }
+    }
+
+    writeln("fracAsInteger=", fracAsInteger);
+    writeln("expForm=", expForm);
+    writeln("fracPart=", fracPart);
+    writeln("exponent=", exponent);
+    writeln("indent=", indent);
+    writeln("fracPart * indent=", fracPart * indent);
+
+    // Making output:
     if(intPart == 0)
         m.append('0');
     else
@@ -120,113 +158,70 @@ if(__traits(isFloating, T))
         m.appendSliceWidth(intDigitsLen);
     }
 
-    enum fracPrecision = 6;
+    char[] freeBuf = m.getFreeBuf();
+    assert(freeBuf.length > 0);
 
-    version(all) //TODO: remove
+    auto i = 1 /* dot place */ + addDigits(freeBuf[1 .. $], fracAsInteger);
+
+    if(expForm)
     {
+        freeBuf[0] = '.';
+
+        // complete value with zeros to comply with glibc output
+        // TODO: optional?
+        const len = 1 + fracPrecision;
+        freeBuf[i .. len] = '0';
+        i = len;
+    }
+    else
+    {
+        // Remove insignificant zeros
+        if(i > 1)
+            foreach_reverse(c; freeBuf[1 .. i])
+            {
+                // Zero digit found
+                if(c == asciiNumStart)
+                    i--;
+                else
+                    break;
+            }
+
+        // Decimal dot only remained? Removes it too
+        if(i == 1)
+            i = 0;
+        else
         {
-            char[] freeBuf = m.getFreeBuf();
-            assert(freeBuf.length > 0);
-
-            enum ulong indent = 10 ^^ (fracPrecision + 1 /* additional digit for rounding */);
-
-            // Scale to integer
-            //TODO: use appropriate integer type
-            auto fracAsInteger = cast(ulong)(fracPart.abs * indent);
-
-            writeln("======");
-            writeln("fracAsInteger before rounding=", fracAsInteger);
-
-            // Rounding
-            {
-                if(fracAsInteger % 10 > 5)
-                    fracAsInteger += 10;
-
-                writeln("fracAsInteger rounded but wo carrying=", fracAsInteger);
-
-                if(fracAsInteger < indent)
-                    fracAsInteger /= 10;
-                else
-                {
-                    // Carrying to integral part:
-                    writeln("carry branch");
-                    intPart += 1;
-                    writeln("fracAsInteger befor carrying=", fracAsInteger);
-                    fracAsInteger -= indent;
-                    fracAsInteger /= 100;
-                }
-            }
-
-            writeln("fracAsInteger=", fracAsInteger);
-            writeln("expForm=", expForm);
-            writeln("fracPart=", fracPart);
-            writeln("exponent=", exponent);
-            writeln("indent=", indent);
-            writeln("fracPart * indent=", fracPart * indent);
-
-            auto i = 1 /* dot place */ + addDigits(freeBuf[1 .. $], fracAsInteger);
-
-            if(expForm)
-            {
-                freeBuf[0] = '.';
-
-                // complete value with zeros to comply with glibc output
-                // TODO: optional?
-                const len = 1 + fracPrecision;
-                freeBuf[i .. len] = '0';
-                i = len;
-            }
-            else
-            {
-                // Remove insignificant zeros
-                if(i > 1)
-                    foreach_reverse(c; freeBuf[1 .. i])
-                    {
-                        // Zero digit found
-                        if(c == asciiNumStart)
-                            i--;
-                        else
-                            break;
-                    }
-
-                // Decimal dot only remained? Removes it too
-                if(i == 1)
-                    i = 0;
-                else
-                {
-                    // Finally, dot is need, adding
-                    assert(i > 1);
-                    freeBuf[0] = '.';
-                }
-            }
-
-            m.appendSliceWidth(i);
+            // Finally, dot is need, adding
+            assert(i > 1);
+            freeBuf[0] = '.';
         }
+    }
 
-        if(expForm)
+    m.appendSliceWidth(i);
+
+    if(expForm)
+    {
+        if(exponent < 0)
         {
-            if(exponent < 0)
-            {
-                exponent = cast(short) -exponent;
-                m.append("e-");
-            }
-            else
-                m.append("e+");
+            exponent = cast(short) -exponent;
+            m.append("e-");
+        }
+        else
+            m.append("e+");
 
-            if(T.max_10_exp >= 100 && exponent >= 100)
-            {
-                const len = addDigits(m.getFreeBuf, exponent);
-                assert(len == 3);
-                m.appendSliceWidth(3);
-            }
-            else
-            {
-                char[2] expBuf = [
-                    cast(ubyte)(asciiNumStart + exponent / 10),
-                    cast(ubyte)(asciiNumStart + exponent % 10),
-                ];
-                m.append(expBuf);
-            }
+        if(T.max_10_exp >= 100 && exponent >= 100)
+        {
+            const len = addDigits(m.getFreeBuf, exponent);
+            assert(len == 3);
+            m.appendSliceWidth(3);
+        }
+        else
+        {
+            char[2] expBuf = [
+                cast(ubyte)(asciiNumStart + exponent / 10),
+                cast(ubyte)(asciiNumStart + exponent % 10),
+            ];
+            m.append(expBuf);
         }
     }
 
