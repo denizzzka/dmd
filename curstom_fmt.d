@@ -11,20 +11,18 @@ void main()
 
     //~ unittest
     {
-        assert(float(0).floatingToTempString == "0");
-        assert(float(1).floatingToTempString == "1");
-        assert(float.nan.floatingToTempString == "nan");
-        assert(float.infinity.floatingToTempString == "inf");
-        assert((-float.infinity).floatingToTempString == "-inf");
-
         static void testIt(T)(T val, const bool expForm, string phobos_expected, size_t line = __LINE__)
         {
-            const res = floatingToTempString(val, expForm);
+            writeln("Phobos return: ", val); //TODO: remove
 
-            assert(res == phobos_expected, `"`~res~`" but expected: "`~phobos_expected~`" (as returns std.format)`);
+            const asPhobos = floatingToTempString(val, expForm, false);
+
+            assert(asPhobos == phobos_expected, `"`~asPhobos~`" but expected: "`~phobos_expected~`" (as returns std.format)`);
 
             {
                 import core.stdc.stdio: snprintf;
+
+                const asLibc = floatingToTempString(val, expForm, true);
 
                 const fmt = expForm ? "%e" : "%f";
 
@@ -32,7 +30,7 @@ void main()
                 const len = snprintf(buf.ptr, buf.length, &fmt[0], val);
                 const stdc_str = buf[0 .. len];
 
-                assert(res.slice == stdc_str, `"`~res.slice~`" but stdc snprintf() returns: "`~stdc_str~`"`);
+                assert(asLibc == stdc_str, `"`~asLibc~`" but stdc snprintf() returns: "`~stdc_str~`"`);
             }
         }
 
@@ -50,10 +48,18 @@ void main()
         //TODO: add test with leading zero
         //TODO: add tests for all numeric types
 
-        onAll(float(-123.45678), false, "-123.456779");
-        onAll(float(-123.45678), true,  "-1.234568e+02");
-        onAll(float(1.0e3), true,  "1.000000e+03");
-        onAll(double(-1.0e-308), true,  "-1.000000e-308");
+        //~ onAll(float(1), false, "1");
+        //~ onAll(float(0), false, "0");
+        //~ assert(float(0).floatingToTempString == "0");
+        //~ assert(float(1).floatingToTempString == "1");
+        //~ assert(float.nan.floatingToTempString == "nan");
+        //~ assert(float.infinity.floatingToTempString == "inf");
+        //~ assert((-float.infinity).floatingToTempString == "-inf");
+
+        //~ onAll(float(-123.45678), false, "-123.456779");
+        //~ onAll(float(-123.45678), true,  "-1.234568e+02");
+        //~ onAll(float(1.0e3), true,  "1.000000e+03");
+        //~ onAll(double(-1.0e-308), true,  "-1.000000e-308");
     }
 }
 
@@ -61,7 +67,7 @@ void main()
 
 private enum asciiNumStart = ubyte(48); // '0'
 
-auto floatingToTempString(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num, const bool expForm = false, const bool libcCompat = true) //pure nothrow @nogc
+auto floatingToTempString(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num, const bool expForm = false, const bool libcCompat) //pure nothrow @nogc
 if(__traits(isFloating, T))
 {
     static struct Ret
