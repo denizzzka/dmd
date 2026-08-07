@@ -104,13 +104,6 @@ if(__traits(isFloating, T))
         ret.slice = ret.buf[0 .. m.currIdx];
     }
 
-    //TODO: move below special cases
-    if(num < 0)
-    {
-        num = -num;
-        m.append('-');
-    }
-
     version(all) //TODO: remove
     {
         if(num != num)
@@ -130,6 +123,12 @@ if(__traits(isFloating, T))
             m.append("-inf");
             setResult();
             return ret;
+        }
+
+        if(num < 0)
+        {
+            num = -num;
+            m.append('-');
         }
 
         const expForm = (format == Format.Exp || format == Format.ExpLibc);
