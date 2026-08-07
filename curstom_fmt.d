@@ -217,7 +217,7 @@ if(__traits(isFloating, T))
     size_t i = 1; /* skip dot place */
 
     // Zeroes after dot before fractional part for values less than 1
-    if(exponent < 0)
+    if(!expForm && exponent < 0)
     {
         const len = -exponent - 1;
         foreach(ref c; freeBuf[i .. i+len])
