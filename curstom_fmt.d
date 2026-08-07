@@ -48,7 +48,7 @@ void main()
         testIt(float(-123.45678), true,  "-1.234568e+02");
         testIt(int(-123), true,  "-123");
         testIt(float(1.0e3), true,  "1.000000e+03");
-        //~ testIt(double(-1.0e-308), true,  "-1e-308");
+        testIt(double(-1.0e-308), true,  "-1e-308");
     }
 }
 
@@ -147,7 +147,19 @@ auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num, const
                 if(fracAsInteger % 10 > 5)
                     fracAsInteger += 10;
 
-                fracAsInteger /= 10;
+                writeln("fracAsInteger rounded but wo carrying=", fracAsInteger);
+
+                if(fracAsInteger < indent)
+                    fracAsInteger /= 10;
+                else
+                {
+                    // Carrying to integral part:
+                    writeln("carry branch");
+                    intPart += 1;
+                    writeln("fracAsInteger befor carrying=", fracAsInteger);
+                    fracAsInteger -= indent;
+                    fracAsInteger /= 100;
+                }
             }
 
             writeln("fracAsInteger=", fracAsInteger);
@@ -164,6 +176,7 @@ auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num, const
                 freeBuf[0] = '.';
 
                 // complete value with zeros to comply with glibc output
+                // TODO: optional?
                 const len = 1 + fracPrecision;
                 freeBuf[i .. len] = '0';
                 i = len;
@@ -171,7 +184,6 @@ auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num, const
             else
             {
                 // Remove insignificant zeros
-
                 if(i > 1)
                     foreach_reverse(c; freeBuf[1 .. i])
                     {
