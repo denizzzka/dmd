@@ -41,8 +41,8 @@ void main()
             const asLibcStd = floatingToTempString(val, Format.StdLibc);
             const asLibcExp = floatingToTempString(val, Format.ExpLibc);
 
-            //~ assert(asLibcStd == stdcTextStd, `"`~asLibcStd~`" but stdc snprintf() returns: "`~stdcTextStd~`"`);
-            //~ assert(asLibcExp == stdcTextExp, `"`~asLibcExp~`" but stdc snprintf() returns: "`~stdcTextExp~`"`);
+            assert(asLibcStd == stdcTextStd, `"`~asLibcStd~`" but stdc snprintf() returns: "`~stdcTextStd~`"`);
+            assert(asLibcExp == stdcTextExp, `"`~asLibcExp~`" but stdc snprintf() returns: "`~stdcTextExp~`"`);
         }
 
         // Test on all posible types
