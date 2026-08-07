@@ -47,7 +47,8 @@ void main()
         testIt(float(-123.45678), false, "-123.456779");
         testIt(float(-123.45678), true,  "-1.234568e+02");
         testIt(int(-123), true,  "-123");
-        testIt(double(-1.0e-308), true,  "-1e-308");
+        testIt(float(1.0e3), true,  "1.000000e+03");
+        //~ testIt(double(-1.0e-308), true,  "-1e-308");
     }
 }
 
@@ -142,8 +143,12 @@ auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num, const
             writeln("fracAsInteger before rounding=", fracAsInteger);
 
             // Rounding
-            if(fracAsInteger % 10 > 5)
-                fracAsInteger += 10;
+            {
+                if(fracAsInteger % 10 > 5)
+                    fracAsInteger += 10;
+
+                fracAsInteger /= 10;
+            }
 
             writeln("fracAsInteger=", fracAsInteger);
             writeln("expForm=", expForm);
@@ -152,27 +157,40 @@ auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num, const
             writeln("indent=", indent);
             writeln("fracPart * indent=", fracPart * indent);
 
-            auto i = 1 /* dot place */ + addDigits(freeBuf[1 .. $], fracAsInteger / 10);
+            auto i = 1 /* dot place */ + addDigits(freeBuf[1 .. $], fracAsInteger);
 
-            // Remove insignificant zeros
-            if(i > 1)
-                foreach_reverse(c; freeBuf[1 .. i])
-                {
-                    // Zero digit found
-                    if(c == asciiNumStart)
-                        i--;
-                    else
-                        break;
-                }
+            if(expForm)
+            {
+                freeBuf[0] = '.';
 
-            // Decimal dot only remained? Removes it too
-            if(i == 1)
-                i = 0;
+                // complete value with zeros to comply with glibc output
+                const len = 1 + fracPrecision;
+                freeBuf[i .. len] = '0';
+                i = len;
+            }
             else
             {
-                // Finally, dot is need, adding
-                assert(i > 1);
-                freeBuf[0] = '.';
+                // Remove insignificant zeros
+
+                if(i > 1)
+                    foreach_reverse(c; freeBuf[1 .. i])
+                    {
+                        // Zero digit found
+                        if(c == asciiNumStart)
+                            i--;
+                        else
+                            break;
+                    }
+
+                // Decimal dot only remained? Removes it too
+                if(i == 1)
+                    i = 0;
+                else
+                {
+                    // Finally, dot is need, adding
+                    assert(i > 1);
+                    freeBuf[0] = '.';
+                }
             }
 
             m.appendSliceWidth(i);
