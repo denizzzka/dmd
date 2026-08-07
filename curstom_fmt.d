@@ -17,6 +17,7 @@ void main()
             const asPhobosExp = floatingToTempString(val, Format.Exp);
 
             //TODO: remove
+            writeln("=================================");
             writeln("Phobos return: ", val);
             writefln("Phobos exp form: %e", val);
 
@@ -59,6 +60,7 @@ void main()
         //TODO: add tests for all numeric types
 
         onAll(1.0f, "1", "1.0e+00");
+        onAll(0.0f, "0", "0.0e+00");
         //~ onAll(float(1), false, "1");
         //~ onAll(float(0), false, "0");
         //~ assert(float(0).floatingToTempString == "0");
@@ -136,7 +138,8 @@ if(__traits(isFloating, T))
         const expForm = (format == Format.Exp || format == Format.ExpLibc);
         short exponent;
 
-        if(expForm)
+        assert(num >= 0);
+        if(expForm && num > 0)
             exponent = calcExp(num, num);
     }
 
@@ -316,6 +319,7 @@ nothrow:
 /// Calculates the exponent with the appropriate shift of the decimal point
 private short calcExp(T)(in T num, out T shifted)
 if(__traits(isFloating, T))
+in(num > 0)
 {
     enum thresUpper = 10.0f;
     enum thresLower = 1.0f / thresUpper;
