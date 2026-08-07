@@ -24,21 +24,18 @@ void main()
             {
                 import core.stdc.stdio: snprintf;
 
-                static if(__traits(isIntegral, T))
-                    const fmt = "%i";
-                else
-                    const fmt = expForm ? "%e" : "%f";
+                const fmt = expForm ? "%e" : "%f";
 
                 char[256] buf = 'a';
                 const len = snprintf(buf.ptr, buf.length, &fmt[0], val);
                 const stdc_str = buf[0 .. len];
 
                 //TODO: remove line num
-                assert(res.slice == stdc_str, "Test at line "~line.num2ascii~`: "`~res.slice~`" but stdc returns: "`~stdc_str~`"`);
+                assert(res.slice == stdc_str, `"`~res.slice~`" but stdc returns: "`~stdc_str~`"`);
             }
 
             //TODO: remove line num
-            assert(res == expected, "Test at line "~line.num2ascii~`: "`~res~`" but expected: "`~expected~`"`);
+            assert(res == expected, `"`~res~`" but expected: "`~expected~`"`);
         }
 
         //TODO: add test with leading zero
@@ -46,7 +43,6 @@ void main()
 
         testIt(float(-123.45678), false, "-123.456779");
         testIt(float(-123.45678), true,  "-1.234568e+02");
-        testIt(int(-123), true,  "-123");
         testIt(float(1.0e3), true,  "1.000000e+03");
         testIt(double(-1.0e-308), true,  "-1e-308");
     }
@@ -57,6 +53,7 @@ void main()
 private enum asciiNumStart = ubyte(48); // '0'
 
 auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num, const bool expForm = false) //pure nothrow @nogc
+if(__traits(isFloating, T))
 {
     static struct Ret
     {
@@ -75,15 +72,13 @@ auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num, const
         ret.slice = ret.buf[0 .. m.currIdx];
     }
 
-    enum isFloat = __traits(isFloating, T);
-
     if(num < 0)
     {
         num = -num;
         m.append('-');
     }
 
-    static if(isFloat)
+    version(all) //TODO: remove
     {
         if(num != num)
         {
@@ -127,7 +122,7 @@ auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num, const
 
     enum fracPrecision = 6;
 
-    static if(isFloat)
+    version(all) //TODO: remove
     {
         {
             char[] freeBuf = m.getFreeBuf();
@@ -208,7 +203,7 @@ auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num, const
             m.appendSliceWidth(i);
         }
 
-        static if(isFloat) if(expForm)
+        if(expForm)
         {
             if(exponent < 0)
             {
