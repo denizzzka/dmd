@@ -11,27 +11,37 @@ void main()
 
     //~ unittest
     {
-        static void testIt(T)(T val, const bool expForm, string phobos_expected, size_t line = __LINE__)
+        static void testIt(T)(T val, string phobos_std, string phobos_exp)
         {
-            writeln("Phobos return: ", val); //TODO: remove
+            const asPhobosStd = floatingToTempString(val, Format.Std);
+            const asPhobosExp = floatingToTempString(val, Format.Exp);
 
-            const asPhobos = floatingToTempString(val, expForm, false);
+            //TODO: remove
+            writeln("Phobos return: ", val);
+            writefln("Phobos exp form: %e", val);
 
-            assert(asPhobos == phobos_expected, `"`~asPhobos~`" but expected: "`~phobos_expected~`" (as returns std.format)`);
+            assert(asPhobosStd == phobos_std, `"`~asPhobosStd~`" but expected "`~phobos_std~`" (as prints writeln())`);
+            assert(asPhobosExp == phobos_exp, `"`~asPhobosExp~`" but expected "`~phobos_exp~`" (as prints writefln())`);
 
+            static string getLibcText(T val, bool expForm)
             {
                 import core.stdc.stdio: snprintf;
-
-                const asLibc = floatingToTempString(val, expForm, true);
 
                 const fmt = expForm ? "%e" : "%f";
 
                 char[256] buf = 'a';
                 const len = snprintf(buf.ptr, buf.length, &fmt[0], val);
-                const stdc_str = buf[0 .. len];
-
-                assert(asLibc == stdc_str, `"`~asLibc~`" but stdc snprintf() returns: "`~stdc_str~`"`);
+                return buf[0 .. len].idup;
             }
+
+            const stdcTextStd = getLibcText(val, false);
+            const stdcTextExp = getLibcText(val, true);
+
+            const asLibcStd = floatingToTempString(val, Format.StdLibc);
+            const asLibcExp = floatingToTempString(val, Format.ExpLibc);
+
+            assert(asLibcStd == stdcTextStd, `"`~asLibcStd~`" but stdc snprintf() returns: "`~stdcTextStd~`"`);
+            assert(asLibcExp == stdcTextExp, `"`~asLibcExp~`" but stdc snprintf() returns: "`~stdcTextExp~`"`);
         }
 
         // Test on all posible types
@@ -48,6 +58,7 @@ void main()
         //TODO: add test with leading zero
         //TODO: add tests for all numeric types
 
+        onAll(1.0f, "1", "1.0e+00");
         //~ onAll(float(1), false, "1");
         //~ onAll(float(0), false, "0");
         //~ assert(float(0).floatingToTempString == "0");
@@ -67,7 +78,15 @@ void main()
 
 private enum asciiNumStart = ubyte(48); // '0'
 
-auto floatingToTempString(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num, const bool expForm = false, const bool libcCompat) //pure nothrow @nogc
+enum Format : ubyte
+{
+    Std,
+    Exp,
+    StdLibc,
+    ExpLibc,
+}
+
+auto floatingToTempString(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num, const Format format) //pure nothrow @nogc
 if(__traits(isFloating, T))
 {
     static struct Ret
@@ -114,6 +133,7 @@ if(__traits(isFloating, T))
             return ret;
         }
 
+        const expForm = (format == Format.Exp || format == Format.ExpLibc);
         short exponent;
 
         if(expForm)
@@ -155,7 +175,7 @@ if(__traits(isFloating, T))
     }
 
     writeln("fracAsInteger=", fracAsInteger);
-    writeln("expForm=", expForm);
+    writeln("format=", format);
     writeln("fracPart=", fracPart);
     writeln("exponent=", exponent);
     writeln("indent=", indent);
@@ -178,7 +198,9 @@ if(__traits(isFloating, T))
 
     auto i = 1 /* dot place */ + addDigits(freeBuf[1 .. $], fracAsInteger);
 
-    if(expForm)
+    const libcCompat = (format == Format.StdLibc || format == Format.ExpLibc);
+
+    if(format == Format.Exp || libcCompat)
     {
         freeBuf[0] = '.';
 
