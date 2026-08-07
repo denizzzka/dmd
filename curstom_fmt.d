@@ -65,10 +65,9 @@ void main()
         onAll(float.infinity, "inf", "inf");
         onAll(-float.infinity, "-inf", "-inf");
         onAll(-123.45678f, "-123.456779" /* FIXME: should be -123.456 */, "-1.234568e+02");
-        onAll(1e3, "1000", "1.0e+03" /* FIXME: should be 1e+03 */);
-        onAll(0.001, "0.001", "1.0e-03" /* FIXME: should be 1e-03 */);
-
-        //~ onAll(float(1.0e3), true,  "1.000000e+03");
+        onAll(1e3f, "1000", "1.0e+03" /* FIXME: should be 1e+03 */);
+        onAll(0.001f, "0.001", "1.0e-03" /* FIXME: should be 1e-03 */);
+        onAll(1000.0f, "1000", "1.0e+03" /* FIXME: should be 1e+03 */);
         //~ onAll(double(-1.0e-308), true,  "-1.000000e-308");
     }
 }
