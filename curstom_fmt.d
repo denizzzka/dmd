@@ -68,7 +68,9 @@ void main()
         onAll(1e3f, "1000", "1.0e+03" /* FIXME: should be 1e+03 */);
         onAll(0.001f, "0.001", "1.0e-03" /* FIXME: should be 1e-03 */);
         onAll(1000.0f, "1000", "1.0e+03" /* FIXME: should be 1e+03 */);
-        //~ onAll(double(-1.0e-308), true,  "-1.000000e-308");
+        onAll(0.001f, "0.001", "1.0e-03");
+        //~ onAll(0.0001f, "0.0001", "1.0e-04");
+        //~ onAll(double(-1.0e-8), "errrr 111", "errrr xxxxx");
     }
 }
 
@@ -84,9 +86,16 @@ enum Format : ubyte
     ExpLibc,
 }
 
-auto floatingToTempString(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num, const Format format) //pure nothrow @nogc
+auto floatingToTempString(T)(T num, const Format format, ushort fracPrecision = 6) //pure nothrow @nogc
 if(__traits(isFloating, T))
 {
+    enum maxExp = T.max_10_exp > -T.min_10_exp
+        ? T.max_10_exp
+        : -T.min_10_exp;
+
+    //TODO: decrease buffer size for expForm like -1.000000e-308
+    enum maxLen = maxExp + ".e+123".length;
+
     static struct Ret
     {
         private char[maxLen] buf = 'b'; //void;
@@ -143,8 +152,9 @@ if(__traits(isFloating, T))
                 exponent = calcExp(num, num);
             else if(num < 1)
             {
+                // Exponent will be used to add zeroes after decimal dot
+                // This call doesn't shifts num during calculation
                 T unused;
-                writeln(num);
                 exponent = calcExp(num, unused);
             }
         }
@@ -156,14 +166,12 @@ if(__traits(isFloating, T))
     assert(fracPart >= 0);
 
     //TODO: use appropriate integer types:
-    enum fracPrecision = 6;
-    enum ulong indent = 10 ^^ (fracPrecision + 1 /* additional digit for rounding */);
+    const ulong indent = 10 ^^ (fracPrecision + 1);
 
     // Scale to integer
-    auto fracAsInteger = cast(ulong)(fracPart.abs * indent);
+    auto fracAsInteger = cast(ulong)(fracPart * indent);
 
-    writeln("======");
-    writeln("fracAsInteger before rounding=", fracAsInteger);
+    writeln("========================");
 
     // Rounding here!
     const carry = round(fracAsInteger, indent);
@@ -294,6 +302,8 @@ if(__traits(isIntegral, T))
     //~ import core.stdc.math: log10;
     //~ const size_t indent = log10(digits);
 
+    writeln("fracAsInteger before rounding=", fracAsInteger);
+
     // Rounding
     if(fracAsInteger % 10 > 5)
         fracAsInteger += 10;
@@ -302,6 +312,7 @@ if(__traits(isIntegral, T))
 
     if(fracAsInteger < indent)
     {
+        writeln("not carry integer part");
         fracAsInteger /= 10;
 
         return false;
