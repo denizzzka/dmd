@@ -11,15 +11,15 @@ void main()
 
     //~ unittest
     {
-        assert(float(0).num2ascii == "0");
-        assert(float(1).num2ascii == "1");
-        assert(float.nan.num2ascii == "nan");
-        assert(float.infinity.num2ascii == "inf");
-        assert((-float.infinity).num2ascii == "-inf");
+        assert(float(0).floatingToTempString == "0");
+        assert(float(1).floatingToTempString == "1");
+        assert(float.nan.floatingToTempString == "nan");
+        assert(float.infinity.floatingToTempString == "inf");
+        assert((-float.infinity).floatingToTempString == "-inf");
 
         static void testIt(T)(T val, const bool expForm, const char[] expected, size_t line = __LINE__)
         {
-            const res = num2ascii(val, expForm);
+            const res = floatingToTempString(val, expForm);
 
             {
                 import core.stdc.stdio: snprintf;
@@ -52,7 +52,7 @@ void main()
 
 private enum asciiNumStart = ubyte(48); // '0'
 
-auto num2ascii(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num, const bool expForm = false) //pure nothrow @nogc
+auto floatingToTempString(ubyte maxLen = 32 /* TODO: decrease or remove */, T)(T num, const bool expForm = false) //pure nothrow @nogc
 if(__traits(isFloating, T))
 {
     static struct Ret
