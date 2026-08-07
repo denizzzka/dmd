@@ -61,13 +61,9 @@ void main()
 
         onAll(1.0f, "1", "1.0e+00");
         onAll(0.0f, "0", "0.0e+00");
-        //~ onAll(float(1), false, "1");
-        //~ onAll(float(0), false, "0");
-        //~ assert(float(0).floatingToTempString == "0");
-        //~ assert(float(1).floatingToTempString == "1");
-        //~ assert(float.nan.floatingToTempString == "nan");
-        //~ assert(float.infinity.floatingToTempString == "inf");
-        //~ assert((-float.infinity).floatingToTempString == "-inf");
+        onAll(float.nan, "nan", "nan");
+        onAll(float.infinity, "inf", "inf");
+        onAll(-float.infinity, "-inf", "-inf");
 
         //~ onAll(float(-123.45678), false, "-123.456779");
         //~ onAll(float(-123.45678), true,  "-1.234568e+02");
