@@ -38,13 +38,24 @@ void main()
             assert(res == expected, `"`~res~`" but expected: "`~expected~`"`);
         }
 
+        // Test on all posible types
+        static void onAll(T, ARGS...)(T val, ARGS args)
+        {
+            static if(T.dig <= float.dig)
+                testIt(cast(float) val, args);
+            else static if(T.dig <= double.dig)
+                testIt(cast(double) val, args);
+            else static if(T.dig <= real.dig)
+                testIt(cast(real) val, args);
+        }
+
         //TODO: add test with leading zero
         //TODO: add tests for all numeric types
 
-        testIt(float(-123.45678), false, "-123.456779");
-        testIt(float(-123.45678), true,  "-1.234568e+02");
-        testIt(float(1.0e3), true,  "1.000000e+03");
-        testIt(double(-1.0e-308), true,  "-1.000000e-308");
+        onAll(float(-123.45678), false, "-123.456779");
+        onAll(float(-123.45678), true,  "-1.234568e+02");
+        onAll(float(1.0e3), true,  "1.000000e+03");
+        onAll(double(-1.0e-308), true,  "-1.000000e-308");
     }
 }
 
