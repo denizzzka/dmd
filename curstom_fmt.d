@@ -153,6 +153,7 @@ if(__traits(isFloating, T))
     // TODO: use smaller types if it's worth it
     ulong intPart = cast(ulong) num;
     double fracPart = num - intPart;
+    assert(fracPart >= 0);
 
     //TODO: use appropriate integer types:
     enum fracPrecision = 6;
@@ -164,30 +165,16 @@ if(__traits(isFloating, T))
     writeln("======");
     writeln("fracAsInteger before rounding=", fracAsInteger);
 
-    // Rounding
-    {
-        if(fracAsInteger % 10 > 5)
-            fracAsInteger += 10;
+    // Rounding here!
+    const carry = round(fracAsInteger, indent);
+    if(carry)
+        intPart += 1;
 
-        writeln("fracAsInteger rounded but wo carrying=", fracAsInteger);
-
-        if(fracAsInteger < indent)
+    // FIXME: dirty hack
+    // TODO: use log10 here?
+    if(exponent < 0)
+        foreach(_; 0 .. -exponent)
             fracAsInteger /= 10;
-        else
-        {
-            // Carrying to integral part:
-            writeln("carry branch");
-            intPart += 1;
-            writeln("fracAsInteger befor carrying=", fracAsInteger);
-            fracAsInteger -= indent;
-            fracAsInteger /= 100;
-        }
-
-        // FIXME: dirty hack
-        if(exponent < 0)
-            foreach(_; 0 .. -exponent)
-                fracAsInteger /= 10;
-    }
 
     writeln("fracAsInteger=", fracAsInteger);
     writeln("format=", format);
@@ -297,6 +284,35 @@ if(__traits(isFloating, T))
 
     setResult();
     return ret;
+}
+
+/// Returns: Is it necessary to carry 1 to an integer part?
+private bool round(T)(ref T fracAsInteger, in ulong indent)
+if(__traits(isIntegral, T))
+{
+    //TODO: add assert check of fracAsInteger size here
+    //~ import core.stdc.math: log10;
+    //~ const size_t indent = log10(digits);
+
+    // Rounding
+    if(fracAsInteger % 10 > 5)
+        fracAsInteger += 10;
+
+    writeln("fracAsInteger rounded but wo carrying=", fracAsInteger);
+
+    if(fracAsInteger < indent)
+    {
+        fracAsInteger /= 10;
+
+        return false;
+    }
+    else
+    {
+        fracAsInteger -= indent;
+        fracAsInteger /= 100;
+
+        return true;
+    }
 }
 
 private struct BufMethods
