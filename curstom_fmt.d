@@ -13,16 +13,16 @@ void main()
     {
         static void testIt(T)(T val, string phobos_std, string phobos_exp)
         {
-            //~ const asPhobosStd = floatingToTempString(val, Format.Std);
-            const asPhobosExp = floatingToTempString(val, Format.Exp);
+            const asPhobosStd = floatingToTempString(val, Format.Std);
+            //~ const asPhobosExp = floatingToTempString(val, Format.Exp);
 
             //TODO: remove
             writeln("=================================");
             writeln("Phobos return: ", val);
             writefln("Phobos exp form: %e", val);
 
-            //~ assert(asPhobosStd == phobos_std, `"`~asPhobosStd~`" but expected "`~phobos_std~`" (as prints writeln())`);
-            assert(asPhobosExp == phobos_exp, `"`~asPhobosExp~`" but expected "`~phobos_exp~`" (as prints writefln())`);
+            assert(asPhobosStd == phobos_std, `"`~asPhobosStd~`" but expected "`~phobos_std~`" (as prints writeln())`);
+            //~ assert(asPhobosExp == phobos_exp, `"`~asPhobosExp~`" but expected "`~phobos_exp~`" (as prints writefln())`);
 
             static string getLibcText(T val, bool expForm)
             {
@@ -183,6 +183,12 @@ if(__traits(isFloating, T))
 
     size_t i;
     const fracAsInteger = round(fracPart, fracPrecision, addTrailingZeroes, i, carry, fracText);
+
+    if(carry)
+    {
+        intPart++;
+        exponent++;
+    }
 
     writeln("format=", format);
     writeln("exponent=", exponent);
