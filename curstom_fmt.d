@@ -176,7 +176,9 @@ if(__traits(isFloating, T))
     bool carry;
     const fracBufSize = fracPrecision + 1 /* extra carry digit - will be used as dot place */;
     const fracOffsetIdx = ret.buf.length - (fracBufSize + maxExpLen);
-    auto fracText = ret.buf[fracOffsetIdx .. fracOffsetIdx + fracBufSize];
+    // after fractional:
+    size_t i = fracOffsetIdx + fracBufSize;
+    auto fracText = ret.buf[fracOffsetIdx .. i];
     const fracAsInteger = round(fracPart, fracPrecision, carry, fracText);
 
     writeln("fracPart before rounding=", fracPart);
@@ -191,66 +193,49 @@ if(__traits(isFloating, T))
         writeln("intDigitsLen=", intDigitsLen);
     }
 
-    writeln("ret.buf=", ret.buf);
-
-    // Output fractional part:
-    char[] freeBuf = m.getFreeBuf();
-    assert(freeBuf.length > 0);
-
-    size_t i = 1; /* skip dot place */
-
-    // Zeroes after dot before fractional part for values less than 1
-    if(!expForm && exponent < 0)
-    {
-        const len = -exponent - 1;
-        foreach(ref c; freeBuf[i .. i+len])
-            c = '0';
-
-        i += len;
-    }
-
-    i += addDigits(freeBuf[i .. $], fracAsInteger);
-    writeln("i=", i);
-
     const libcCompat = (format == Format.StdLibc || format == Format.ExpLibc);
+
+    const dotIdx = fracOffsetIdx;
 
     if(format == Format.Exp || libcCompat)
     {
-        freeBuf[0] = '.';
+        ret.buf[dotIdx] = '.';
 
         if(libcCompat)
         {
+            //FIXME:
             // complete value with zeros to comply with glibc output
-            const len = 1 + fracPrecision;
-            freeBuf[i .. len] = '0';
-            i = len;
+            //~ const len = 1 + fracPrecision;
+            //~ freeBuf[i .. len] = '0';
+            //~ i = len;
         }
     }
     else
     {
+        //FIXME:
         // Remove insignificant zeros
-        if(i > 1)
-            foreach_reverse(c; freeBuf[1 .. i])
-            {
-                // Zero digit found
-                if(c == asciiNumStart)
-                    i--;
-                else
-                    break;
-            }
+        //~ if(i > 1)
+            //~ foreach_reverse(c; freeBuf[1 .. i])
+            //~ {
+                //~ // Zero digit found
+                //~ if(c == asciiNumStart)
+                    //~ i--;
+                //~ else
+                    //~ break;
+            //~ }
 
-        // Decimal dot only remained? Removes it too
-        if(i == 1)
-            i = 0;
-        else
+        //~ // Decimal dot only remained? Removes it too
+        //~ if(i == 1)
+            //~ i = 0;
+        //~ else
         {
             // Finally, dot is need, adding
-            assert(i > 1);
-            freeBuf[0] = '.';
+            //~ assert(i > 1);
+            ret.buf[dotIdx] = '.';
         }
     }
 
-    writeln("i =", i);
+    writeln("ret.buf=", ret.buf);
 
     m.appendSliceWidth(i);
 
