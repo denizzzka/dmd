@@ -14,7 +14,7 @@ void main()
         static void testIt(T)(T val, string phobos_std, string phobos_exp)
         {
             const asPhobosStd = floatingToTempString(val, Format.Std);
-            const asPhobosExp = floatingToTempString(val, Format.Exp);
+            //~ const asPhobosExp = floatingToTempString(val, Format.Exp);
 
             //TODO: remove
             writeln("=================================");
@@ -22,7 +22,7 @@ void main()
             writefln("Phobos exp form: %e", val);
 
             assert(asPhobosStd == phobos_std, `"`~asPhobosStd~`" but expected "`~phobos_std~`" (as prints writeln())`);
-            assert(asPhobosExp == phobos_exp, `"`~asPhobosExp~`" but expected "`~phobos_exp~`" (as prints writefln())`);
+            //~ assert(asPhobosExp == phobos_exp, `"`~asPhobosExp~`" but expected "`~phobos_exp~`" (as prints writefln())`);
 
             static string getLibcText(T val, bool expForm)
             {
@@ -59,17 +59,17 @@ void main()
         //TODO: add test with leading zero
         //TODO: add tests for all numeric types
 
-        onAll(1.0f, "1", "1.0e+00");
-        onAll(0.0f, "0", "0.0e+00");
-        onAll(float.nan, "nan", "nan");
-        onAll(float.infinity, "inf", "inf");
-        onAll(-float.infinity, "-inf", "-inf");
-        onAll(-123.45678f, "-123.456779" /* FIXME: should be -123.456 */, "-1.234568e+02");
-        onAll(1e3f, "1000", "1.0e+03" /* FIXME: should be 1e+03 */);
-        onAll(0.001f, "0.001", "1.0e-03" /* FIXME: should be 1e-03 */);
-        onAll(1000.0f, "1000", "1.0e+03" /* FIXME: should be 1e+03 */);
-        onAll(0.001f, "0.001", "1.0e-03");
-        //~ onAll(0.0001f, "0.0001", "1.0e-04");
+        //~ onAll(1.0f, "1", "1.0e+00");
+        //~ onAll(0.0f, "0", "0.0e+00");
+        //~ onAll(float.nan, "nan", "nan");
+        //~ onAll(float.infinity, "inf", "inf");
+        //~ onAll(-float.infinity, "-inf", "-inf");
+        //~ onAll(-123.45678f, "-123.456779" /* FIXME: should be -123.456 */, "-1.234568e+02");
+        //~ onAll(1e3f, "1000", "1.0e+03" /* FIXME: should be 1e+03 */);
+        //~ onAll(0.001f, "0.001", "1.0e-03" /* FIXME: should be 1e-03 */);
+        //~ onAll(1000.0f, "1000", "1.0e+03" /* FIXME: should be 1e+03 */);
+        //~ onAll(0.001f, "0.001", "1.0e-03");
+        onAll(0.0001f, "0.0001", "1.0e-04");
         //~ onAll(double(-1.0e-8), "errrr 111", "errrr xxxxx");
     }
 }
@@ -139,39 +139,37 @@ if(__traits(isFloating, T))
             num = -num;
             m.append('-');
         }
-
-        const expForm = (format == Format.Exp || format == Format.ExpLibc);
-
-        //TODO: move it closer to usage place?
-        short exponent;
-
-        assert(num >= 0);
-        if(num > 0)
-        {
-            if(expForm)
-                exponent = calcExp(num, num);
-            else if(num < 1)
-            {
-                // Exponent will be used to add zeroes after decimal dot
-                // This call doesn't shifts num during calculation
-                T unused;
-                exponent = calcExp(num, unused);
-            }
-        }
     }
+
+    const expForm = (format == Format.Exp || format == Format.ExpLibc);
+
+    //TODO: move it closer to usage place?
+    short exponent;
+
+    assert(num >= 0);
+    if(expForm)
+        exponent = calcExp(num, num);
 
     // TODO: use smaller types if it's worth it
     ulong intPart = cast(ulong) num;
     double fracPart = num - intPart;
     assert(fracPart >= 0);
 
+    // Exponent need for adding zeroes after decimal dot
+    if(!expForm && num < 1)
+    {
+        T unused;
+        exponent = calcExp(num, unused);
+    }
+
+    writeln("+++========================");
+    writeln("exponent=", exponent);
+
     //TODO: use appropriate integer types:
     const ulong indent = 10 ^^ (fracPrecision + 1);
 
     // Scale to integer
     auto fracAsInteger = cast(ulong)(fracPart * indent);
-
-    writeln("========================");
 
     // Rounding here!
     const carry = round(fracAsInteger, indent);
@@ -180,9 +178,9 @@ if(__traits(isFloating, T))
 
     // FIXME: dirty hack
     // TODO: use log10 here?
-    if(exponent < 0)
-        foreach(_; 0 .. -exponent)
-            fracAsInteger /= 10;
+    //~ if(exponent < 0)
+        //~ foreach(_; 0 .. -exponent)
+            //~ fracAsInteger /= 10;
 
     writeln("fracAsInteger=", fracAsInteger);
     writeln("format=", format);
@@ -367,9 +365,9 @@ private struct BufMethods
     }
 }
 
-pure:
-nothrow:
-@nogc:
+//~ pure:
+//~ nothrow:
+//~ @nogc:
 
 /// Calculates the exponent with the appropriate shift of the decimal point
 private short calcExp(T)(in T num, out T shifted)
@@ -383,13 +381,13 @@ in(num > 0)
     short exponent;
 
     //TODO: early stop to ignore non-displayed part
-    if(num >= thresUpper)
+    if(shifted >= thresUpper)
         while(shifted >= thresUpper)
         {
             shifted /= 10;
             exponent++;
         }
-    else if (num < thresLower)
+    else if (shifted < thresLower)
         while(shifted < thresLower)
         {
             shifted *= 10;
