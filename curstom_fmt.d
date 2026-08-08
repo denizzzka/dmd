@@ -174,7 +174,7 @@ if(__traits(isFloating, T))
     assert(fracPart < 1);
     const short fracPrecision = 6;
     bool carry;
-    const fracBufSize = fracPrecision + 1 /* extra carry digit */;
+    const fracBufSize = fracPrecision + 1 /* extra carry digit - will be used as dot place */;
     const fracOffsetIdx = ret.buf.length - (fracBufSize + maxExpLen);
     auto fracText = ret.buf[fracOffsetIdx .. fracOffsetIdx + fracBufSize];
     const fracAsInteger = round(fracPart, fracPrecision, carry, fracText);
@@ -184,18 +184,14 @@ if(__traits(isFloating, T))
     writeln("fracAsInteger=", fracAsInteger);
     writeln("exponent=", exponent);
     writeln("carry=", carry);
-    writeln("ret.buf=", ret.buf);
 
-    if(intPart == 0)
-        m.append('0');
-    else
     {
-        // Using unused part of the return buffer to store numbers
-        char[] freeBuf = m.getFreeBuf();
-
-        const intDigitsLen = addDigits(freeBuf, intPart);
-        m.appendSliceWidth(intDigitsLen);
+        char[] buf = ret.buf[0 .. fracOffsetIdx];
+        const intDigitsLen = addDigitsReverse(buf, intPart);
+        writeln("intDigitsLen=", intDigitsLen);
     }
+
+    writeln("ret.buf=", ret.buf);
 
     // Output fractional part:
     char[] freeBuf = m.getFreeBuf();
@@ -424,6 +420,33 @@ in(num > 0)
         }
 
     return exponent;
+}
+
+/// Appends the digits of a positive integer to the buffer
+/// Starts from the end corner
+///
+/// Returns: number of digits
+//TODO: use core.internal.string.signedToTempString instead
+private size_t addDigitsReverse(char[] buf, ulong integer)
+{
+    if(integer == 0)
+    {
+        buf[$-1] = '0';
+        return 1;
+    }
+
+    ushort i = cast(ushort) buf.length;
+    while(integer > 0)
+    {
+        i--;
+        writeln("reverse integer i=", i);
+        buf[i] = asciiNumStart + integer % 10;
+        integer /= 10;
+
+        assert(i > 0);
+    }
+
+    return buf.length - i;
 }
 
 /// Appends the digits of a positive integer to the buffer
