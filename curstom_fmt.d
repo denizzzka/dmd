@@ -168,7 +168,8 @@ if(__traits(isFloating, T))
     // Rounding
     assert(fracPart < 1);
     bool carry;
-    const fracAsInteger = round(fracPart, fracPrecision, carry);
+    char[8] FIXME_REMOVE;
+    const fracAsInteger = round(fracPart, fracPrecision, carry, FIXME_REMOVE);
 
     // Apply possible carry to an integer part
     if(carry)
@@ -286,9 +287,10 @@ if(__traits(isFloating, T))
     return ret;
 }
 
-private auto round(T)(in T fracPart, in short precisionAfterDot, bool carry)
+private auto round(T)(in T fracPart, in short precisionAfterDot, out bool carry, char[] outBuf)
 if(__traits(isFloating, T))
 in(fracPart >= 0)
+in(outBuf.length == precisionAfterDot + 2)
 {
     const uint mult = 10 ^^ (precisionAfterDot + 1);
     writeln("mult ", mult);
@@ -299,18 +301,37 @@ in(fracPart >= 0)
     writeln("asInteger ", asInteger);
 
     // Rounding
+    bool possibleCarry;
     if(asInteger % 10 > 5)
+    {
         asInteger += 10;
+        possibleCarry = true;
+    }
 
     asInteger /= 10;
 
     writeln("asInteger rounded=", asInteger);
 
-    // FIXME: carry detection goes wrong
-    if(asInteger >= mult)
+    // Carry detection combined with output(!)
     {
-        carry = true;
-        asInteger -= mult;
+        foreach_reverse(i, ref c; outBuf)
+        {
+            const ubyte digit = asInteger % 10;
+            c = asciiNumStart + digit;
+
+            if(possibleCarry)
+            {
+                // Only numbers like 100.00 and 0.0010 can be result of digits carrying
+                carry = (i == 0)
+                    ? digit == 1
+                    : digit != 0;
+
+                if(!carry)
+                    possibleCarry = false;
+            }
+
+            asInteger /= 10;
+        }
     }
 
     return asInteger;
