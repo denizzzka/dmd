@@ -174,8 +174,9 @@ if(__traits(isFloating, T))
     assert(fracPart < 1);
     const short fracPrecision = 6;
     bool carry;
-    const fracOffsetIdx = ret.buf.length - (fracPrecision+1 + maxExpLen);
-    auto fracText = ret.buf[fracOffsetIdx .. fracOffsetIdx + fracPrecision+1];
+    const fracBufSize = fracPrecision + 1 /* extra carry digit */;
+    const fracOffsetIdx = ret.buf.length - (fracBufSize + maxExpLen);
+    auto fracText = ret.buf[fracOffsetIdx .. fracOffsetIdx + fracBufSize];
     const fracAsInteger = round(fracPart, fracPrecision, carry, fracText);
 
     writeln("fracPart before rounding=", fracPart);
@@ -290,7 +291,7 @@ if(__traits(isFloating, T))
 private auto round(T)(in T fracPart, in short precisionAfterDot, out bool carry, char[] outBuf)
 if(__traits(isFloating, T))
 in(fracPart >= 0)
-in(outBuf.length == precisionAfterDot + 1, outBuf.length.to!string)
+in(outBuf.length == precisionAfterDot + 1 /* extra carry digit */, outBuf.length.to!string)
 {
     const uint mult = 10 ^^ (precisionAfterDot + 1);
     writeln("mult ", mult);
@@ -346,6 +347,8 @@ in(outBuf.length == precisionAfterDot + 1, outBuf.length.to!string)
             asInteger /= 10;
         }
     }
+
+    assert(outBuf[0] == '0' || outBuf[0] == '1');
 
     return asInteger;
 }
