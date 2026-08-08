@@ -86,7 +86,7 @@ enum Format : ubyte
     ExpLibc,
 }
 
-auto floatingToTempString(T)(T num, const Format format, ushort fracPrecision = 6) //pure nothrow @nogc
+auto floatingToTempString(T)(T num, const Format format) //pure nothrow @nogc
 if(__traits(isFloating, T))
 {
     enum maxExp = T.max_10_exp > -T.min_10_exp
@@ -146,48 +146,29 @@ if(__traits(isFloating, T))
     //TODO: move it closer to usage place?
     short exponent;
 
-    assert(num >= 0);
     if(expForm)
         exponent = calcExp(num, num);
+    else
+    {
+        T unused;
+        exponent = calcExp(num, unused);
+    }
 
     // TODO: use smaller types if it's worth it
     ulong intPart = cast(ulong) num;
     double fracPart = num - intPart;
     assert(fracPart >= 0);
 
-    // Exponent need for adding zeroes after decimal dot
-    if(!expForm && num < 1)
-    {
-        T unused;
-        exponent = calcExp(num, unused);
-    }
-
     writeln("+++========================");
-    writeln("exponent=", exponent);
+    writeln("fracPart before rounding=", fracPart);
 
-    //TODO: use appropriate integer types:
-    const ulong indent = 10 ^^ (fracPrecision + 1);
+    // Rounding
+    const short fracPrecision = 6;
+    fracPart = round(fracPart, fracPrecision);
 
-    // Scale to integer
-    auto fracAsInteger = cast(ulong)(fracPart * indent);
-
-    // Rounding here!
-    const carry = round(fracAsInteger, indent);
-    if(carry)
-        intPart += 1;
-
-    // FIXME: dirty hack
-    // TODO: use log10 here?
-    //~ if(exponent < 0)
-        //~ foreach(_; 0 .. -exponent)
-            //~ fracAsInteger /= 10;
-
-    writeln("fracAsInteger=", fracAsInteger);
     writeln("format=", format);
     writeln("fracPart=", fracPart);
     writeln("exponent=", exponent);
-    writeln("indent=", indent);
-    writeln("fracPart * indent=", fracPart * indent);
 
     // Making output:
     if(intPart == 0)
@@ -201,7 +182,7 @@ if(__traits(isFloating, T))
         m.appendSliceWidth(intDigitsLen);
     }
 
-    // Printing fractional part:
+    // Output fractional part:
     char[] freeBuf = m.getFreeBuf();
     assert(freeBuf.length > 0);
 
@@ -293,7 +274,34 @@ if(__traits(isFloating, T))
 }
 
 /// Returns: Is it necessary to carry 1 to an integer part?
-private bool round(T)(ref T fracAsInteger, in ulong indent)
+private T round(T)(in T fracPart, in short precisionAfterDot)
+if(__traits(isFloating, T))
+in(fracPart >= 0)
+{
+    const uint mult = 10 ^^ (precisionAfterDot + 1);
+    writeln("mult ", mult);
+
+    // Scale to integer
+    //TODO: use appropriate size of integer type?
+    auto asInteger = cast(ulong)(fracPart * mult);
+    writeln("asInteger ", asInteger);
+
+    // Rounding
+    if(asInteger % 10 > 5)
+        asInteger += 10;
+
+    asInteger /= 10;
+
+    writeln("asInteger rounded=", asInteger);
+
+    T ret = (cast(T)asInteger) / (mult / 10);
+    writeln("rounded=", ret);
+
+    return ret;
+}
+
+/// Returns: Is it necessary to carry 1 to an integer part?
+private bool round_disabled(T)(ref T fracAsInteger, in ulong indent)
 if(__traits(isIntegral, T))
 {
     //TODO: add assert check of fracAsInteger size here
