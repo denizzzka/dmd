@@ -13,16 +13,16 @@ void main()
     {
         static void testIt(T)(T val, string phobos_std, string phobos_exp)
         {
-            const asPhobosStd = floatingToTempString(val, Format.Std);
-            //~ const asPhobosExp = floatingToTempString(val, Format.Exp);
+            //~ const asPhobosStd = floatingToTempString(val, Format.Std);
+            const asPhobosExp = floatingToTempString(val, Format.Exp);
 
             //TODO: remove
             writeln("=================================");
             writeln("Phobos return: ", val);
             writefln("Phobos exp form: %e", val);
 
-            assert(asPhobosStd == phobos_std, `"`~asPhobosStd~`" but expected "`~phobos_std~`" (as prints writeln())`);
-            //~ assert(asPhobosExp == phobos_exp, `"`~asPhobosExp~`" but expected "`~phobos_exp~`" (as prints writefln())`);
+            //~ assert(asPhobosStd == phobos_std, `"`~asPhobosStd~`" but expected "`~phobos_std~`" (as prints writeln())`);
+            assert(asPhobosExp == phobos_exp, `"`~asPhobosExp~`" but expected "`~phobos_exp~`" (as prints writefln())`);
 
             static string getLibcText(T val, bool expForm)
             {
@@ -241,18 +241,17 @@ if(__traits(isFloating, T))
 in(fracPart >= 0)
 in(outBuf.length == precisionAfterDot + 1 /* extra carry digit */, outBuf.length.to!string)
 {
-    writeln("fracPart before rounding=", fracPart);
+    writefln("fracPart before rounding=%f", fracPart);
 
-    const uint mult = 10 ^^ (precisionAfterDot + 1);
+    const ulong mult = 10 ^^ (precisionAfterDot + 1);
     writeln("mult ", mult);
 
     // Scale to integer
-    //TODO: use appropriate size of integer type?
-    auto scaled = fracPart * mult;
-    writeln("scaled ", scaled);
+    auto scaled = (0.5 / mult + fracPart) * mult;
+    writefln("scaled %f", scaled);
 
-    //~ const roundf = scaled + 5.0f;
-    //~ writeln("roundf=", roundf);
+    //~ scaled += 5;
+    //~ writefln("scaled with round addition=%f", scaled);
 
     auto asInteger = cast(ulong) scaled;
     writeln("asInteger ", asInteger);
@@ -309,7 +308,7 @@ in(outBuf.length == precisionAfterDot + 1 /* extra carry digit */, outBuf.length
         }
     }
 
-    assert(outBuf[0] == '0' || outBuf[0] == '1');
+    assert(outBuf[0] == '0' || outBuf[0] == '1', outBuf[0].to!string);
 
     return asInteger;
 }
