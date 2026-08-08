@@ -99,7 +99,7 @@ if(__traits(isFloating, T))
 
     static struct Ret
     {
-        private char[maxLen] buf = 'b'; //void;
+        private char[maxLen] buf = '*'; //void;
         const(char)[] slice;
         alias this = slice;
 
