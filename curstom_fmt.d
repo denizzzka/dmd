@@ -184,9 +184,7 @@ if(__traits(isFloating, T))
     size_t i;
     const fracAsInteger = round(fracPart, fracPrecision, addTrailingZeroes, i, carry, fracText);
 
-    writeln("fracPart before rounding=", fracPart);
     writeln("format=", format);
-    writeln("fracAsInteger=", fracAsInteger);
     writeln("exponent=", exponent);
     writeln("carry=", carry);
 
@@ -237,12 +235,20 @@ if(__traits(isFloating, T))
 in(fracPart >= 0)
 in(outBuf.length == precisionAfterDot + 1 /* extra carry digit */, outBuf.length.to!string)
 {
+    writeln("fracPart before rounding=", fracPart);
+
     const uint mult = 10 ^^ (precisionAfterDot + 1);
     writeln("mult ", mult);
 
     // Scale to integer
     //TODO: use appropriate size of integer type?
-    auto asInteger = cast(ulong)(fracPart * mult);
+    auto scaled = fracPart * mult;
+    writeln("scaled ", scaled);
+
+    //~ const roundf = scaled + 5.0f;
+    //~ writeln("roundf=", roundf);
+
+    auto asInteger = cast(ulong) scaled;
     writeln("asInteger ", asInteger);
 
     // Rounding
@@ -251,6 +257,8 @@ in(outBuf.length == precisionAfterDot + 1 /* extra carry digit */, outBuf.length
     {
         asInteger += 10;
         possibleCarry = true;
+
+        writeln("asInteger rounded, not divided=", asInteger);
     }
 
     asInteger /= 10;
