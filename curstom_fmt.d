@@ -176,10 +176,13 @@ if(__traits(isFloating, T))
     bool carry;
     const fracBufSize = fracPrecision + 1 /* extra carry digit - will be used as dot place */;
     const fracOffsetIdx = ret.buf.length - (fracBufSize + maxExpLen);
-    // after fractional:
-    size_t i = fracOffsetIdx + fracBufSize;
-    auto fracText = ret.buf[fracOffsetIdx .. i];
-    const fracAsInteger = round(fracPart, fracPrecision, carry, fracText);
+    auto fracText = ret.buf[fracOffsetIdx .. fracOffsetIdx + fracBufSize];
+
+    const libcCompat = (format == Format.StdLibc || format == Format.ExpLibc);
+    const bool addTrailingZeroes = (format == Format.Exp || libcCompat);
+
+    size_t i;
+    const fracAsInteger = round(fracPart, fracPrecision, addTrailingZeroes, i, carry, fracText);
 
     writeln("fracPart before rounding=", fracPart);
     writeln("format=", format);
@@ -193,47 +196,7 @@ if(__traits(isFloating, T))
         writeln("intDigitsLen=", intDigitsLen);
     }
 
-    const libcCompat = (format == Format.StdLibc || format == Format.ExpLibc);
-
     const dotIdx = fracOffsetIdx;
-
-    if(format == Format.Exp || libcCompat)
-    {
-        ret.buf[dotIdx] = '.';
-
-        if(libcCompat)
-        {
-            //FIXME:
-            // complete value with zeros to comply with glibc output
-            //~ const len = 1 + fracPrecision;
-            //~ freeBuf[i .. len] = '0';
-            //~ i = len;
-        }
-    }
-    else
-    {
-        //FIXME:
-        // Remove insignificant zeros
-        //~ if(i > 1)
-            //~ foreach_reverse(c; freeBuf[1 .. i])
-            //~ {
-                //~ // Zero digit found
-                //~ if(c == asciiNumStart)
-                    //~ i--;
-                //~ else
-                    //~ break;
-            //~ }
-
-        //~ // Decimal dot only remained? Removes it too
-        //~ if(i == 1)
-            //~ i = 0;
-        //~ else
-        {
-            // Finally, dot is need, adding
-            //~ assert(i > 1);
-            ret.buf[dotIdx] = '.';
-        }
-    }
 
     writeln("ret.buf=", ret.buf);
 
@@ -269,7 +232,7 @@ if(__traits(isFloating, T))
     return ret;
 }
 
-private auto round(T)(in T fracPart, in short precisionAfterDot, out bool carry, char[] outBuf)
+private auto round(T)(in T fracPart, in short precisionAfterDot, in bool addTrailingZeroes, out size_t len, out bool carry, char[] outBuf)
 if(__traits(isFloating, T))
 in(fracPart >= 0)
 in(outBuf.length == precisionAfterDot + 1 /* extra carry digit */, outBuf.length.to!string)
@@ -304,7 +267,10 @@ in(outBuf.length == precisionAfterDot + 1 /* extra carry digit */, outBuf.length
             c = asciiNumStart + digit;
 
             if(!trailingZeroesPassed && digit != 0)
+            {
                 trailingZeroesPassed = true;
+                len = addTrailingZeroes ? i+1 : outBuf.length;
+            }
 
             if(possibleCarry && trailingZeroesPassed)
             {
