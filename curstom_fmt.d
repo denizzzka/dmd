@@ -162,12 +162,23 @@ if(__traits(isFloating, T))
     writeln("+++========================");
     writeln("fracPart before rounding=", fracPart);
 
-    // Rounding
+    /// Precision after dot
     const short fracPrecision = 6;
-    fracPart = round(fracPart, fracPrecision);
+
+    // Rounding
+    assert(fracPart < 1);
+    bool carry;
+    const fracAsInteger = round(fracPart, fracPrecision, carry);
+
+    // Apply possible carry to an integer part
+    if(carry)
+    {
+        intPart += carry;
+        fracPart -= carry;
+    }
 
     writeln("format=", format);
-    writeln("fracPart=", fracPart);
+    writeln("fracAsInteger=", fracAsInteger);
     writeln("exponent=", exponent);
 
     // Making output:
@@ -273,8 +284,7 @@ if(__traits(isFloating, T))
     return ret;
 }
 
-/// Returns: Is it necessary to carry 1 to an integer part?
-private T round(T)(in T fracPart, in short precisionAfterDot)
+private auto round(T)(in T fracPart, in short precisionAfterDot, bool carry)
 if(__traits(isFloating, T))
 in(fracPart >= 0)
 {
@@ -294,42 +304,10 @@ in(fracPart >= 0)
 
     writeln("asInteger rounded=", asInteger);
 
-    T ret = (cast(T)asInteger) / (mult / 10);
-    writeln("rounded=", ret);
+    if(asInteger >= mult)
+        asInteger -= mult;
 
-    return ret;
-}
-
-/// Returns: Is it necessary to carry 1 to an integer part?
-private bool round_disabled(T)(ref T fracAsInteger, in ulong indent)
-if(__traits(isIntegral, T))
-{
-    //TODO: add assert check of fracAsInteger size here
-    //~ import core.stdc.math: log10;
-    //~ const size_t indent = log10(digits);
-
-    writeln("fracAsInteger before rounding=", fracAsInteger);
-
-    // Rounding
-    if(fracAsInteger % 10 > 5)
-        fracAsInteger += 10;
-
-    writeln("fracAsInteger rounded but wo carrying=", fracAsInteger);
-
-    if(fracAsInteger < indent)
-    {
-        writeln("not carry integer part");
-        fracAsInteger /= 10;
-
-        return false;
-    }
-    else
-    {
-        fracAsInteger -= indent;
-        fracAsInteger /= 100;
-
-        return true;
-    }
+    return asInteger;
 }
 
 private struct BufMethods
