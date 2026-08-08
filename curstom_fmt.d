@@ -93,8 +93,9 @@ if(__traits(isFloating, T))
         ? T.max_10_exp
         : -T.min_10_exp;
 
+    enum maxExpLen = ".0e+123".length;
     //TODO: decrease buffer size for expForm like -1.000000e-308
-    enum maxLen = maxExp + ".e+123".length;
+    enum maxLen = maxExp + maxExpLen;
 
     static struct Ret
     {
@@ -160,31 +161,30 @@ if(__traits(isFloating, T))
     assert(fracPart >= 0);
 
     writeln("+++========================");
-    writeln("fracPart before rounding=", fracPart);
+
+    // Making output:
+
+    /*
+      Unusual: output fractional part first because it is subject of
+      rounding simultaneously, and the size of the integer part and
+      exponent depend on this
+    */
 
     /// Precision after dot
-    const short fracPrecision = 6;
-
-    // Rounding
     assert(fracPart < 1);
+    const short fracPrecision = 6;
     bool carry;
-    char[8] FIXME_REMOVE;
-    const fracAsInteger = round(fracPart, fracPrecision, carry, FIXME_REMOVE);
+    const fracOffsetIdx = ret.buf.length - (fracPrecision+1 + maxExpLen);
+    auto fracText = ret.buf[fracOffsetIdx .. fracOffsetIdx + fracPrecision+1];
+    const fracAsInteger = round(fracPart, fracPrecision, carry, fracText);
 
-    // Apply possible carry to an integer part
-    if(carry)
-    {
-        writeln("Carry!");
-        intPart += carry;
-        fracPart -= carry;
-        exponent--;
-    }
-
+    writeln("fracPart before rounding=", fracPart);
     writeln("format=", format);
     writeln("fracAsInteger=", fracAsInteger);
     writeln("exponent=", exponent);
+    writeln("carry=", carry);
+    writeln("ret.buf=", ret.buf);
 
-    // Making output:
     if(intPart == 0)
         m.append('0');
     else
@@ -290,7 +290,7 @@ if(__traits(isFloating, T))
 private auto round(T)(in T fracPart, in short precisionAfterDot, out bool carry, char[] outBuf)
 if(__traits(isFloating, T))
 in(fracPart >= 0)
-in(outBuf.length == precisionAfterDot + 2)
+in(outBuf.length == precisionAfterDot + 1, outBuf.length.to!string)
 {
     const uint mult = 10 ^^ (precisionAfterDot + 1);
     writeln("mult ", mult);
@@ -312,22 +312,35 @@ in(outBuf.length == precisionAfterDot + 2)
 
     writeln("asInteger rounded=", asInteger);
 
-    // Carry detection combined with output(!)
+    // Carry detection combined with output
     {
+        bool trailingZeroesPassed;
+
         foreach_reverse(i, ref c; outBuf)
         {
             const ubyte digit = asInteger % 10;
             c = asciiNumStart + digit;
 
-            if(possibleCarry)
-            {
-                // Only numbers like 100.00 and 0.0010 can be result of digits carrying
-                carry = (i == 0)
-                    ? digit == 1
-                    : digit != 0;
+            if(!trailingZeroesPassed && digit != 0)
+                trailingZeroesPassed = true;
 
+            if(possibleCarry && trailingZeroesPassed)
+            {
                 if(!carry)
-                    possibleCarry = false;
+                {
+                    // Probably found most significant digit of the
+                    // number to which the carry was applied
+                    if(digit == 1)
+                        carry = true;
+                    else
+                        possibleCarry = false;
+                }
+                else
+                    if(digit != 0)
+                    {
+                        carry = false;
+                        possibleCarry = false;
+                    }
             }
 
             asInteger /= 10;
