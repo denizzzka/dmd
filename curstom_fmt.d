@@ -366,8 +366,8 @@ private short calcExp(T)(in T num, out T shifted)
 if(__traits(isFloating, T))
 in(num > 0)
 {
-    enum thresUpper = 10.0f;
-    enum thresLower = 1.0f;
+    enum thresUpper = 10;
+    enum thresLower = 1;
 
     shifted = num;
     short exponent;
