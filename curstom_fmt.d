@@ -173,8 +173,10 @@ if(__traits(isFloating, T))
     // Apply possible carry to an integer part
     if(carry)
     {
+        writeln("Carry!");
         intPart += carry;
         fracPart -= carry;
+        exponent--;
     }
 
     writeln("format=", format);
@@ -304,8 +306,12 @@ in(fracPart >= 0)
 
     writeln("asInteger rounded=", asInteger);
 
+    // FIXME: carry detection goes wrong
     if(asInteger >= mult)
+    {
+        carry = true;
         asInteger -= mult;
+    }
 
     return asInteger;
 }
