@@ -167,7 +167,7 @@ if(__traits(isFloating, T))
     /*
       Unusual: output fractional part first because it is subject of
       rounding simultaneously, and the size of the integer part and
-      exponent depend on this
+      exponent depend on it
     */
 
     /// Precision after dot
