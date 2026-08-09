@@ -190,8 +190,7 @@ void dtoa_puff(char[] buf, double val, in ushort precision)
         assert(buf.length >= ulong.max.log10l + 1);
     }
 
-    const char[] intPart = unsignedToTempString(d.bigits[bigitIndex], buf[0 .. precision]);
-    assert(false, intPart);
+    unsignedToTempString(d.bigits[bigitIndex], buf[0 .. precision]);
     bigitIndex++;
 
     uint count = precision;
