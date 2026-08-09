@@ -106,8 +106,7 @@ struct Decimal(size_t maxLen)
         {
             if(v >= bigitBound)
             {
-                //TODO: add check to cast
-                uint upper = cast(uint)(v / bigitBound);
+                uint upper = (v / bigitBound).checkedCast!uint;
                 if(upper != 0)
                 {
                     bigits[numBigits] = upper;
