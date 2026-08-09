@@ -70,14 +70,11 @@ struct Decimal(size_t maxLen)
 
         foreach(i; 0 .. numBigits)
         {
+            //TODO: why ulong?
             const ulong bigit = bigits[i + offset];
 
-            //TODO: use some sort of "checked cast"?
-            bigits[i] = cast(uint)(borrow + (bigit >> n));
-
-            const newBorrow = (bigit & mask) * bigitBound >> n;
-            assert(newBorrow <= borrow.max);
-            borrow = cast(uint) newBorrow;
+            bigits[i] = (borrow + (bigit >> n)).checkedCast!uint;
+            borrow = ((bigit & mask) * bigitBound >> n).checkedCast!uint;
         }
 
         if(borrow != 0)
