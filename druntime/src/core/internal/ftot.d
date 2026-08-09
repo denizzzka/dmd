@@ -24,6 +24,8 @@ unittest
     //~ assert(d.numBigits == 4);
 
     //~ const onRightSide = d.bigits.idup;
+    foreach(b; d.bigits)
+        printf(">>>Rbigit=%d\n", b);
 
     // Shift left to the initial state:
     d.shiftLeft(1);
