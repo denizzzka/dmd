@@ -338,7 +338,7 @@ private uint to_chars(scope char[] buf, ulong val)
     () @trusted
     {
         import core.stdc.string: memmove;
-        memmove(&buf[0], &digits[0], digits.length - 1);
+        memmove(&buf[0], &digits[0], digits.length);
     }();
 
     return cast(uint) digits.length;
