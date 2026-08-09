@@ -161,12 +161,13 @@ void dtoa_puff(char[] buf, double val, int precision)
     //~ char* ptr = std::to_chars(buf, buf + precision, d.bigits[bigit_index++]).ptr;
     char* ptr;
 
-    int count = cast(int)(ptr - buf); //FIXME
+    size_t count = 123; //FIXME: unsignedToTempString() result._len
     int exp = cast(int)((d.fractionStart - bigit_index) * 9 + count - 1); //FIXME
 
     for (; bigit_index < d.numBigits && count <= precision; ++bigit_index)
     {
-        char* block = buf + count;
+        //FIXME:
+        //~ char* block = buf + count;
         //FIXME:
         //~ ptr = std::to_chars(block, block + 9, d.bigits[bigit_index]).ptr;
         //~ int num_digits = ptr - block, num_zeros = 9 - num_digits;
