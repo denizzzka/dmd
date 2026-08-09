@@ -21,10 +21,10 @@ struct Decimal(size_t maxLen)
     // Each bigit is a 9-digit decimal number.
     uint[maxLen] bigits;
     //TODO: decrease type size?
-    size_t numBigits;
+    uint numBigits;
     enum bigitBound = 10 ^^ 9;
     /// Fraction part delimiter index
-    size_t fractionStart;
+    uint fractionStart;
 
     void shiftLeft(int n)
     {
@@ -181,8 +181,8 @@ void dtoa_puff(char[] buf, double val, int precision)
     const char[] intPart = unsignedToTempString(d.bigits[bigit_index], buf);
     bigit_index++;
 
-    size_t count = intPart.length; //FIXME: remove
-    int exp = cast(int)((d.fractionStart - bigit_index) * 9 + count - 1); //FIXME: add overflow check
+    auto count = intPart.length.checkedCast!uint;
+    int exp = (d.fractionStart - bigit_index) * 9 + count - 1;
 
     for (; bigit_index < d.numBigits && count <= precision; ++bigit_index)
     {
