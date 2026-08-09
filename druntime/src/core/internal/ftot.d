@@ -1,9 +1,11 @@
 /// Floating to text conversion
 module core.internal.ftot;
 
+@safe:
+
 unittest
 {
-    char[100] buf;
+    static char[100] buf = '|';
     dtoa_puff(buf, 123.456, 6);
 
     assert(false, buf);
@@ -12,7 +14,6 @@ unittest
 pure:
 nothrow:
 @nogc:
-@safe:
 
 private T checkedCast(T, V)(V val)
 if(__traits(isIntegral, T) && __traits(isUnsigned, T))
@@ -190,6 +191,7 @@ void dtoa_puff(char[] buf, double val, in ushort precision)
     }
 
     const char[] intPart = unsignedToTempString(d.bigits[bigitIndex], buf[0 .. precision]);
+    assert(false, intPart);
     bigitIndex++;
 
     uint count = precision;
