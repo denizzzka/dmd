@@ -154,14 +154,21 @@ struct Decimal(size_t maxLen)
 
 void dtoa_puff(char[] buf, double val, int precision)
 {
+    import core.internal.string: unsignedToTempString;
+
     auto d = Decimal!100(val);
     int bigit_index = d.bigits[0] > 0 ? 0 : 1;
 
-    //FIXME:replace by unsignedToTempString()
-    //~ char* ptr = std::to_chars(buf, buf + precision, d.bigits[bigit_index++]).ptr;
-    char* ptr;
+    debug
+    {
+        import core.stdc.math: log10;
+        assert(buf.length >= ulong.max.log10 + 1);
+    }
 
-    size_t count = 123; //FIXME: unsignedToTempString() result._len
+    const char[] intPart = unsignedToTempString(d.bigits[bigit_index], buf);
+    bigit_index++;
+
+    size_t count = intPart.length; //FIXME: remove
     int exp = cast(int)((d.fractionStart - bigit_index) * 9 + count - 1); //FIXME
 
     for (; bigit_index < d.numBigits && count <= precision; ++bigit_index)
@@ -239,4 +246,10 @@ void dtoa_puff(char[] buf, double val, int precision)
 
     //FIXME:
     //~ *std::to_chars(buf + count, buf + count + 4, exp).ptr = '\0';
+}
+
+unittest
+{
+    char[1000] buf;
+    dtoa_puff(buf, 123.456, 6);
 }
