@@ -4,9 +4,9 @@ module core.internal.ftot;
 pure:
 nothrow:
 @nogc:
-//~ @safe: FIXME
+@safe:
 
-T checkedCast(T, V)(V val)
+private T checkedCast(T, V)(V val)
 if(__traits(isIntegral, T) && __traits(isUnsigned, T))
 {
     assert(val <= T.max);
