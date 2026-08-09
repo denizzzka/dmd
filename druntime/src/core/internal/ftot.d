@@ -7,7 +7,7 @@ unittest
 {
     static char[100] buf = '|';
     static char[] res;
-    res = dtoa_puff(buf, 123456.789, 10);
+    res = dtoa_puff(buf, -123456.789, 10);
 
     assert(false, res);
 }
@@ -254,8 +254,13 @@ char[] dtoa_puff(return scope char[] buf, double val, in ushort precision)
     }
 
     const bool negative = val < 0;
-    //FIXME:
-    //~ memmove(buf + 2 + (negative ? 1 : 0), buf + 1, count - 1);
+
+    //TODO: replace by native D code:
+    () @trusted
+    {
+        import core.stdc.string: memmove;
+        memmove(&buf[2 + (negative ? 1 : 0)], &buf[1], count - 1);
+    }();
 
     int offset = 1;
     if (negative)
