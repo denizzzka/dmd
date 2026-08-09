@@ -165,12 +165,14 @@ struct Decimal(size_t maxLen)
     }
 }
 
-void dtoa_puff(char[] buf, double val, int precision)
+void dtoa_puff(char[] buf, double val, in ushort precision)
 {
     import core.internal.string: unsignedToTempString;
 
     auto d = Decimal!100(val);
-    int bigit_index = d.bigits[0] > 0 ? 0 : 1;
+
+    //TODO: I don't know what is this conditional does yet
+    uint bigitIndex = d.bigits[0] > 0 ? 0 : 1;
 
     debug
     {
@@ -178,25 +180,26 @@ void dtoa_puff(char[] buf, double val, int precision)
         assert(buf.length >= ulong.max.log10 + 1);
     }
 
-    const char[] intPart = unsignedToTempString(d.bigits[bigit_index], buf);
-    bigit_index++;
+    const char[] intPart = unsignedToTempString(d.bigits[bigitIndex], buf[0 .. precision]);
+    bigitIndex++;
 
-    auto count = intPart.length.checkedCast!uint;
-    int exp = (d.fractionStart - bigit_index) * 9 + count - 1;
+    uint count = precision;
+    int exp = (d.fractionStart - bigitIndex) * 9 + count - 1;
 
-    for (; bigit_index < d.numBigits && count <= precision; ++bigit_index)
+    for(; bigitIndex < d.numBigits && count <= precision; bigitIndex++)
     {
+        const nextBlockIdx = count + 9;
+        auto block = buf[count .. nextBlockIdx];
+        const char[] digits = unsignedToTempString(d.bigits[bigitIndex], block);
+
         //FIXME:
-        //~ char* block = buf + count;
-        //FIXME:
-        //~ ptr = std::to_chars(block, block + 9, d.bigits[bigit_index]).ptr;
-        //~ int num_digits = ptr - block, num_zeros = 9 - num_digits;
-        int num_digits; //FIXME: remove
-        if (num_digits < 9) {
-        //~ memmove(block + num_zeros, block, num_digits);
-        //~ memcpy(block, "00000000", num_zeros);
-        }
-        count += 9;
+        //~ if(digits.length < 9)
+        //~ {
+            //~ memmove(block + num_zeros, block, num_digits);
+            //~ memcpy(block, "00000000", num_zeros);
+        //~ }
+
+        count = nextBlockIdx;
     }
 
     bool has_nonzero()
@@ -205,7 +208,7 @@ void dtoa_puff(char[] buf, double val, int precision)
             if (buf[i] != '0')
                 return true;
 
-        for(int i = bigit_index + 1; i < d.numBigits; i++)
+        for(int i = bigitIndex + 1; i < d.numBigits; i++)
             if (d.bigits[i] != 0)
                 return true;
 
@@ -263,6 +266,8 @@ void dtoa_puff(char[] buf, double val, int precision)
 
 unittest
 {
-    char[1000] buf;
+    char[100] buf;
     dtoa_puff(buf, 123.456, 6);
+
+    assert(false, buf);
 }
