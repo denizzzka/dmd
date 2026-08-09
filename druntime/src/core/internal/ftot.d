@@ -344,7 +344,6 @@ char[] dtoa_puff(return scope char[] buf, double val, in ushort precision)
 }
 
 /// Same as C++ std::to_chars
-//TODO: remove
 private uint to_chars(T)(scope char[] buf, T val)
 if(__traits(isIntegral, T))
 {
@@ -361,6 +360,8 @@ if(__traits(isIntegral, T))
 
     () @trusted
     {
+        // It needs to be moved because (un)signedToTempString
+        // writes from the end of the buffer
         import core.stdc.string: memmove;
         memmove(&buf[0], &digits[0], digits.length);
     }();
