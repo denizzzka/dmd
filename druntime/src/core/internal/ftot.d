@@ -6,6 +6,13 @@ nothrow:
 @nogc:
 //~ @safe: FIXME
 
+T checkedCast(T, V)(V val)
+if(__traits(isIntegral, T) && __traits(isUnsigned, T))
+{
+    assert(val <= T.max);
+    return cast(T) val;
+}
+
 //TODO: implement floatingToTempString()
 
 /// A fixed-point decimal number.
@@ -58,9 +65,7 @@ struct Decimal(size_t maxLen)
             numBigits--;
             fractionStart--;
 
-            const newBorrow = ulong(bigits[0]) * bigitBound >> n;
-            assert(newBorrow <= borrow.max);
-            borrow = cast(uint) newBorrow;
+            borrow = (ulong(bigits[0]) * bigitBound >> n).checkedCast!uint;
         }
 
         foreach(i; 0 .. numBigits)
@@ -169,7 +174,7 @@ void dtoa_puff(char[] buf, double val, int precision)
     bigit_index++;
 
     size_t count = intPart.length; //FIXME: remove
-    int exp = cast(int)((d.fractionStart - bigit_index) * 9 + count - 1); //FIXME
+    int exp = cast(int)((d.fractionStart - bigit_index) * 9 + count - 1); //FIXME: add overflow check
 
     for (; bigit_index < d.numBigits && count <= precision; ++bigit_index)
     {
