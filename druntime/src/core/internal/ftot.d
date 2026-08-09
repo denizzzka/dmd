@@ -1,6 +1,14 @@
 /// Floating to text conversion
 module core.internal.ftot;
 
+unittest
+{
+    char[100] buf;
+    dtoa_puff(buf, 123.456, 6);
+
+    assert(false, buf);
+}
+
 pure:
 nothrow:
 @nogc:
@@ -176,8 +184,8 @@ void dtoa_puff(char[] buf, double val, in ushort precision)
 
     debug
     {
-        import core.stdc.math: log10;
-        assert(buf.length >= ulong.max.log10 + 1);
+        import core.stdc.math: log10l;
+        assert(buf.length >= ulong.max.log10l + 1);
     }
 
     const char[] intPart = unsignedToTempString(d.bigits[bigitIndex], buf[0 .. precision]);
@@ -262,12 +270,4 @@ void dtoa_puff(char[] buf, double val, in ushort precision)
 
     //FIXME:
     //~ *std::to_chars(buf + count, buf + count + 4, exp).ptr = '\0';
-}
-
-unittest
-{
-    char[100] buf;
-    dtoa_puff(buf, 123.456, 6);
-
-    assert(false, buf);
 }
