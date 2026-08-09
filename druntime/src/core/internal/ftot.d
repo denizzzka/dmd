@@ -8,8 +8,8 @@ unittest
     import core.stdc.stdio;
 
     double val = 123.456;
-    auto d = Decimal!6(val);
-    assert(d.numBigits == 2);
+    auto d = Decimal!16(val);
+    assert(d.numBigits == 7);
 
     const initial = d.bigits.idup;
 
@@ -146,7 +146,7 @@ struct Decimal(size_t maxLen)
         //TODO: replace libc call by core.internal.convert
         import core.stdc.math: frexp;
 
-        enum numBits = double.dig;
+        enum numBits = d.mant_dig;
         const e4l = frexp(d, &expTmp) * (1UL << numBits);
         long v = cast(long) e4l;
 
