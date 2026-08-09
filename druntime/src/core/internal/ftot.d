@@ -40,17 +40,18 @@ unittest
         printf(">>> bigit=%d\n", b);
 
     assert(initial[0 .. 2] == d.bigits[0 .. 2]);
-
-    assert(false);
 }
 
 unittest
 {
-    static char[100] buf = '|';
+    static char[100] buf = '|'; buf[$-1] = '\0'; //TODO: = void;
     static char[] res;
-    res = dtoa_puff(buf, -123456.789, 10);
+    res = dtoa_puff(buf, -123456.789101112, 20);
 
-    //~ assert(false, res);
+    import core.stdc.stdio;
+    printf("%s\n", buf.ptr);
+
+    assert(false, res);
 }
 
 //~ pure:
