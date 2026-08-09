@@ -48,7 +48,6 @@ unittest
     static char[] res;
     //~ res = dtoa_puff(buf, -1.23456789101112, 30);
 
-    //FIXME: right shift is broken, probably
     res = dtoa_puff(buf, -0.0000123456789, 10);
 
     import core.stdc.stdio;
@@ -141,7 +140,6 @@ struct Decimal(size_t maxLen)
     }
 
     // TODO: remove
-    //TODO: make const
     private int exp;
 
     this(double d)
@@ -158,6 +156,7 @@ struct Decimal(size_t maxLen)
 
         printf("prev exp=%d\n", exp);
 
+        //TODO: make exp const
         exp -= numBits;
 
         printf("numBits=%d integral part=%f ulong=%lld exp=%d value=%g\n", numBits, integralPart, v, exp, d);
@@ -334,7 +333,12 @@ char[] dtoa_puff(return scope char[] buf, double val, in ushort precision)
         buf[count] = '0';
 
     buf[count++] = 'e';
-    buf[count++] = (exp >= 0 ? '+' : '-');
+
+    if(exp >= 0)
+        buf[count] = '+';
+    else { /* '-' is output by the integer-to-text function */ }
+
+    count++;
 
     const expLen = to_chars(buf[count .. $], exp);
 
@@ -343,12 +347,18 @@ char[] dtoa_puff(return scope char[] buf, double val, in ushort precision)
 
 /// Same as C++ std::to_chars
 //TODO: remove
-private uint to_chars(scope char[] buf, ulong val)
+private uint to_chars(T)(scope char[] buf, T val)
+if(__traits(isIntegral, T))
 {
-    import core.internal.string: unsignedToTempString;
+    import core.internal.string;
 
     char[100] tmpBuf;
-    char[] digits = unsignedToTempString(val, tmpBuf);
+
+    static if(__traits(isUnsigned, T))
+        char[] digits = unsignedToTempString(val, tmpBuf);
+    else
+        char[] digits = signedToTempString(val, tmpBuf);
+
     assert(digits.length <= buf.length);
 
     () @trusted
