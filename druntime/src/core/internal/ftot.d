@@ -152,7 +152,7 @@ struct Decimal(size_t maxLen)
     }
 }
 
-void dtoa_puff(char* buf, double val, int precision)
+void dtoa_puff(char[] buf, double val, int precision)
 {
     auto d = Decimal!100(val);
     int bigit_index = d.bigits[0] > 0 ? 0 : 1;
