@@ -18,11 +18,12 @@ unittest
     d.shiftRight(2);
     d.shiftRight(5);
     d.shiftRight(8);
-    d.shiftRight(16);
+    d.shiftRight(8);
+    d.shiftRight(8);
 
     //~ assert(d.numBigits == 4);
 
-    const onRightSide = d.bigits.idup;
+    //~ const onRightSide = d.bigits.idup;
 
     // Shift left to the initial state:
     d.shiftLeft(1);
@@ -35,6 +36,8 @@ unittest
 
     foreach(b; d.bigits)
         printf(">>> bigit=%d\n", b);
+
+    assert(initial[0 .. 2] == d.bigits[0 .. 2]);
 
     assert(false);
 }
@@ -72,7 +75,8 @@ struct Decimal(size_t maxLen)
     /// Fraction part delimiter index
     int fractionStart;
 
-    void shiftLeft(in int n)
+    void shiftLeft(in uint n)
+    in(n <= 29)
     {
         const ubyte offset = bigits[0] >= (bigitBound >> n) ? 1 : 0;
         uint carry;
@@ -100,7 +104,8 @@ struct Decimal(size_t maxLen)
         }
     }
 
-    void shiftRight(in int n)
+    void shiftRight(in uint n)
+    in(n <= 9)
     {
         const uint mask = (1 << n) - 1;
         uint borrow;
