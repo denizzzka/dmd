@@ -46,7 +46,7 @@ unittest
 {
     static char[100] buf = '|'; buf[$-1] = '\0'; //TODO: = void;
     static char[] res;
-    res = dtoa_puff(buf, 0.0000123456789101112, 30);
+    res = dtoa_puff(buf, -0.0000123456789101112, 30);
 
     import core.stdc.stdio;
     printf("%s\n", buf.ptr);
@@ -316,9 +316,7 @@ char[] dtoa_puff(return scope char[] buf, double val, in ushort precision)
         buf[count] = '0';
 
     buf[count++] = 'e';
-
-    if (exp >= 0)
-        buf[count++] = '+';
+    buf[count++] = (exp >= 0 ? '+' : '-');
 
     const expLen = to_chars(buf[count .. $], exp);
 
