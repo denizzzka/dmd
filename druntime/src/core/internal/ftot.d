@@ -1,7 +1,43 @@
 /// Floating to text conversion
 module core.internal.ftot;
 
-@safe:
+//~ @safe:
+
+unittest
+{
+    import core.stdc.stdio;
+
+    double val = 123.456;
+    auto d = Decimal!6(val);
+    assert(d.numBigits == 2);
+
+    const initial = d.bigits.idup;
+
+    // Shift right to 32 bits:
+    d.shiftRight(1);
+    d.shiftRight(2);
+    d.shiftRight(5);
+    d.shiftRight(8);
+    d.shiftRight(16);
+
+    assert(d.numBigits == 4);
+
+    const onRightSide = d.bigits.idup;
+
+    // Shift left to the initial state:
+    //~ d.shiftLeft(1);
+    //~ d.shiftLeft(2);
+    //~ d.shiftLeft(5);
+    //~ d.shiftLeft(8);
+    //~ d.shiftLeft(16);
+
+    printf(">>> numBigits=%d\n", d.numBigits);
+
+    foreach(b; d.bigits)
+        printf(">>> bigit=%d\n", b);
+
+    assert(false);
+}
 
 unittest
 {
@@ -9,10 +45,10 @@ unittest
     static char[] res;
     res = dtoa_puff(buf, -123456.789, 10);
 
-    assert(false, res);
+    //~ assert(false, res);
 }
 
-pure:
+//~ pure:
 nothrow:
 @nogc:
 
@@ -29,7 +65,7 @@ if(__traits(isIntegral, T) && __traits(isUnsigned, T))
 struct Decimal(size_t maxLen)
 {
     // Each bigit is a 9-digit decimal number.
-    uint[maxLen] bigits;
+    uint[maxLen] bigits; //TODO: = void;
     //TODO: decrease type size?
     uint numBigits;
     enum bigitBound = 10 ^^ 9;
@@ -38,11 +74,12 @@ struct Decimal(size_t maxLen)
 
     void shiftLeft(int n)
     {
-        const int offset = bigits[0] >= (bigitBound >> n) ? 1 : 0;
+        const ubyte offset = bigits[0] >= (bigitBound >> n) ? 1 : 0;
         uint carry;
 
-        foreach_reverse(i, bigit; bigits)
+        foreach_reverse(i; 0 .. numBigits)
         {
+            ulong bigit = bigits[i];
             bigit = (bigit << n) + carry;
 
             if(bigit < bigitBound)
@@ -50,10 +87,10 @@ struct Decimal(size_t maxLen)
             else
             {
                 bigit = bigit % bigitBound;
-                carry = bigit / bigitBound;
+                carry = (bigit / bigitBound).checkedCast!uint;
             }
 
-            bigits[i + offset] = bigit;
+            bigits[i + offset] = bigit.checkedCast!uint;
         }
 
         if(offset != 0)
@@ -80,7 +117,6 @@ struct Decimal(size_t maxLen)
 
         foreach(i; 0 .. numBigits)
         {
-            //TODO: why ulong?
             const ulong bigit = bigits[i + offset];
 
             bigits[i] = (borrow + (bigit >> n)).checkedCast!uint;
