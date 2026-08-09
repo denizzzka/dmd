@@ -21,7 +21,7 @@ struct Decimal(size_t maxLen = 100)
 
     void shiftLeft(int n)
     {
-        const int offset = *bigits >= (bigitBound >> n) ? 1 : 0;
+        const int offset = bigits[0] >= (bigitBound >> n) ? 1 : 0;
         uint carry;
 
         foreach_reverse(i, bigit; bigits)
@@ -42,7 +42,7 @@ struct Decimal(size_t maxLen = 100)
         if(offset != 0)
         {
             bigits[0] = carry;
-            num_bigits++;
+            numBigits++;
         }
     }
 
@@ -57,15 +57,22 @@ struct Decimal(size_t maxLen = 100)
             offset = 1;
             numBigits--;
             fractionStart--;
-            borrow = ulong(bigits[0]) * bigitBound >> n;
+
+            const newBorrow = ulong(bigits[0]) * bigitBound >> n;
+            assert(newBorrow <= borrow.max);
+            borrow = cast(uint) newBorrow;
         }
 
-        foreach(i; 0 .. num_bigits)
+        foreach(i; 0 .. numBigits)
         {
-            ulong bigit = bigits[i + offset];
-            const uint newBorrow = (bigit & mask) * bigitBound >> n;
-            bigits[i] = borrow + (bigit >> n);
-            borrow = newBorrow;
+            const ulong bigit = bigits[i + offset];
+
+            //TODO: use some sort of "checked cast"?
+            bigits[i] = cast(uint)(borrow + (bigit >> n));
+
+            const newBorrow = (bigit & mask) * bigitBound >> n;
+            assert(newBorrow <= borrow.max);
+            borrow = cast(uint) newBorrow;
         }
 
         if(borrow != 0)
@@ -80,16 +87,22 @@ struct Decimal(size_t maxLen = 100)
         int exp;
         //TODO: remove?
         enum numBits = double.dig;
-        long v = cast(long)(frexp(d, &exp) * (1UL << num_bits));
+        //FIXME:
+        //~ long v = cast(long)(frexp(d, &exp) * (1UL << num_bits));
+        long v;
 
-        if(v < 0) v = -v;
-        exp -= num_bits;
+        if(v < 0)
+            v = -v;
+
+        //TODO: move to exp init
+        exp -= numBits;
 
         if(exp >= 0)
         {
             if(v >= bigitBound)
             {
-                uint upper = v / bigitBound;
+                //TODO: add check to cast
+                uint upper = cast(uint)(v / bigitBound);
                 if(upper != 0)
                 {
                     bigits[numBigits] = upper;
@@ -97,8 +110,8 @@ struct Decimal(size_t maxLen = 100)
                 }
             }
 
-            bigits[numBigits] = v % bigit_bound;
-            num_bigits++;
+            bigits[numBigits] = cast(uint)(v % bigitBound);
+            numBigits++;
 
             enum bits_per_iteration = 29; // 2^^29 fits in one bigit
             int i = 0;
@@ -108,32 +121,33 @@ struct Decimal(size_t maxLen = 100)
             if(i != exp)
                 shiftLeft(exp - i);
 
-            fractionStart = num_bigits;
+            fractionStart = numBigits;
         }
         else
         {
             fractionStart = 1;
 
-            if(v >= bigit_bound)
+            if(v >= bigitBound)
             {
-                const uint upper = v / bigit_bound;
+                const uint upper = cast(uint)(v / bigitBound);
                 if(upper != 0)
                 {
-                    bigits[num_bigits] = upper;
-                    num_bigits++;
-                    fraction_start++;
+                    bigits[numBigits] = upper;
+                    numBigits++;
+                    fractionStart++;
                 }
             }
 
-            bigits[num_bigits] = v % bigit_bound;
-            num_bigits++;
+            bigits[numBigits] = cast(uint)(v % bigitBound);
+            numBigits++;
 
             enum bits_per_iteration = 9; // 10^^9 can only be shifted left 9 bits
             int i = 0;
             for (; i - bits_per_iteration >= exp; i -= bits_per_iteration)
                 shiftRight(bits_per_iteration);
 
-            if (i != exp) shift_right(i - exp);
+            if (i != exp)
+                shiftRight(i - exp);
         }
     }
 }
@@ -144,7 +158,8 @@ void dtoa_puff(char* buf, double val, int precision)
     int bigit_index = d.bigits[0] > 0 ? 0 : 1;
 
     //FIXME:replace by unsignedToTempString()
-    char* ptr = std::to_chars(buf, buf + precision, d.bigits[bigit_index++]).ptr;
+    //~ char* ptr = std::to_chars(buf, buf + precision, d.bigits[bigit_index++]).ptr;
+    char* ptr;
 
     int count = ptr - buf;
     int exp = (d.fraction_start - bigit_index) * 9 + count - 1;
@@ -152,7 +167,8 @@ void dtoa_puff(char* buf, double val, int precision)
     for (; bigit_index < d.num_bigits && count <= precision; ++bigit_index)
     {
         char* block = buf + count;
-        ptr = std::to_chars(block, block + 9, d.bigits[bigit_index]).ptr;
+        //FIXME:
+        //~ ptr = std::to_chars(block, block + 9, d.bigits[bigit_index]).ptr;
         int num_digits = ptr - block, num_zeros = 9 - num_digits;
         if (num_digits < 9) {
         memmove(block + num_zeros, block, num_digits);
@@ -218,5 +234,6 @@ void dtoa_puff(char* buf, double val, int precision)
     if (exp >= 0)
         buf[count++] = '+';
 
-    *std::to_chars(buf + count, buf + count + 4, exp).ptr = '\0';
+    //FIXME:
+    //~ *std::to_chars(buf + count, buf + count + 4, exp).ptr = '\0';
 }
