@@ -114,7 +114,7 @@ struct Decimal(size_t maxLen)
                 }
             }
 
-            bigits[numBigits] = cast(uint)(v % bigitBound);
+            bigits[numBigits] = (v % bigitBound).checkedCast!uint;
             numBigits++;
 
             enum bits_per_iteration = 29; // 2^^29 fits in one bigit
