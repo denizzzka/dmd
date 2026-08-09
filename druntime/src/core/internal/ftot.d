@@ -1,12 +1,12 @@
 /// Floating to text conversion
 module core.internal.ftot;
 
+import core.stdc.stdio;
+
 //~ @safe:
 
 unittest
 {
-    import core.stdc.stdio;
-
     double val = 123.456;
     auto d = Decimal!16(val);
     assert(d.numBigits == 7);
@@ -46,10 +46,10 @@ unittest
 {
     static char[100] buf = '|'; buf[$-1] = '\0'; //TODO: = void;
     static char[] res;
-    res = dtoa_puff(buf, -1.23456789101112, 30);
+    //~ res = dtoa_puff(buf, -1.23456789101112, 30);
 
     //FIXME: right shift is broken, probably
-    //~ res = dtoa_puff(buf, -0.0000123456789101112, 30);
+    res = dtoa_puff(buf, -0.0000123456789, 10);
 
     import core.stdc.stdio;
     printf("%s\n", buf.ptr);
@@ -78,7 +78,6 @@ struct Decimal(size_t maxLen)
     //TODO: decrease type size?
     uint numBigits;
     enum bigitBound = 10 ^^ 9;
-    /// Fraction part delimiter index
     int fractionStart;
 
     void shiftLeft(in uint n)
@@ -142,7 +141,8 @@ struct Decimal(size_t maxLen)
     }
 
     // TODO: remove
-    private int expTmp;
+    //TODO: make const
+    private int exp;
 
     this(double d)
     {
@@ -150,13 +150,17 @@ struct Decimal(size_t maxLen)
         import core.stdc.math: frexp;
 
         enum numBits = d.mant_dig;
-        const e4l = frexp(d, &expTmp) * (1UL << numBits);
-        long v = cast(long) e4l;
+        const integralPart = frexp(d, &exp) * (1UL << numBits);
+        long v = cast(long) integralPart;
 
         if(v < 0)
             v = -v;
 
-        const int exp = expTmp - numBits;
+        printf("prev exp=%d\n", exp);
+
+        exp -= numBits;
+
+        printf("numBits=%d integral part=%f ulong=%lld exp=%d value=%g\n", numBits, integralPart, v, exp, d);
 
         if(exp >= 0)
         {
