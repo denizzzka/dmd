@@ -92,7 +92,6 @@ struct Decimal(size_t maxLen)
         //TODO: replace libc call by core.internal.convert
         import core.stdc.math: frexp;
 
-        //TODO: remove?
         enum numBits = double.dig;
         const e4l = frexp(d, &expTmp) * (1UL << numBits);
         long v = cast(long) e4l;
