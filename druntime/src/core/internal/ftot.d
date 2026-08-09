@@ -179,8 +179,6 @@ struct Decimal(size_t maxLen)
 
 char[] dtoa_puff(return scope char[] buf, double val, in ushort precision)
 {
-    import core.internal.string: unsignedToTempString;
-
     auto d = Decimal!100(val);
 
     //TODO: I don't know what is this conditional does yet
@@ -192,7 +190,7 @@ char[] dtoa_puff(return scope char[] buf, double val, in ushort precision)
         assert(buf.length >= ulong.max.log10l + 1);
     }
 
-    unsignedToTempString(d.bigits[bigitIndex], buf[0 .. precision]);
+    to_chars(buf[0 .. precision], d.bigits[bigitIndex]);
     bigitIndex++;
 
     uint count = precision;
@@ -202,9 +200,8 @@ char[] dtoa_puff(return scope char[] buf, double val, in ushort precision)
     {
         const nextBlockIdx = count + 9;
         auto block = buf[count .. nextBlockIdx];
-        const char[] digits = unsignedToTempString(d.bigits[bigitIndex], block);
 
-        const digLen = digits.length;
+        const digLen = to_chars(block, d.bigits[bigitIndex]);
         const zLen = 9 - digLen;
         assert(zLen >= 0);
 
@@ -280,7 +277,26 @@ char[] dtoa_puff(return scope char[] buf, double val, in ushort precision)
     if (exp >= 0)
         buf[count++] = '+';
 
-    const expTxt = unsignedToTempString(exp, buf[count .. count + 4]);
+    const expLen = to_chars(buf[count .. count + 4], exp);
 
-    return buf[0 .. count + expTxt.length];
+    return buf[0 .. count + expLen];
+}
+
+/// Same as C++ std::to_chars
+//TODO: remove
+private size_t to_chars(scope char[] buf, ulong val)
+{
+    import core.internal.string: unsignedToTempString;
+
+    char[100] tmpBuf;
+    char[] digits = unsignedToTempString(val, tmpBuf);
+    assert(digits.length <= buf.length);
+
+    () @trusted
+    {
+        import core.stdc.string: memmove;
+        memmove(&buf[0], &digits[0], digits.length - 1);
+    }();
+
+    return digits.length;
 }
