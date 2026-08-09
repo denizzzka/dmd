@@ -335,10 +335,8 @@ char[] dtoa_puff(return scope char[] buf, double val, in ushort precision)
     buf[count++] = 'e';
 
     if(exp >= 0)
-        buf[count] = '+';
+        buf[count++] = '+';
     else { /* '-' is output by the integer-to-text function */ }
-
-    count++;
 
     const expLen = to_chars(buf[count .. $], exp);
 
