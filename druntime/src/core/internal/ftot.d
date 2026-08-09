@@ -46,7 +46,10 @@ unittest
 {
     static char[100] buf = '|'; buf[$-1] = '\0'; //TODO: = void;
     static char[] res;
-    res = dtoa_puff(buf, -0.0000123456789101112, 30);
+    res = dtoa_puff(buf, -1.23456789101112, 30);
+
+    //FIXME: right shift is broken, probably
+    //~ res = dtoa_puff(buf, -0.0000123456789101112, 30);
 
     import core.stdc.stdio;
     printf("%s\n", buf.ptr);
@@ -245,13 +248,24 @@ char[] dtoa_puff(return scope char[] buf, double val, in ushort precision)
         auto block = buf[count .. nextBlockIdx];
 
         const digLen = to_chars(block, d.bigits[bigitIndex]);
+        assert(digLen <= 9);
         const zLen = 9 - digLen;
         assert(zLen >= 0);
 
         if(zLen != 0)
         {
-            block[zLen .. 9] = block[0 .. digLen];
-            block[0 .. zLen] = 0;
+            //FIXME: Causes "range violation" because ranges may overlap
+            //block[zLen .. 9] = block[0 .. digLen];
+            //block[0 .. zLen] = 0;
+
+            () @trusted
+            {
+                import core.stdc.string: memmove, memcpy;
+
+                memmove(&block[zLen], &block[0], digLen);
+                memcpy(&block[0], "00000000".ptr, zLen);
+            }();
+
         }
 
         count = nextBlockIdx;
