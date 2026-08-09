@@ -204,12 +204,15 @@ char[] dtoa_puff(return scope char[] buf, double val, in ushort precision)
         auto block = buf[count .. nextBlockIdx];
         const char[] digits = unsignedToTempString(d.bigits[bigitIndex], block);
 
-        //FIXME:
-        //~ if(digits.length < 9)
-        //~ {
-            //~ memmove(block + num_zeros, block, num_digits);
-            //~ memcpy(block, "00000000", num_zeros);
-        //~ }
+        const digLen = digits.length;
+        const zLen = 9 - digLen;
+        assert(zLen >= 0);
+
+        if(zLen != 0)
+        {
+            block[zLen .. 9] = block[0 .. digLen];
+            block[0 .. zLen] = 0;
+        }
 
         count = nextBlockIdx;
     }
