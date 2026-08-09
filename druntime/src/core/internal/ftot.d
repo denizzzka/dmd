@@ -84,14 +84,20 @@ struct Decimal(size_t maxLen)
         }
     }
 
+    // TODO: remove
+    private int expTmp;
+
     this(double d)
     {
+        //TODO: replace libc call by core.internal.convert
+        import core.stdc.math: frexp;
+
         int exp;
         //TODO: remove?
         enum numBits = double.dig;
-        //FIXME:
-        //~ long v = cast(long)(frexp(d, &exp) * (1UL << num_bits));
-        long v;
+        const e4l = frexp(d, &expTmp) * (1UL << numBits);
+        exp = expTmp;
+        long v = cast(long) e4l;
 
         if(v < 0)
             v = -v;
