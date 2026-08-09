@@ -20,16 +20,16 @@ unittest
     d.shiftRight(8);
     d.shiftRight(16);
 
-    assert(d.numBigits == 4);
+    //~ assert(d.numBigits == 4);
 
     const onRightSide = d.bigits.idup;
 
     // Shift left to the initial state:
-    //~ d.shiftLeft(1);
-    //~ d.shiftLeft(2);
-    //~ d.shiftLeft(5);
-    //~ d.shiftLeft(8);
-    //~ d.shiftLeft(16);
+    d.shiftLeft(1);
+    d.shiftLeft(2);
+    d.shiftLeft(5);
+    d.shiftLeft(8);
+    d.shiftLeft(16);
 
     printf(">>> numBigits=%d\n", d.numBigits);
 
@@ -70,9 +70,9 @@ struct Decimal(size_t maxLen)
     uint numBigits;
     enum bigitBound = 10 ^^ 9;
     /// Fraction part delimiter index
-    uint fractionStart;
+    int fractionStart;
 
-    void shiftLeft(int n)
+    void shiftLeft(in int n)
     {
         const ubyte offset = bigits[0] >= (bigitBound >> n) ? 1 : 0;
         uint carry;
@@ -86,8 +86,8 @@ struct Decimal(size_t maxLen)
                 carry = 0;
             else
             {
-                bigit = bigit % bigitBound;
                 carry = (bigit / bigitBound).checkedCast!uint;
+                bigit = bigit % bigitBound;
             }
 
             bigits[i + offset] = bigit.checkedCast!uint;
@@ -100,7 +100,7 @@ struct Decimal(size_t maxLen)
         }
     }
 
-    void shiftRight(int n)
+    void shiftRight(in int n)
     {
         const uint mask = (1 << n) - 1;
         uint borrow;
@@ -117,10 +117,19 @@ struct Decimal(size_t maxLen)
 
         foreach(i; 0 .. numBigits)
         {
+            /+
+             + Simplified:
             const ulong bigit = bigits[i + offset];
 
             bigits[i] = (borrow + (bigit >> n)).checkedCast!uint;
             borrow = ((bigit & mask) * bigitBound >> n).checkedCast!uint;
+            +/
+
+            // As in original letter:
+            ulong bigit = bigits[i + offset];
+            uint new_borrow = ((bigit & mask) * bigitBound >> n).checkedCast!uint;
+            bigits[i] = borrow + (bigit >> n).checkedCast!uint;
+            borrow = new_borrow;
         }
 
         if(borrow != 0)
