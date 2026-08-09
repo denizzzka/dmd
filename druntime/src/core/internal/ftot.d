@@ -122,19 +122,10 @@ struct Decimal(size_t maxLen)
 
         foreach(i; 0 .. numBigits)
         {
-            /+
-             + Simplified:
             const ulong bigit = bigits[i + offset];
 
-            bigits[i] = (borrow + (bigit >> n)).checkedCast!uint;
-            borrow = ((bigit & mask) * bigitBound >> n).checkedCast!uint;
-            +/
-
-            // As in original letter:
-            ulong bigit = bigits[i + offset];
-            uint new_borrow = ((bigit & mask) * bigitBound >> n).checkedCast!uint;
             bigits[i] = borrow + (bigit >> n).checkedCast!uint;
-            borrow = new_borrow;
+            borrow = ((bigit & mask) * bigitBound >> n).checkedCast!uint;
         }
 
         if(borrow != 0)
