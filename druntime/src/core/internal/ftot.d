@@ -106,7 +106,7 @@ struct Decimal(size_t maxLen)
         {
             if(v >= bigitBound)
             {
-                uint upper = (v / bigitBound).checkedCast!uint;
+                const uint upper = (v / bigitBound).checkedCast!uint;
                 if(upper != 0)
                 {
                     bigits[numBigits] = upper;
@@ -138,7 +138,7 @@ struct Decimal(size_t maxLen)
 
             if(v >= bigitBound)
             {
-                const uint upper = cast(uint)(v / bigitBound);
+                const uint upper = (v / bigitBound).checkedCast!uint;
                 if(upper != 0)
                 {
                     bigits[numBigits] = upper;
@@ -147,7 +147,7 @@ struct Decimal(size_t maxLen)
                 }
             }
 
-            bigits[numBigits] = cast(uint)(v % bigitBound);
+            bigits[numBigits] = (v % bigitBound).checkedCast!uint;
             numBigits++;
 
             enum bits_per_iteration = 9; // 10^^9 can only be shifted left 9 bits
