@@ -190,10 +190,9 @@ char[] dtoa_puff(return scope char[] buf, double val, in ushort precision)
         assert(buf.length >= ulong.max.log10l + 1);
     }
 
-    to_chars(buf[0 .. precision], d.bigits[bigitIndex]);
+    uint count = to_chars(buf[0 .. precision], d.bigits[bigitIndex]);
     bigitIndex++;
 
-    uint count = precision;
     int exp = (d.fractionStart - bigitIndex) * 9 + count - 1;
 
     for(; bigitIndex < d.numBigits && count <= precision; bigitIndex++)
@@ -284,7 +283,7 @@ char[] dtoa_puff(return scope char[] buf, double val, in ushort precision)
 
 /// Same as C++ std::to_chars
 //TODO: remove
-private size_t to_chars(scope char[] buf, ulong val)
+private uint to_chars(scope char[] buf, ulong val)
 {
     import core.internal.string: unsignedToTempString;
 
@@ -298,5 +297,5 @@ private size_t to_chars(scope char[] buf, ulong val)
         memmove(&buf[0], &digits[0], digits.length - 1);
     }();
 
-    return digits.length;
+    return cast(uint) digits.length;
 }
