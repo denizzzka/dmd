@@ -9,7 +9,7 @@ nothrow:
 //TODO: implement floatingToTempString()
 
 /// A fixed-point decimal number.
-struct Decimal(size_t maxLen = 100)
+struct Decimal(size_t maxLen)
 {
     // Each bigit is a 9-digit decimal number.
     uint[maxLen] bigits;
@@ -154,14 +154,14 @@ struct Decimal(size_t maxLen = 100)
 
 void dtoa_puff(char* buf, double val, int precision)
 {
-    auto d = Decimal(val);
+    auto d = Decimal!100(val);
     int bigit_index = d.bigits[0] > 0 ? 0 : 1;
 
     //FIXME:replace by unsignedToTempString()
     //~ char* ptr = std::to_chars(buf, buf + precision, d.bigits[bigit_index++]).ptr;
     char* ptr;
 
-    int count = ptr - buf;
+    int count = cast(int)(ptr - buf); //FIXME
     int exp = (d.fraction_start - bigit_index) * 9 + count - 1;
 
     for (; bigit_index < d.num_bigits && count <= precision; ++bigit_index)
@@ -169,10 +169,11 @@ void dtoa_puff(char* buf, double val, int precision)
         char* block = buf + count;
         //FIXME:
         //~ ptr = std::to_chars(block, block + 9, d.bigits[bigit_index]).ptr;
-        int num_digits = ptr - block, num_zeros = 9 - num_digits;
+        //~ int num_digits = ptr - block, num_zeros = 9 - num_digits;
+        int num_digits; //FIXME: remove
         if (num_digits < 9) {
-        memmove(block + num_zeros, block, num_digits);
-        memcpy(block, "00000000", num_zeros);
+        //~ memmove(block + num_zeros, block, num_digits);
+        //~ memcpy(block, "00000000", num_zeros);
         }
         count += 9;
     }
