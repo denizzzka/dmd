@@ -4,7 +4,7 @@ module core.internal.ftot;
 pure:
 nothrow:
 @nogc:
-@safe:
+//~ @safe: FIXME
 
 //TODO: implement floatingToTempString()
 
@@ -162,9 +162,9 @@ void dtoa_puff(char* buf, double val, int precision)
     char* ptr;
 
     int count = cast(int)(ptr - buf); //FIXME
-    int exp = (d.fraction_start - bigit_index) * 9 + count - 1;
+    int exp = cast(int)((d.fractionStart - bigit_index) * 9 + count - 1); //FIXME
 
-    for (; bigit_index < d.num_bigits && count <= precision; ++bigit_index)
+    for (; bigit_index < d.numBigits && count <= precision; ++bigit_index)
     {
         char* block = buf + count;
         //FIXME:
@@ -184,7 +184,7 @@ void dtoa_puff(char* buf, double val, int precision)
             if (buf[i] != '0')
                 return true;
 
-        for(int i = bigit_index + 1; i < d.num_bigits; i++)
+        for(int i = bigit_index + 1; i < d.numBigits; i++)
             if (d.bigits[i] != 0)
                 return true;
 
@@ -214,8 +214,9 @@ void dtoa_puff(char* buf, double val, int precision)
         count = precision;
     }
 
-    bool negative = signbit(val);
-    memmove(buf + 2 + (negative ? 1 : 0), buf + 1, count - 1);
+    const bool negative = val < 0;
+    //FIXME:
+    //~ memmove(buf + 2 + (negative ? 1 : 0), buf + 1, count - 1);
 
     int offset = 1;
     if (negative)
