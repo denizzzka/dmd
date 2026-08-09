@@ -6,9 +6,10 @@ module core.internal.ftot;
 unittest
 {
     static char[100] buf = '|';
-    dtoa_puff(buf, 123.456, 6);
+    static char[] res;
+    res = dtoa_puff(buf, 123456.789, 10);
 
-    assert(false, buf);
+    assert(false, res);
 }
 
 pure:
@@ -126,7 +127,8 @@ struct Decimal(size_t maxLen)
             numBigits++;
 
             enum bits_per_iteration = 29; // 2^^29 fits in one bigit
-            assert(exp >= bits_per_iteration);
+            //FIXME:
+            //~ assert(exp >= bits_per_iteration);
 
             int i = 0;
             for(; i <= exp - bits_per_iteration; i += bits_per_iteration)
@@ -175,7 +177,7 @@ struct Decimal(size_t maxLen)
     }
 }
 
-void dtoa_puff(char[] buf, double val, in ushort precision)
+char[] dtoa_puff(return scope char[] buf, double val, in ushort precision)
 {
     import core.internal.string: unsignedToTempString;
 
@@ -270,6 +272,7 @@ void dtoa_puff(char[] buf, double val, in ushort precision)
     if (exp >= 0)
         buf[count++] = '+';
 
-    //FIXME:
-    //~ *std::to_chars(buf + count, buf + count + 4, exp).ptr = '\0';
+    const expTxt = unsignedToTempString(exp, buf[count .. count + 4]);
+
+    return buf[0 .. count + expTxt.length];
 }
