@@ -118,12 +118,17 @@ struct Decimal(size_t maxLen)
             numBigits++;
 
             enum bits_per_iteration = 29; // 2^^29 fits in one bigit
+            assert(exp >= bits_per_iteration);
+
             int i = 0;
             for(; i <= exp - bits_per_iteration; i += bits_per_iteration)
                 shiftLeft(bits_per_iteration);
 
             if(i != exp)
+            {
+                assert(exp > i);
                 shiftLeft(exp - i);
+            }
 
             fractionStart = numBigits;
         }
