@@ -143,11 +143,12 @@ void dtoa_puff(char* buf, double val, int precision)
     auto d = Decimal(val);
     int bigit_index = d.bigits[0] > 0 ? 0 : 1;
 
-    //replace by unsignedToTempString()
+    //FIXME:replace by unsignedToTempString()
     char* ptr = std::to_chars(buf, buf + precision, d.bigits[bigit_index++]).ptr;
 
     int count = ptr - buf;
     int exp = (d.fraction_start - bigit_index) * 9 + count - 1;
+
     for (; bigit_index < d.num_bigits && count <= precision; ++bigit_index)
     {
         char* block = buf + count;
@@ -160,41 +161,62 @@ void dtoa_puff(char* buf, double val, int precision)
         count += 9;
     }
 
-auto has_nonzero = [=]() {
-for (int i = precision + 1; i < count; ++i) {
-if (buf[i] != '0') return true;
-}
-for (int i = bigit_index + 1; i < d.num_bigits; ++i) {
-if (d.bigits[i] != 0) return true;
-}
-return false;
-};
-if (count > precision) {
-char digit = buf[precision];
-if (digit > '5' || digit == '5' &&
-((buf[precision - 1] % 2) == 1 || has_nonzero())) {
-int i = precision - 1;
-for (; i >= 0 && buf[i] == '9'; --i) buf[i] = '0';
-if (i >= 0) {
-++buf[i];
-} else {
-buf[0] = '1';
-++exp;
-}
-}
-count = precision;
-}
-bool negative = signbit(val);
-memmove(buf + 2 + (negative ? 1 : 0), buf + 1, count - 1);
-int offset = 1;
-if (negative) {
-buf[1] = buf[0];
-buf[0] = '-';
-++offset;
-}
-buf[offset] = '.';
-for (count += offset; count <= precision; ++count) buf[count] = '0';
-buf[count++] = 'e';
-if (exp >= 0) buf[count++] = '+';
-*std::to_chars(buf + count, buf + count + 4, exp).ptr = '\0';
+    bool has_nonzero()
+    {
+        for(int i = precision + 1; i < count; i++)
+            if (buf[i] != '0')
+                return true;
+
+        for(int i = bigit_index + 1; i < d.num_bigits; i++)
+            if (d.bigits[i] != 0)
+                return true;
+
+        return false;
+    };
+
+    if (count > precision)
+    {
+        const digit = buf[precision];
+
+        if (digit > '5' || digit == '5' && ((buf[precision - 1] % 2) == 1 || has_nonzero()))
+        {
+            // TODO: foreach_reverse
+            int i = precision - 1;
+            for (; i >= 0 && buf[i] == '9'; --i)
+                buf[i] = '0';
+
+            if (i >= 0)
+                ++buf[i];
+            else
+            {
+                buf[0] = '1';
+                exp++;
+            }
+        }
+
+        count = precision;
+    }
+
+    bool negative = signbit(val);
+    memmove(buf + 2 + (negative ? 1 : 0), buf + 1, count - 1);
+
+    int offset = 1;
+    if (negative)
+    {
+        buf[1] = buf[0];
+        buf[0] = '-';
+        ++offset;
+    }
+
+    buf[offset] = '.';
+
+    for (count += offset; count <= precision; ++count)
+        buf[count] = '0';
+
+    buf[count++] = 'e';
+
+    if (exp >= 0)
+        buf[count++] = '+';
+
+    *std::to_chars(buf + count, buf + count + 4, exp).ptr = '\0';
 }
