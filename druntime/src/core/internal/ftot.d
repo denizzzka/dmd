@@ -170,6 +170,25 @@ if(is(T == ushort) || is(T == uint))
         }
     }
 
+    void insertLeft(T val)
+    in(val < bigitBound)
+    {
+        bigits[numBigits] = val % bigitBound;
+        numBigits++;
+
+        enum bits_per_iteration = maxLeftShift;
+
+        int i = 0;
+        for(; i <= exp - bits_per_iteration; i += bits_per_iteration)
+            shiftLeft(bits_per_iteration);
+
+        if(i != exp)
+        {
+            assert(exp > i);
+            shiftLeft(exp - i);
+        }
+    }
+
     // TODO: remove
     private int exp;
 
@@ -203,21 +222,7 @@ if(is(T == ushort) || is(T == uint))
 
         if(exp >= 0)
         {
-            bigits[numBigits] = assumeSafeCastT(v % bigitBound);
-            numBigits++;
-
-            enum bits_per_iteration = maxLeftShift;
-
-            int i = 0;
-            for(; i <= exp - bits_per_iteration; i += bits_per_iteration)
-                shiftLeft(bits_per_iteration);
-
-            if(i != exp)
-            {
-                assert(exp > i);
-                shiftLeft(exp - i);
-            }
-
+            insertLeft(v % bigitBound);
             fractionStart = numBigits;
         }
         else
