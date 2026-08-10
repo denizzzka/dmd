@@ -198,9 +198,9 @@ if(is(T == ushort) || is(T == uint))
         else
             alias GF = UL;
 
-        auto v = cast(GF) (integralPart < 0 ? -integralPart : integralPart);
+        const v = cast(GF) (integralPart < 0 ? -integralPart : integralPart);
 
-        printf("prev exp=%d\n", exp);
+        //~ printf("prev exp=%d\n", exp);
 
         //TODO: make exp const
         exp -= numBits;
