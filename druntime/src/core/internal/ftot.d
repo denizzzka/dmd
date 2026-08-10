@@ -173,8 +173,8 @@ if(is(T == ushort) || is(T == uint))
         import core.stdc.math: frexp;
 
         enum numBits = d.mant_dig;
-        const integralPart = frexp(d, &exp) * (1UL << numBits);
-        const ulong v = cast(ulong) (integralPart < 0 ? -integralPart : integralPart);
+        const integralPart = frexp(d, &exp) * (UL(1) << numBits);
+        const v = cast(UL) (integralPart < 0 ? -integralPart : integralPart);
 
         printf("prev exp=%d\n", exp);
 
@@ -187,7 +187,7 @@ if(is(T == ushort) || is(T == uint))
         {
             if(v >= bigitBound)
             {
-                const uint upper = assumeSafeCastT(v / bigitBound);
+                const T upper = assumeSafeCastT(v / bigitBound);
                 if(upper != 0)
                 {
                     bigits[numBigits] = upper;
@@ -220,7 +220,7 @@ if(is(T == ushort) || is(T == uint))
 
             if(v >= bigitBound)
             {
-                const uint upper = assumeSafeCastT(v / bigitBound);
+                const T upper = assumeSafeCastT(v / bigitBound);
                 if(upper != 0)
                 {
                     bigits[numBigits] = upper;
