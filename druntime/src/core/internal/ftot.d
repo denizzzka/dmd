@@ -64,13 +64,6 @@ unittest
 nothrow:
 @nogc:
 
-private T checkedCast(T, V)(V val)
-if(__traits(isIntegral, T) && __traits(isUnsigned, T))
-{
-    assert(val <= T.max);
-    return cast(T) val;
-}
-
 //TODO: implement floatingToTempString()
 
 /**
@@ -124,11 +117,11 @@ if(is(T == ushort) || is(T == uint))
                 carry = 0;
             else
             {
-                carry = (bigit / bigitBound).checkedCast!uint;
+                carry = checkedCastT(bigit / bigitBound);
                 bigit = bigit % bigitBound;
             }
 
-            bigits[i + offset] = bigit.checkedCast!uint;
+            bigits[i + offset] = checkedCastT(bigit);
         }
 
         if(offset != 0)
@@ -151,15 +144,15 @@ if(is(T == ushort) || is(T == uint))
             numBigits--;
             fractionStart--;
 
-            borrow = (ulong(bigits[0]) * bigitBound >> n).checkedCast!uint;
+            borrow = checkedCastT(ulong(bigits[0]) * bigitBound >> n);
         }
 
         foreach(i; 0 .. numBigits)
         {
             const ulong bigit = bigits[i + offset];
 
-            bigits[i] = borrow + (bigit >> n).checkedCast!uint;
-            borrow = ((bigit & mask) * bigitBound >> n).checkedCast!uint;
+            bigits[i] = borrow + checkedCastT(bigit >> n);
+            borrow = checkedCastT((bigit & mask) * bigitBound >> n);
         }
 
         if(borrow != 0)
@@ -179,10 +172,7 @@ if(is(T == ushort) || is(T == uint))
 
         enum numBits = d.mant_dig;
         const integralPart = frexp(d, &exp) * (1UL << numBits);
-        long v = cast(long) integralPart;
-
-        if(v < 0)
-            v = -v;
+        const ulong v = cast(ulong) (integralPart < 0 ? -integralPart : integralPart);
 
         printf("prev exp=%d\n", exp);
 
@@ -195,7 +185,7 @@ if(is(T == ushort) || is(T == uint))
         {
             if(v >= bigitBound)
             {
-                const uint upper = (v / bigitBound).checkedCast!uint;
+                const uint upper = checkedCastT(v / bigitBound);
                 if(upper != 0)
                 {
                     bigits[numBigits] = upper;
@@ -203,7 +193,7 @@ if(is(T == ushort) || is(T == uint))
                 }
             }
 
-            bigits[numBigits] = (v % bigitBound).checkedCast!uint;
+            bigits[numBigits] = checkedCastT(v % bigitBound);
             numBigits++;
 
             enum bits_per_iteration = 29; // 2^^29 fits in one bigit
@@ -228,7 +218,7 @@ if(is(T == ushort) || is(T == uint))
 
             if(v >= bigitBound)
             {
-                const uint upper = (v / bigitBound).checkedCast!uint;
+                const uint upper = checkedCastT(v / bigitBound);
                 if(upper != 0)
                 {
                     bigits[numBigits] = upper;
@@ -237,7 +227,7 @@ if(is(T == ushort) || is(T == uint))
                 }
             }
 
-            bigits[numBigits] = (v % bigitBound).checkedCast!uint;
+            bigits[numBigits] = checkedCastT(v % bigitBound);
             numBigits++;
 
             enum bits_per_iteration = 9; // 10^^9 can only be shifted left 9 bits
@@ -254,6 +244,13 @@ if(is(T == ushort) || is(T == uint))
                 shiftRight(i - exp);
             }
         }
+    }
+
+    private static T checkedCastT(V)(V val)
+    if(__traits(isIntegral, V) && __traits(isUnsigned, V))
+    {
+        assert(val <= T.max);
+        return cast(T) val;
     }
 }
 
