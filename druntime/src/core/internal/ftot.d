@@ -83,7 +83,7 @@ nothrow:
 struct Decimal(T, size_t maxLen)
 if(is(T == ushort) || is(T == uint))
 {
-    // Each bigit is a 9-digit decimal number.
+    /// Each bigit is a 9-digit decimal number.
     T[maxLen] bigits; //TODO: = void;
 
     // Set decimal exponent. The most effective is to use
