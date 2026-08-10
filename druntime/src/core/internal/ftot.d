@@ -44,7 +44,10 @@ unittest
 
 unittest
 {
-    static char[100] buf = '|'; buf[$-1] = '\0'; //TODO: = void;
+    static char[100] buf = '|';
+    // Just in case of debugging using stdc:
+    buf[$-1] = '\0';
+
     static char[] res;
     //~ res = dtoa_puff(buf, -1.23456789101112, 30);
 
