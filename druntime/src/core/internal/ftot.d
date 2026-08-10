@@ -190,18 +190,19 @@ if(is(T == ushort) || is(T == uint))
 
         //~ printf("numBits=%d integral part=%f ulong=%lld exp=%d value=%g\n", numBits, integralPart, v, exp, d);
 
+        if(v >= bigitBound)
+        {
+            const T upper = assumeSafeCastT(v / bigitBound); // FIXME: fails here on 16-bit
+            if(upper != 0)
+            {
+                bigits[numBigits] = upper;
+                numBigits++;
+                fractionStart++;
+            }
+        }
+
         if(exp >= 0)
         {
-            if(v >= bigitBound)
-            {
-                const T upper = assumeSafeCastT(v / bigitBound);
-                if(upper != 0)
-                {
-                    bigits[numBigits] = upper;
-                    numBigits++;
-                }
-            }
-
             bigits[numBigits] = assumeSafeCastT(v % bigitBound);
             numBigits++;
 
@@ -221,18 +222,7 @@ if(is(T == ushort) || is(T == uint))
         }
         else
         {
-            fractionStart = 1;
-
-            if(v >= bigitBound)
-            {
-                const T upper = assumeSafeCastT(v / bigitBound); // FIXME: fails here on 16-bit
-                if(upper != 0)
-                {
-                    bigits[numBigits] = upper;
-                    numBigits++;
-                    fractionStart++;
-                }
-            }
+            fractionStart += 1;
 
             bigits[numBigits] = assumeSafeCastT(v % bigitBound);
             numBigits++;
