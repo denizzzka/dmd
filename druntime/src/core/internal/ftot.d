@@ -212,8 +212,7 @@ if(is(T == ushort) || is(T == uint))
             const T upper = assumeSafeCastT(v / bigitBound); // FIXME: fails here on 16-bit
             if(upper != 0)
             {
-                bigits[numBigits] = upper;
-                numBigits++;
+                addBigit(upper);
                 fractionStart++;
             }
         }
@@ -240,8 +239,7 @@ if(is(T == ushort) || is(T == uint))
         {
             fractionStart += 1;
 
-            bigits[numBigits] = assumeSafeCastT(v % bigitBound);
-            numBigits++;
+            addBigit(v % bigitBound);
 
             enum bits_per_iteration = maxPossibleShift;
 
