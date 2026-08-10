@@ -175,18 +175,6 @@ if(is(T == ushort) || is(T == uint))
     {
         bigits[numBigits] = val % bigitBound;
         numBigits++;
-
-        enum bits_per_iteration = maxLeftShift;
-
-        int i = 0;
-        for(; i <= exp - bits_per_iteration; i += bits_per_iteration)
-            shiftLeft(bits_per_iteration);
-
-        if(i != exp)
-        {
-            assert(exp > i);
-            shiftLeft(exp - i);
-        }
     }
 
     // TODO: remove
@@ -233,6 +221,19 @@ if(is(T == ushort) || is(T == uint))
         if(exp >= 0)
         {
             insertLeft(v % bigitBound);
+
+            enum bits_per_iteration = maxLeftShift;
+
+            int i = 0;
+            for(; i <= exp - bits_per_iteration; i += bits_per_iteration)
+                shiftLeft(bits_per_iteration);
+
+            if(i != exp)
+            {
+                assert(exp > i);
+                shiftLeft(exp - i);
+            }
+
             fractionStart = numBigits;
         }
         else
