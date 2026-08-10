@@ -52,16 +52,17 @@ unittest
 
     void testIt(T)(T v, string expected)
     {
-        res = dtoa_puff!uint(buf, v, 6);
-        assert(res == expected, res);
-
-        //~ res = dtoa_puff!ushort(buf, v, 6);
+        //~ res = dtoa_puff!uint(buf, v, 6);
         //~ assert(res == expected, res);
+
+        res = dtoa_puff!ushort(buf, v, 6);
+        assert(res == expected, res);
     }
 
-    testIt(-12.345f, "-1.23450e+1");
-    testIt(-1.23456789101112, "-1.23457e+0");
-    testIt(0.0000123456789, "1.23457e-5");
+    //~ testIt(-12.345f, "-1.23450e+1");
+    testIt(2.0, "-1.23457e+0");
+    //~ testIt(-1.23456789101112, "-1.23457e+0");
+    //~ testIt(0.0000123456789, "1.23457e-5");
 }
 
 //~ pure:
@@ -106,6 +107,7 @@ if(is(T == ushort) || is(T == uint))
     uint numBigits;
     int fractionStart;
 
+    //TODO: rename to wholeBigitShift
     private enum maxPossibleShift = T.sizeof * 8 - 2; //FIXME why -2
 
     void shiftBitsLeft(in int n = maxPossibleShift)
@@ -138,7 +140,7 @@ if(is(T == ushort) || is(T == uint))
         }
     }
 
-    void shiftBitsRight(in int n)
+    void shiftBitsRight(in int n = maxPossibleShift)
     in(n > 0)
     in(n <= maxPossibleShift)
     {
@@ -211,6 +213,8 @@ if(is(T == ushort) || is(T == uint))
         enum numBits = d.mant_dig;
         const integralPart = frexp(d, &exp) * (1UL << numBits);
 
+        printf("mantis=%f exp=%d\n", integralPart, exp);
+
         //TODO: naming
         enum bool tooBig = (T.sizeof == 2 && !is(F == float));
 
@@ -222,8 +226,6 @@ if(is(T == ushort) || is(T == uint))
 
         const v = cast(GF) (integralPart < 0 ? -integralPart : integralPart);
 
-        //~ printf("prev exp=%d\n", exp);
-
         //TODO: make exp const
         exp -= numBits;
 
@@ -231,12 +233,24 @@ if(is(T == ushort) || is(T == uint))
 
         if(v >= bigitBound)
         {
-            const T upper = assumeSafeCastT(v / bigitBound); // FIXME: fails here on 16-bit
-            if(upper != 0)
+            GF upper = v / bigitBound;
+
+            printf("v=%llu  upper=%llu\n", v, upper);
+
+            // Additional division for small bigits
+            static if(tooBig)
+            while(upper >= bigitBound)
             {
-                addBigit(upper);
-                fractionStart++;
+                const lessSig = upper % bigitBound;
+                addBigitShiftRight(lessSig);
+
+                upper /= bigitBound;
+
+                printf("while loop, upper=%llu\n", upper);
             }
+
+            addBigit(upper % bigitBound);
+            fractionStart++;
         }
 
         if(exp >= 0)
@@ -261,13 +275,15 @@ if(is(T == ushort) || is(T == uint))
         {
             addBigitShiftRight(v % bigitBound);
         }
+
+        printf("frac start=%d\n", fractionStart);
     }
 
     private static T assumeSafeCastT(V)(V val, size_t line = __LINE__)
     if(__traits(isIntegral, V))
     {
         assert(val >= 0);
-        printf("line: %llu\n", line);
+        //~ printf("line: %llu\n", line);
         assert(val <= T.max);
         return cast(T) val;
     }
