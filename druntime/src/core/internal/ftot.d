@@ -170,7 +170,7 @@ if(is(T == ushort) || is(T == uint))
         }
     }
 
-    void insertLeft(T val)
+    void placeLeft(T val)
     in(val < bigitBound)
     {
         bigits[numBigits] = val % bigitBound;
@@ -220,7 +220,7 @@ if(is(T == ushort) || is(T == uint))
 
         if(exp >= 0)
         {
-            insertLeft(v % bigitBound);
+            placeLeft(v % bigitBound);
 
             enum bits_per_iteration = maxLeftShift;
 
