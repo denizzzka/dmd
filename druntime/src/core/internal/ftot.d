@@ -52,17 +52,17 @@ unittest
 
     void testIt(T)(T v, string expected)
     {
-        //~ res = dtoa_puff!uint(buf, v, 6);
-        //~ assert(res == expected, res);
-
-        res = dtoa_puff!ushort(buf, v, 6);
+        res = dtoa_puff!uint(buf, v, 6);
         assert(res == expected, res);
+
+        //~ res = dtoa_puff!ushort(buf, v, 6);
+        //~ assert(res == expected, res);
     }
 
-    //~ testIt(-12.345f, "-1.23450e+1");
-    testIt(2.0, "-1.23457e+0");
-    //~ testIt(-1.23456789101112, "-1.23457e+0");
-    //~ testIt(0.0000123456789, "1.23457e-5");
+    testIt(-12.345f, "-1.23450e+1");
+    testIt(2.0, "2.00000e+0");
+    testIt(-1.23456789101112, "-1.23457e+0");
+    testIt(0.0000123456789, "1.23457e-5");
 }
 
 //~ pure:
