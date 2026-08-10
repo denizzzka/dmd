@@ -272,22 +272,22 @@ char[] dtoa_puff(T)(return scope char[] buf, double val, in ushort precision)
     uint count = to_chars(buf[0 .. precision], d.bigits[bigitIndex]);
     bigitIndex++;
 
-    int exp = (d.fractionStart - bigitIndex) * 9 + count - 1;
+    int exp = (d.fractionStart - bigitIndex) * d.decimalExp + count - 1;
 
     for(; bigitIndex < d.numBigits && count <= precision; bigitIndex++)
     {
-        const nextBlockIdx = count + 9;
+        const nextBlockIdx = count + d.decimalExp;
         auto block = buf[count .. nextBlockIdx];
 
         const digLen = to_chars(block, d.bigits[bigitIndex]);
-        assert(digLen <= 9);
-        const zLen = 9 - digLen;
+        assert(digLen <= d.decimalExp);
+        const zLen = d.decimalExp - digLen;
         assert(zLen >= 0);
 
         if(zLen != 0)
         {
             //FIXME: Causes "range violation" because ranges may overlap
-            //block[zLen .. 9] = block[0 .. digLen];
+            //block[zLen .. d.decimalExp] = block[0 .. digLen];
             //block[0 .. zLen] = 0;
 
             () @trusted
