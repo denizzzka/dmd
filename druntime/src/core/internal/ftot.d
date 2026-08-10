@@ -108,7 +108,7 @@ if(is(T == ushort) || is(T == uint))
 
     private enum maxLeftShift =  T.sizeof * 8 - 2; //FIXME why -2
 
-    void shiftLeft(in int n)
+    void shiftLeft(in int n = maxLeftShift)
     in(n > 0)
     in(n <= maxLeftShift)
     {
@@ -226,7 +226,7 @@ if(is(T == ushort) || is(T == uint))
 
             int i = 0;
             for(; i <= exp - bits_per_iteration; i += bits_per_iteration)
-                shiftLeft(bits_per_iteration);
+                shiftLeft();
 
             if(i != exp)
             {
