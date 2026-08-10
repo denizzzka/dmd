@@ -102,8 +102,9 @@ if(is(T == ushort) || is(T == uint))
     uint numBigits;
     int fractionStart;
 
-    void shiftLeft(in uint n)
-    in(n <= 29)
+    void shiftLeft(in int n)
+    in(n > 0)
+    in(n <= T.sizeof * 8 - 2 /*FIXME why -2?*/)
     {
         const ubyte offset = bigits[0] >= (bigitBound >> n) ? 1 : 0;
         uint carry;
@@ -131,8 +132,9 @@ if(is(T == ushort) || is(T == uint))
         }
     }
 
-    void shiftRight(in uint n)
-    in(n <= 9)
+    void shiftRight(in int n)
+    in(n > 0)
+    in(n <= decimalExp)
     {
         const uint mask = (1 << n) - 1;
         uint borrow;
