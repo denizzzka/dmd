@@ -171,10 +171,32 @@ if(is(T == ushort) || is(T == uint))
     }
 
     void addBigit(T val)
+    in(val >= 0)
     in(val < bigitBound)
     {
         bigits[numBigits] = val;
         numBigits++;
+    }
+
+    void addBigitShiftRight(T v)
+    in(v >= 0)
+    in(v < bigitBound)
+    {
+        fractionStart++;
+
+        addBigit(v);
+
+        enum bits_per_iteration = maxPossibleShift;
+
+        int i = 0;
+        for (; i - bits_per_iteration >= exp; i -= bits_per_iteration)
+            shiftBitsRight(bits_per_iteration);
+
+        if (i != exp)
+        {
+            assert(i > exp);
+            shiftBitsRight(i - exp);
+        }
     }
 
     // TODO: remove
@@ -237,21 +259,7 @@ if(is(T == ushort) || is(T == uint))
         }
         else
         {
-            fractionStart += 1;
-
-            addBigit(v % bigitBound);
-
-            enum bits_per_iteration = maxPossibleShift;
-
-            int i = 0;
-            for (; i - bits_per_iteration >= exp; i -= bits_per_iteration)
-                shiftBitsRight(bits_per_iteration);
-
-            if (i != exp)
-            {
-                assert(i > exp);
-                shiftBitsRight(i - exp);
-            }
+            addBigitShiftRight(v % bigitBound);
         }
     }
 
