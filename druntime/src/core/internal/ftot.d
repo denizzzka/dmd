@@ -92,12 +92,18 @@ if(is(T == ushort) || is(T == uint))
     // Set decimal exponent. The most effective is to use
     // the largest power of 10 that is less than T.max.
     static if(T.sizeof == 4)
+    {
         enum decimalExp = 9;
+        alias UL = ulong; // Twice longer than T
+    }
     else static if(T.sizeof == 2)
-        enum bigitBound = 4;
+    {
+        enum decimalExp = 4;
+        alias UL = uint;
+    }
 
     /// Radix
-    enum bigitBound = 10 ^^ decimalExp;
+    enum T bigitBound = 10 ^^ decimalExp;
 
     //TODO: decrease type size?
     uint numBigits;
