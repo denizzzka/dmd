@@ -8,7 +8,7 @@ import core.stdc.stdio;
 unittest
 {
     double val = 123.456;
-    auto d = Decimal!16(val);
+    auto d = Decimal!(uint, 16)(val);
     assert(d.numBigits == 7);
 
     const initial = d.bigits.idup;
@@ -52,7 +52,7 @@ unittest
 
     void testIt(T)(T v, string expected)
     {
-        res = dtoa_puff(buf, v, 6);
+        res = dtoa_puff!uint(buf, v, 6);
         assert(res == expected, res);
     }
 
@@ -79,15 +79,28 @@ if(__traits(isIntegral, T) && __traits(isUnsigned, T))
  * Implements a fixed-point decimal number using a base-10^9 positional system.
  * It represents large numbers by breaking them into "bigits" (blocks),
  * where each block is a 9-digit decimal integer stored in a integer type.
+ *
+ * Params:
+ *  T = unsigned integer of size 16 or 32
  */
-struct Decimal(size_t maxLen)
+struct Decimal(T, size_t maxLen)
+if(is(T == ushort) || is(T == uint))
 {
     // Each bigit is a 9-digit decimal number.
-    uint[maxLen] bigits; //TODO: = void;
+    T[maxLen] bigits; //TODO: = void;
+
+    // Set decimal exponent. The most effective is to use
+    // the largest power of 10 that is less than T.max.
+    static if(T.sizeof == 4)
+        enum decimalExp = 9;
+    else static if(T.sizeof == 2)
+        enum bigitBound = 4;
+
+    /// Radix
+    enum bigitBound = 10 ^^ decimalExp;
+
     //TODO: decrease type size?
     uint numBigits;
-    /// Radix
-    enum bigitBound = 10 ^^ 9;
     int fractionStart;
 
     void shiftLeft(in uint n)
@@ -238,9 +251,9 @@ struct Decimal(size_t maxLen)
     }
 }
 
-char[] dtoa_puff(return scope char[] buf, double val, in ushort precision)
+char[] dtoa_puff(T)(return scope char[] buf, double val, in ushort precision)
 {
-    auto d = Decimal!100(val);
+    auto d = Decimal!(T, 100)(val);
 
     //TODO: I don't know what is this conditional does yet
     uint bigitIndex = d.bigits[0] > 0 ? 0 : 1;
