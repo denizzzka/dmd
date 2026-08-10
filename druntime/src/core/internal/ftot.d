@@ -107,11 +107,11 @@ if(is(T == ushort) || is(T == uint))
     in(n <= T.sizeof * 8 - 2 /*FIXME why -2?*/)
     {
         const ubyte offset = bigits[0] >= (bigitBound >> n) ? 1 : 0;
-        uint carry;
+        T carry;
 
         foreach_reverse(i; 0 .. numBigits)
         {
-            ulong bigit = bigits[i];
+            UL bigit = bigits[i];
             bigit = (bigit << n) + carry;
 
             if(bigit < bigitBound)
