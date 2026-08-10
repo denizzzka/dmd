@@ -49,14 +49,15 @@ unittest
     buf[$-1] = '\0';
 
     static char[] res;
-    //~ res = dtoa_puff(buf, -1.23456789101112, 30);
 
-    res = dtoa_puff(buf, -0.0000123456789, 10);
+    void testIt(T)(T v, string expected)
+    {
+        res = dtoa_puff(buf, v, 6);
+        assert(res == expected, res);
+    }
 
-    import core.stdc.stdio;
-    printf("%s\n", buf.ptr);
-
-    assert(false, res);
+    testIt(-1.23456789101112, "-1.23457e+0");
+    testIt(0.0000123456789, "1.23457e-5");
 }
 
 //~ pure:
