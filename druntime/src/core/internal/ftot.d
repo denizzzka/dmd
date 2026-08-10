@@ -54,8 +54,12 @@ unittest
     {
         res = dtoa_puff!uint(buf, v, 6);
         assert(res == expected, res);
+
+        //~ res = dtoa_puff!ushort(buf, v, 6);
+        //~ assert(res == expected, res);
     }
 
+    testIt(-12.345f, "-1.23450e+1");
     testIt(-1.23456789101112, "-1.23457e+0");
     testIt(0.0000123456789, "1.23457e-5");
 }
@@ -136,7 +140,7 @@ if(is(T == ushort) || is(T == uint))
     in(n > 0)
     in(n <= decimalExp)
     {
-        const T mask = (1 << n) - 1;
+        const T mask = assumeSafeCastT((1 << n) - 1);
         T borrow;
         int offset;
 
@@ -153,7 +157,7 @@ if(is(T == ushort) || is(T == uint))
         {
             const UL bigit = bigits[i + offset];
 
-            bigits[i] = borrow + assumeSafeCastT(bigit >> n);
+            bigits[i] = assumeSafeCastT(borrow + (bigit >> n));
             borrow = assumeSafeCastT((bigit & mask) * bigitBound >> n);
         }
 
@@ -167,7 +171,8 @@ if(is(T == ushort) || is(T == uint))
     // TODO: remove
     private int exp;
 
-    this(double d)
+    this(F)(F d)
+    if(__traits(isFloating, F))
     {
         //TODO: replace libc call by core.internal.convert
         import core.stdc.math: frexp;
@@ -220,7 +225,7 @@ if(is(T == ushort) || is(T == uint))
 
             if(v >= bigitBound)
             {
-                const T upper = assumeSafeCastT(v / bigitBound);
+                const T upper = assumeSafeCastT(v / bigitBound); // FIXME: fails here on 16-bit
                 if(upper != 0)
                 {
                     bigits[numBigits] = upper;
@@ -248,9 +253,11 @@ if(is(T == ushort) || is(T == uint))
         }
     }
 
-    private static T assumeSafeCastT(V)(V val)
-    if(__traits(isIntegral, V) && __traits(isUnsigned, V))
+    private static T assumeSafeCastT(V)(V val, size_t line = __LINE__)
+    if(__traits(isIntegral, V))
     {
+        assert(val >= 0);
+        printf("line: %llu\n", line);
         assert(val <= T.max);
         return cast(T) val;
     }
