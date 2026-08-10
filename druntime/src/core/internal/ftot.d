@@ -60,8 +60,8 @@ unittest
     }
 
     testIt(-12.345f, "-1.23450e+1");
-    //~ testIt(-1.23456789101112, "-1.23457e+0");
-    //~ testIt(0.0000123456789, "1.23457e-5");
+    testIt(-1.23456789101112, "-1.23457e+0");
+    testIt(0.0000123456789, "1.23457e-5");
 }
 
 //~ pure:
@@ -180,8 +180,8 @@ if(is(T == ushort) || is(T == uint))
         import core.stdc.math: frexp;
 
         enum numBits = d.mant_dig;
-        const integralPart = frexp(d, &exp) * (UL(1) << numBits);
-        const v = cast(UL) (integralPart < 0 ? -integralPart : integralPart);
+        const integralPart = frexp(d, &exp) * (1UL << numBits);
+        const v = cast(ulong) (integralPart < 0 ? -integralPart : integralPart);
 
         printf("prev exp=%d\n", exp);
 
