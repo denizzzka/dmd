@@ -200,7 +200,17 @@ if(is(T == ushort) || is(T == uint))
 
         enum numBits = d.mant_dig;
         const integralPart = frexp(d, &exp) * (1UL << numBits);
-        const v = cast(ulong) (integralPart < 0 ? -integralPart : integralPart);
+
+        //TODO: naming
+        enum bool tooBig = (T.sizeof == 2 && !is(F == float));
+
+        // A type that is guaranteed to fit a integral part
+        static if(tooBig)
+            alias GF = ulong;
+        else
+            alias GF = UL;
+
+        auto v = cast(GF) (integralPart < 0 ? -integralPart : integralPart);
 
         printf("prev exp=%d\n", exp);
 
