@@ -28,11 +28,11 @@ unittest
         printf(">>>Rbigit=%d\n", b);
 
     // Shift left to the initial state:
-    d.shiftLeft(1);
-    d.shiftLeft(2);
-    d.shiftLeft(5);
-    d.shiftLeft(8);
-    d.shiftLeft(16);
+    d.shiftBitsLeft(1);
+    d.shiftBitsLeft(2);
+    d.shiftBitsLeft(5);
+    d.shiftBitsLeft(8);
+    d.shiftBitsLeft(16);
 
     printf(">>> numBigits=%d\n", d.numBigits);
 
@@ -108,7 +108,7 @@ if(is(T == ushort) || is(T == uint))
 
     private enum maxLeftShift =  T.sizeof * 8 - 2; //FIXME why -2
 
-    void shiftLeft(in int n = maxLeftShift)
+    void shiftBitsLeft(in int n = maxLeftShift)
     in(n > 0)
     in(n <= maxLeftShift)
     {
@@ -226,12 +226,12 @@ if(is(T == ushort) || is(T == uint))
 
             int i = 0;
             for(; i <= exp - bits_per_iteration; i += bits_per_iteration)
-                shiftLeft();
+                shiftBitsLeft(bits_per_iteration);
 
             if(i != exp)
             {
                 assert(exp > i);
-                shiftLeft(exp - i);
+                shiftBitsLeft(exp - i);
             }
 
             fractionStart = numBigits;
