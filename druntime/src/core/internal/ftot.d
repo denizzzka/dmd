@@ -90,12 +90,14 @@ if(is(T == ushort) || is(T == uint))
     // the largest power of 10 that is less than T.max.
     static if(T.sizeof == 4)
     {
-        enum decimalExp = 9;
+        enum decimalExp = 9; // 10^9 - largest decimal number less than 32-bit value
+        enum maxLeftShift = 29; // 2^29 - largest binary number less than 10^9
         alias UL = ulong; // Twice longer than T
     }
     else static if(T.sizeof == 2)
     {
-        enum decimalExp = 4;
+        enum decimalExp = 4; // 10^4 - largest decimal number less than 16-bit value
+        enum maxLeftShift = 13; // 2^13 - largest binary number less than 10^4
         alias UL = uint;
     }
 
@@ -106,11 +108,9 @@ if(is(T == ushort) || is(T == uint))
     uint numBigits;
     int fractionStart;
 
-    private enum maxPossibleShift = T.sizeof * 8 - 2; //FIXME why -2
-
-    void shiftBitsLeft(in int n = maxPossibleShift)
+    void shiftBitsLeft(in int n)
     in(n > 0)
-    in(n <= maxPossibleShift)
+    in(n <= maxLeftShift)
     {
         const ubyte offset = bigits[0] >= (bigitBound >> n) ? 1 : 0;
         T carry;
@@ -140,7 +140,7 @@ if(is(T == ushort) || is(T == uint))
 
     void shiftBitsRight(in int n)
     in(n > 0)
-    in(n <= maxPossibleShift)
+    in(n <= decimalExp)
     {
         const T mask = assumeSafeCastT((1 << n) - 1);
         T borrow;
@@ -186,7 +186,7 @@ if(is(T == ushort) || is(T == uint))
 
         addBigit(v);
 
-        enum bits_per_iteration = maxPossibleShift;
+        enum bits_per_iteration = decimalExp;
 
         int i = 0;
         for (; i - bits_per_iteration >= exp; i -= bits_per_iteration)
@@ -243,7 +243,7 @@ if(is(T == ushort) || is(T == uint))
         {
             addBigit(v % bigitBound);
 
-            enum bits_per_iteration = maxPossibleShift;
+            enum bits_per_iteration = maxLeftShift;
 
             int i = 0;
             for(; i <= exp - bits_per_iteration; i += bits_per_iteration)
