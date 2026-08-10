@@ -117,11 +117,11 @@ if(is(T == ushort) || is(T == uint))
                 carry = 0;
             else
             {
-                carry = checkedCastT(bigit / bigitBound);
+                carry = assumeSafeCastT(bigit / bigitBound);
                 bigit = bigit % bigitBound;
             }
 
-            bigits[i + offset] = checkedCastT(bigit);
+            bigits[i + offset] = assumeSafeCastT(bigit);
         }
 
         if(offset != 0)
@@ -144,15 +144,15 @@ if(is(T == ushort) || is(T == uint))
             numBigits--;
             fractionStart--;
 
-            borrow = checkedCastT(ulong(bigits[0]) * bigitBound >> n);
+            borrow = assumeSafeCastT(ulong(bigits[0]) * bigitBound >> n);
         }
 
         foreach(i; 0 .. numBigits)
         {
             const ulong bigit = bigits[i + offset];
 
-            bigits[i] = borrow + checkedCastT(bigit >> n);
-            borrow = checkedCastT((bigit & mask) * bigitBound >> n);
+            bigits[i] = borrow + assumeSafeCastT(bigit >> n);
+            borrow = assumeSafeCastT((bigit & mask) * bigitBound >> n);
         }
 
         if(borrow != 0)
@@ -185,7 +185,7 @@ if(is(T == ushort) || is(T == uint))
         {
             if(v >= bigitBound)
             {
-                const uint upper = checkedCastT(v / bigitBound);
+                const uint upper = assumeSafeCastT(v / bigitBound);
                 if(upper != 0)
                 {
                     bigits[numBigits] = upper;
@@ -193,7 +193,7 @@ if(is(T == ushort) || is(T == uint))
                 }
             }
 
-            bigits[numBigits] = checkedCastT(v % bigitBound);
+            bigits[numBigits] = assumeSafeCastT(v % bigitBound);
             numBigits++;
 
             enum bits_per_iteration = 29; // 2^^29 fits in one bigit
@@ -218,7 +218,7 @@ if(is(T == ushort) || is(T == uint))
 
             if(v >= bigitBound)
             {
-                const uint upper = checkedCastT(v / bigitBound);
+                const uint upper = assumeSafeCastT(v / bigitBound);
                 if(upper != 0)
                 {
                     bigits[numBigits] = upper;
@@ -227,7 +227,7 @@ if(is(T == ushort) || is(T == uint))
                 }
             }
 
-            bigits[numBigits] = checkedCastT(v % bigitBound);
+            bigits[numBigits] = assumeSafeCastT(v % bigitBound);
             numBigits++;
 
             enum bits_per_iteration = 9; // 10^^9 can only be shifted left 9 bits
@@ -246,7 +246,7 @@ if(is(T == ushort) || is(T == uint))
         }
     }
 
-    private static T checkedCastT(V)(V val)
+    private static T assumeSafeCastT(V)(V val)
     if(__traits(isIntegral, V) && __traits(isUnsigned, V))
     {
         assert(val <= T.max);
