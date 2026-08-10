@@ -69,13 +69,20 @@ if(__traits(isIntegral, T) && __traits(isUnsigned, T))
 
 //TODO: implement floatingToTempString()
 
-/// A fixed-point decimal number.
+/**
+ * A fixed-point decimal number.
+ *
+ * Implements a fixed-point decimal number using a base-10^9 positional system.
+ * It represents large numbers by breaking them into "bigits" (blocks),
+ * where each block is a 9-digit decimal integer stored in a integer type.
+ */
 struct Decimal(size_t maxLen)
 {
     // Each bigit is a 9-digit decimal number.
     uint[maxLen] bigits; //TODO: = void;
     //TODO: decrease type size?
     uint numBigits;
+    /// Radix
     enum bigitBound = 10 ^^ 9;
     int fractionStart;
 
