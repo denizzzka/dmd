@@ -136,8 +136,8 @@ if(is(T == ushort) || is(T == uint))
     in(n > 0)
     in(n <= decimalExp)
     {
-        const uint mask = (1 << n) - 1;
-        uint borrow;
+        const T mask = (1 << n) - 1;
+        T borrow;
         int offset;
 
         if((bigits[0] >> n) == 0 && bigits[0] != 0)
@@ -146,12 +146,12 @@ if(is(T == ushort) || is(T == uint))
             numBigits--;
             fractionStart--;
 
-            borrow = assumeSafeCastT(ulong(bigits[0]) * bigitBound >> n);
+            borrow = assumeSafeCastT(UL(bigits[0]) * bigitBound >> n);
         }
 
         foreach(i; 0 .. numBigits)
         {
-            const ulong bigit = bigits[i + offset];
+            const UL bigit = bigits[i + offset];
 
             bigits[i] = borrow + assumeSafeCastT(bigit >> n);
             borrow = assumeSafeCastT((bigit & mask) * bigitBound >> n);
