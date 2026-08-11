@@ -92,15 +92,17 @@ if(is(T == ushort) || is(T == uint))
     static if(T.sizeof == 4)
     {
         enum decimalExp = 9; // 10^9 - largest decimal number less than 32-bit value
-        enum maxLeftShift = 29; // 2^29 - largest binary number less than 10^9
+        enum bigitBitWidth = 29; // 2^29 - largest binary number less than 10^9
         alias UL = ulong; // Twice longer than T
     }
     else static if(T.sizeof == 2)
     {
         enum decimalExp = 4; // 10^4 - largest decimal number less than 16-bit value
-        enum maxLeftShift = 13; // 2^13 - largest binary number less than 10^4
+        enum bigitBitWidth = 13; // 2^13 - largest binary number less than 10^4
         alias UL = uint;
     }
+
+    private enum maxLeftShift = bigitBitWidth;
 
     /// Radix
     enum T bigitBound = 10 ^^ decimalExp;
