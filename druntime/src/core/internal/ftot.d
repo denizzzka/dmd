@@ -245,11 +245,14 @@ if(is(T == ushort) || is(T == uint))
         alias GF = ulong;
 
         // ulong fits 20 decimal digits
-        enum additionalBigits = 20 / decimalExp + (20 % decimalExp == 0 ? 0 : 1);
-        static assert(additionalBigits == 5);
+        enum intPartBigitsNum = 20 / decimalExp + (20 % decimalExp == 0 ? 0 : 1);
+        static assert(intPartBigitsNum == 5);
     }
     else
+    {
         alias GF = UL;
+        enum intPartBigitsNum = 1;
+    }
 
     // TODO: remove
     private int exp;
@@ -281,7 +284,7 @@ if(is(T == ushort) || is(T == uint))
             // Additional division for small numbers which store large mantissa
             static if(tooBig)
             {
-                auto intPartIdx = additionalBigits - 1;
+                auto intPartIdx = intPartBigitsNum - 1;
 
                 while(upper >= bigitBound)
                 {
