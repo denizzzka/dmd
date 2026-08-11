@@ -14,12 +14,12 @@ unittest
     const initial = d.bigits.idup;
 
     // Shift right to 32 bits:
-    d.shiftBitsRight(1);
-    d.shiftBitsRight(2);
-    d.shiftBitsRight(5);
-    d.shiftBitsRight(8);
-    d.shiftBitsRight(8);
-    d.shiftBitsRight(8);
+    d.shiftFewBitsRight(1);
+    d.shiftFewBitsRight(2);
+    d.shiftFewBitsRight(5);
+    d.shiftFewBitsRight(8);
+    d.shiftFewBitsRight(8);
+    d.shiftFewBitsRight(8);
 
     //~ assert(d.numBigits == 4);
 
@@ -141,7 +141,7 @@ if(is(T == ushort) || is(T == uint))
         }
     }
 
-    void shiftBitsRight(in int n)
+    void shiftFewBitsRight(in int n)
     in(n > 0)
     in(n <= decimalExp)
     {
@@ -193,12 +193,12 @@ if(is(T == ushort) || is(T == uint))
 
         int i = 0;
         for (; i - bits_per_iteration >= exp; i -= bits_per_iteration)
-            shiftBitsRight(bits_per_iteration);
+            shiftFewBitsRight(bits_per_iteration);
 
         if (i != exp)
         {
             assert(i > exp);
-            shiftBitsRight(i - exp);
+            shiftFewBitsRight(i - exp);
         }
     }
 
