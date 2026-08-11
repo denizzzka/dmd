@@ -346,8 +346,14 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision)
 {
     auto d = Decimal!(T, 100)(val);
 
-    //TODO: I don't know what is this conditional does yet
-    uint bigitIndex = d.bigits[0] > 0 ? 0 : 1;
+    uint bigitIndex;
+
+    // Skip leading zeroes
+    foreach(i; 0 .. d.intPartBigitsNum)
+        if(d.bigits[i] == 0)
+            bigitIndex++;
+        else
+            break;
 
     debug
     {
@@ -356,6 +362,7 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision)
         assert(buf.length >= ulong.max.log10l + 1);
     }
 
+    // Integer part output
     uint count = to_chars(buf[0 .. precision], d.bigits[bigitIndex]);
     bigitIndex++;
 
