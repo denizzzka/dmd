@@ -70,11 +70,11 @@ unittest
 
     void testIt(T)(T v, string expected)
     {
-        res = dtoa_puff!uint(buf, v, 6);
-        assert(res == expected, res);
-
-        //~ res = dtoa_puff!ushort(buf, v, 6);
+        //~ res = dtoa_puff!uint(buf, v, 6);
         //~ assert(res == expected, res);
+
+        res = dtoa_puff!ushort(buf, v, 6);
+        assert(res == expected, res);
     }
 
     testIt(-12.345f, "-1.23450e+1");
@@ -255,7 +255,13 @@ if(is(T == ushort) || is(T == uint))
 
         // A type that is guaranteed to fit a integral part
         static if(tooBig)
+        {
             alias GF = ulong;
+
+            // ulong fits 20 decimal digits
+            enum additionalBigits = 20 / decimalExp + (20 % decimalExp == 0 ? 0 : 1);
+            assert(additionalBigits == 5);
+        }
         else
             alias GF = UL;
 
@@ -270,25 +276,31 @@ if(is(T == ushort) || is(T == uint))
         {
             GF upper = v / bigitBound;
 
-            printf("v=%llu  upper=%llu\n", v, upper);
+            //~ printf("v=%llu  upper=%llu\n", v, upper);
 
-            // Additional division for small bigits
+            // Additional division for small numbers which store large mantissa
             static if(tooBig)
-            while(upper >= bigitBound)
             {
-                const lessSig = upper % bigitBound;
-                addBigit(lessSig);
+                auto intPartIdx = additionalBigits - 1;
 
-                // Shifts whole bigit to the right
-                massiveRightShift(bigitBitWidth);
-                
-                upper /= lessSig;
+                while(upper >= bigitBound)
+                {
+                    const lessSig = upper % bigitBound;
+                    bigits[intPartIdx] = lessSig;
 
-                printf("while loop, upper=%llu\n", upper);
+                    upper /= bigitBound;
+                    intPartIdx--;
+                    fractionStart++;
+
+                    //~ printf("while loop, upper=%llu\n", upper);
+                }
             }
 
             addBigit(upper % bigitBound);
             fractionStart++;
+
+            foreach(idx, b; bigits[0 .. 9])
+                printf("bigit[%llu] %d\n", idx, b);
         }
 
         if(exp >= 0)
