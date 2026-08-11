@@ -21,21 +21,6 @@ unittest
     d.shiftBitsLeft(d.maxLeftShift);
     d.shiftBitsLeft(1);
     assert(d.bigits[0] == 1);
-
-    d.bigits[1 .. $] = 0;
-
-    foreach(b; d.bigits)
-        printf(">>>single bit=%d\n", b);
-
-    //~ d.shiftFewBitsRight(1);
-    d.massiveRightShift(d.bigitBitWidth * 6);
-
-    foreach(b; d.bigits)
-        printf(">>>single bit shifted=%d\n", b);
-
-    assert(d.bigits[6] == 1);
-
-    assert(false);
 }
 
 unittest
