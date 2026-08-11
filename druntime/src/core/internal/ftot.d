@@ -102,6 +102,8 @@ if(is(T == ushort) || is(T == uint))
         alias UL = uint;
     }
 
+    static assert(decimalExp <= bigitBitWidth);
+
     private enum maxLeftShift = bigitBitWidth;
 
     /// Radix
@@ -170,6 +172,18 @@ if(is(T == ushort) || is(T == uint))
         {
             bigits[numBigits] = borrow;
             numBigits++;
+        }
+    }
+
+    void massiveRightShift(int n)
+    {
+        enum bitsPerIteration = decimalExp;
+
+        while(n > 0)
+        {
+            const bits = n < bitsPerIteration ? n : bitsPerIteration;
+            shiftFewBitsRight(bits);
+            n -= bits;
         }
     }
 
@@ -243,9 +257,12 @@ if(is(T == ushort) || is(T == uint))
             while(upper >= bigitBound)
             {
                 const lessSig = upper % bigitBound;
-                addBigitShiftRight(lessSig);
+                addBigit(lessSig);
 
-                upper /= bigitBound;
+                // Shifts whole bigit to the right
+                massiveRightShift(bigitBitWidth);
+                
+                upper /= lessSig;
 
                 printf("while loop, upper=%llu\n", upper);
             }
