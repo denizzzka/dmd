@@ -7,6 +7,39 @@ import core.stdc.stdio;
 
 unittest
 {
+    double val = 0.0;
+    auto d = Decimal!(uint, 20)(val);
+    d.bigits = 0;
+
+    d.addBigit(1);
+    assert(d.bigits[1] == 1);
+
+    d.shiftBitsLeft(d.maxLeftShift);
+    d.shiftBitsLeft(1);
+    assert(d.bigits[0] == 1);
+
+    d.shiftBitsLeft(d.maxLeftShift);
+    d.shiftBitsLeft(1);
+    assert(d.bigits[0] == 1);
+
+    d.bigits[1 .. $] = 0;
+
+    foreach(b; d.bigits)
+        printf(">>>single bit=%d\n", b);
+
+    //~ d.shiftFewBitsRight(1);
+    d.massiveRightShift(d.bigitBitWidth * 6);
+
+    foreach(b; d.bigits)
+        printf(">>>single bit shifted=%d\n", b);
+
+    assert(d.bigits[6] == 1);
+
+    assert(false);
+}
+
+unittest
+{
     double val = 123.456;
     auto d = Decimal!(uint, 16)(val);
     //~ assert(d.numBigits == 7);
