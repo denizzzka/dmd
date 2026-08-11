@@ -176,15 +176,17 @@ if(is(T == ushort) || is(T == uint))
     }
 
     void massiveRightShift(int n)
+    in(n > 0)
     {
         enum bitsPerIteration = decimalExp;
 
-        while(n > 0)
+        do
         {
             const bits = n < bitsPerIteration ? n : bitsPerIteration;
             shiftFewBitsRight(bits);
             n -= bits;
         }
+        while(n > 0);
     }
 
     void addBigit(T val)
