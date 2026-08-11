@@ -236,6 +236,21 @@ if(is(T == ushort) || is(T == uint))
         }
     }
 
+    //TODO: naming
+    enum bool tooBig = (T.sizeof == 2 && !is(F == float));
+
+    // A type that is guaranteed to fit a integral part
+    static if(tooBig)
+    {
+        alias GF = ulong;
+
+        // ulong fits 20 decimal digits
+        enum additionalBigits = 20 / decimalExp + (20 % decimalExp == 0 ? 0 : 1);
+        static assert(additionalBigits == 5);
+    }
+    else
+        alias GF = UL;
+
     // TODO: remove
     private int exp;
 
@@ -249,21 +264,6 @@ if(is(T == ushort) || is(T == uint))
         const integralPart = frexp(d, &exp) * (1UL << numBits);
 
         printf("mantis=%f exp=%d\n", integralPart, exp);
-
-        //TODO: naming
-        enum bool tooBig = (T.sizeof == 2 && !is(F == float));
-
-        // A type that is guaranteed to fit a integral part
-        static if(tooBig)
-        {
-            alias GF = ulong;
-
-            // ulong fits 20 decimal digits
-            enum additionalBigits = 20 / decimalExp + (20 % decimalExp == 0 ? 0 : 1);
-            assert(additionalBigits == 5);
-        }
-        else
-            alias GF = UL;
 
         const v = cast(GF) (integralPart < 0 ? -integralPart : integralPart);
 
