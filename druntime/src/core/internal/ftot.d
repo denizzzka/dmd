@@ -11,7 +11,7 @@ unittest
     auto d = Decimal!(uint, 20)(val);
     d.bigitsArr = 0;
 
-    d.addBigit(1);
+    d.bigits[d.numBigits++] = 1;
     assert(d.bigits[1] == 1);
 
     d.shiftFewBitsLeft(d.maxLeftShift);
@@ -223,15 +223,6 @@ if(is(T == ushort) || is(T == uint))
             n -= bits;
         }
         while(n > 0);
-    }
-
-    //TODO: remove
-    void addBigit(T val)
-    in(val >= 0)
-    in(val < bigitBound)
-    {
-        bigits[numBigits] = val;
-        numBigits++;
     }
 
     //TODO: naming
