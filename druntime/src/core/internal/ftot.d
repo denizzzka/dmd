@@ -229,27 +229,6 @@ if(is(T == ushort) || is(T == uint))
         numBigits++;
     }
 
-    void addBigitShiftRight(T v)
-    in(v >= 0)
-    in(v < bigitBound)
-    {
-        fractionStart++;
-
-        addBigit(v);
-
-        enum bits_per_iteration = decimalExp;
-
-        int i = 0;
-        for (; i - bits_per_iteration >= exp; i -= bits_per_iteration)
-            shiftFewBitsRight(bits_per_iteration);
-
-        if (i != exp)
-        {
-            assert(i > exp);
-            shiftFewBitsRight(i - exp);
-        }
-    }
-
     //TODO: naming
     enum bool tooBig = (T.sizeof == 2 && !is(F == float));
 
@@ -320,15 +299,17 @@ if(is(T == ushort) || is(T == uint))
                 printf("bigit[%llu] %d\n", idx, b);
         }
 
+        addBigit(v % bigitBound);
+
         if(exp >= 0)
         {
-            addBigit(v % bigitBound);
             massiveLeftShift(exp);
             fractionStart = numBigits;
         }
         else
         {
-            addBigitShiftRight(v % bigitBound);
+            massiveRightShift(-exp);
+            fractionStart++;
         }
 
         printf("frac start=%d\n", fractionStart);
