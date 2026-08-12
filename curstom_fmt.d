@@ -265,15 +265,19 @@ in(outBuf.length > precisionAfterDot, outBuf.length.to!string)
 
     writeln("asInteger rounded=", asInteger);
 
-    // Carry detection combined with output
-    size_t count = outBuf.length - 1;
-    bool outputEnabled = addTrailingZeroes;
+    return roundWithCarry(asInteger, precisionAfterDot, addTrailingZeroes, carry, outBuf);
+}
 
-    foreach_reverse(_; 0 .. precisionAfterDot - 1)
+private auto roundWithCarry(ulong integer, in ushort precision, in bool addTrailingZeroes, ref ubyte carry, char[] outBuf)
+{
+    bool outputEnabled = addTrailingZeroes;
+    size_t count = outBuf.length - 1;
+
+    foreach_reverse(_; 1 .. precision)
     {
-        //~ writeln("asInteger=", asInteger);
-        ubyte digit = cast(ubyte)(asInteger % 10);
-        digit += cast(ubyte) carry;
+        //~ writeln("asInteger=", integer);
+        ubyte digit = cast(ubyte)(integer % 10);
+        digit += carry;
 
         if(digit > 9)
         {
@@ -283,7 +287,7 @@ in(outBuf.length > precisionAfterDot, outBuf.length.to!string)
         else
             carry = 0;
 
-        asInteger /= 10;
+        integer /= 10;
 
         if(digit != 0)
             outputEnabled = true;
