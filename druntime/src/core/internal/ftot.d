@@ -161,10 +161,12 @@ if(is(T == ushort) || is(T == uint))
         }
     }
 
-    void shiftFewBitsRight(in int n, ubyte bigitIdx = 0)
+    void shiftFewBitsRight(in int n)
     in(n > 0)
     in(n <= decimalExp)
     {
+        enum ubyte bigitIdx = 0;
+
         const T mask = assumeSafeCastT((1 << n) - 1);
         T borrow;
         int offset;
@@ -208,7 +210,7 @@ if(is(T == ushort) || is(T == uint))
         while(n > 0);
     }
 
-    void massiveRightShift(int n, ubyte bigitToShiftIdx = 0)
+    void massiveRightShift(int n)
     in(n > 0)
     {
         enum bitsPerIteration = decimalExp;
@@ -216,7 +218,7 @@ if(is(T == ushort) || is(T == uint))
         do
         {
             const bits = n < bitsPerIteration ? n : bitsPerIteration;
-            shiftFewBitsRight(bits, bigitToShiftIdx);
+            shiftFewBitsRight(bits);
             n -= bits;
         }
         while(n > 0);
