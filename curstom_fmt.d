@@ -185,8 +185,9 @@ if(__traits(isFloating, T))
 
     if(carry)
     {
+        //~ writeln("intPart=", intPart);
         intPart += carry;
-        exponent++; //TODO: ???!!!
+        //~ exponent++; //TODO: ???!!!
     }
 
     writeln("format=", format);
