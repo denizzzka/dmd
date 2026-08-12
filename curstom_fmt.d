@@ -159,6 +159,7 @@ if(__traits(isFloating, T))
     ulong intPart = cast(ulong) num;
     double fracPart = num - intPart;
     assert(fracPart >= 0);
+    assert(fracPart < 1);
 
     writeln("+++========================");
 
@@ -171,22 +172,22 @@ if(__traits(isFloating, T))
     */
 
     /// Precision after dot
-    assert(fracPart < 1);
     const short fracPrecision = 6;
-    bool carry;
-    const fracBufSize = fracPrecision + 1 /* extra carry digit - will be used as dot place */;
+    ubyte carry;
+    const fracBufSize = fracPrecision + 1 /* extra carry digit - then will be used as dot place */;
     const fracOffsetIdx = ret.buf.length - (fracBufSize + maxExpLen);
     auto fracText = ret.buf[fracOffsetIdx .. fracOffsetIdx + fracBufSize];
 
     const libcCompat = (format == Format.StdLibc || format == Format.ExpLibc);
     const bool addTrailingZeroes = (format == Format.Exp || libcCompat);
 
+    //TODO: rename to charCnt
     size_t i;
-    const fracAsInteger = round(fracPart, fracPrecision, addTrailingZeroes, i, carry, fracText);
+    round(fracPart, fracPrecision, addTrailingZeroes, i, carry, fracText);
 
     if(carry)
     {
-        intPart++;
+        intPart += carry;
         exponent++;
     }
 
@@ -236,18 +237,18 @@ if(__traits(isFloating, T))
     return ret;
 }
 
-private auto round(T)(in T fracPart, in short precisionAfterDot, in bool addTrailingZeroes, out size_t len, out bool carry, char[] outBuf)
+private void round(T)(in T fracPart, in short precisionAfterDot, in bool addTrailingZeroes, out size_t len, out ubyte carry, char[] outBuf)
 if(__traits(isFloating, T))
 in(fracPart >= 0)
 in(outBuf.length == precisionAfterDot + 1 /* extra carry digit */, outBuf.length.to!string)
 {
-    writefln("fracPart before rounding=%f", fracPart);
+    writefln("fracPart before rounding=%e", fracPart);
 
-    const ulong mult = 10 ^^ (precisionAfterDot + 1);
+    const ulong mult = 10 ^^ precisionAfterDot;
     writeln("mult ", mult);
 
     // Scale to integer
-    auto scaled = (0.5 / mult + fracPart) * mult;
+    auto scaled = (fracPart + 0.0f) * mult;
     writefln("scaled %f", scaled);
 
     //~ scaled += 5;
@@ -256,15 +257,9 @@ in(outBuf.length == precisionAfterDot + 1 /* extra carry digit */, outBuf.length
     auto asInteger = cast(ulong) scaled;
     writeln("asInteger ", asInteger);
 
-    // Rounding
-    bool possibleCarry;
+    // Initial carry
     if(asInteger % 10 > 5)
-    {
-        asInteger += 10;
-        possibleCarry = true;
-
-        writeln("asInteger rounded, not divided=", asInteger);
-    }
+        carry = 1;
 
     asInteger /= 10;
 
@@ -276,8 +271,7 @@ in(outBuf.length == precisionAfterDot + 1 /* extra carry digit */, outBuf.length
 
         foreach_reverse(i, ref c; outBuf)
         {
-            const ubyte digit = asInteger % 10;
-            c = asciiNumStart + digit;
+            ubyte digit = cast(ubyte)(asInteger % 10);
 
             if(!trailingZeroesPassed && digit != 0)
             {
@@ -285,32 +279,25 @@ in(outBuf.length == precisionAfterDot + 1 /* extra carry digit */, outBuf.length
                 len = addTrailingZeroes ? i+1 : outBuf.length;
             }
 
-            if(possibleCarry && trailingZeroesPassed)
+            writeln("carry internal=", carry);
+
+            digit = cast(ubyte)(digit + carry);
+
+            if(digit > 9)
             {
-                if(!carry)
-                {
-                    // Probably found most significant digit of the
-                    // number to which the carry was applied
-                    if(digit == 1)
-                        carry = true;
-                    else
-                        possibleCarry = false;
-                }
-                else
-                    if(digit != 0)
-                    {
-                        carry = false;
-                        possibleCarry = false;
-                    }
+                carry = digit / 10;
+                digit %= 10;
             }
+            else
+                carry = 0;
+
+            c = cast(ubyte)(asciiNumStart + digit);
 
             asInteger /= 10;
         }
     }
 
     assert(outBuf[0] == '0' || outBuf[0] == '1', outBuf[0].to!string);
-
-    return asInteger;
 }
 
 private struct BufMethods
