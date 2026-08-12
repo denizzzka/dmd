@@ -177,25 +177,22 @@ if(__traits(isFloating, T))
     auto fracBuf = ret.buf[0 .. expStartIdx];
     const fracLen = roundReverse(fracPart, fracPrecision, addTrailingZeroes, carry, fracBuf);
 
-    const fracEnd = expStartIdx - fracLen;
+    const fracStartIdx = expStartIdx - fracLen;
     writeln("expStartIdx=", expStartIdx);
     writeln("fracLen=", fracLen);
-    writeln("fracEnd=", fracEnd);
+    writeln("fracStartIdx=", fracStartIdx);
     writeln("addTrailingZeroes=", addTrailingZeroes);
-
-    if(carry)
-    {
-        //~ writeln("intPart=", intPart);
-        intPart += carry;
-        //~ exponent++; //TODO: ???!!!
-    }
 
     writeln("format=", format);
     writeln("exponent=", exponent);
     writeln("carry=", carry);
 
-    const intDigitsLen = addDigitsReverse(ret.buf[0 .. fracEnd], intPart);
-    const intDigitsStart = fracEnd - intDigitsLen;
+    if(carry)
+        exponent++;
+
+    const intDigitsLen = roundWithCarry(intPart, 6, true, true, carry, ret.buf[0 .. fracStartIdx]);
+    //~ const intDigitsLen = addDigitsReverse(ret.buf[0 .. fracEnd], intPart);
+    const intDigitsStartIdx = fracStartIdx - intDigitsLen;
     writeln("intDigitsLen=", intDigitsLen);
 
     //~ const dotIdx = fracOffsetIdx;
@@ -230,7 +227,7 @@ if(__traits(isFloating, T))
 
     writeln("ret.buf=", ret.buf);
 
-    ret.slice = ret.buf[intDigitsStart .. m.charCnt];
+    ret.slice = ret.buf[intDigitsStartIdx .. m.charCnt];
 
     return ret;
 }
@@ -265,10 +262,10 @@ in(outBuf.length > precisionAfterDot, outBuf.length.to!string)
 
     writeln("asInteger rounded=", asInteger);
 
-    return roundWithCarry(asInteger, precisionAfterDot, addTrailingZeroes, carry, outBuf);
+    return roundWithCarry(asInteger, precisionAfterDot, false, addTrailingZeroes, carry, outBuf);
 }
 
-private auto roundWithCarry(ulong integer, in ushort precision, in bool addTrailingZeroes, ref ubyte carry, char[] outBuf)
+private auto roundWithCarry(ulong integer, in ushort precision, in bool skipLeadingZeros, in bool addTrailingZeroes, ref ubyte carry, char[] outBuf)
 {
     bool outputEnabled = addTrailingZeroes;
     size_t count = outBuf.length - 1;
@@ -287,8 +284,6 @@ private auto roundWithCarry(ulong integer, in ushort precision, in bool addTrail
         else
             carry = 0;
 
-        integer /= 10;
-
         if(digit != 0)
             outputEnabled = true;
 
@@ -297,6 +292,11 @@ private auto roundWithCarry(ulong integer, in ushort precision, in bool addTrail
             outBuf[count] = cast(ubyte)(asciiNumStart + digit);
             count--;
         }
+
+        integer /= 10;
+
+        if(skipLeadingZeros && integer == 0 && carry == 0)
+            break;
     }
 
     return outBuf.length - count;
