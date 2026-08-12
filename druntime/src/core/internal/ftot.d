@@ -9,7 +9,7 @@ unittest
 {
     double val = 0.0;
     auto d = Decimal!(uint, 20)(val);
-    d.bigits = 0;
+    d.bigitsArr = 0;
 
     d.addBigit(1);
     assert(d.bigits[1] == 1);
@@ -103,7 +103,8 @@ struct Decimal(T, size_t maxLen)
 if(is(T == ushort) || is(T == uint))
 {
     /// Each bigit is a 9-digit decimal number.
-    T[maxLen] bigits; //TODO: = void;
+    T[maxLen] bigitsArr; //TODO: = void;
+    T[] bigits;
 
     // Set decimal exponent. The most effective is to use
     // the largest power of 10 that is less than T.max.
@@ -163,7 +164,7 @@ if(is(T == ushort) || is(T == uint))
         }
     }
 
-    void shiftFewBitsRight(in int n, byte bigitIdx = 0)
+    void shiftFewBitsRight(in int n)
     in(n > 0)
     in(n <= decimalExp)
     {
@@ -172,16 +173,16 @@ if(is(T == ushort) || is(T == uint))
         int offset;
 
         // Number was here and moved completely to the right?
-        if((bigits[bigitIdx] >> n) == 0 && bigits[bigitIdx] != 0)
+        if((bigits[0] >> n) == 0 && bigits[0] != 0)
         {
             offset = 1;
             numBigits--;
             fractionStart--;
 
-            borrow = assumeSafeCastT(UL(bigits[bigitIdx]) * bigitBound >> n);
+            borrow = assumeSafeCastT(UL(bigits[0]) * bigitBound >> n);
         }
 
-        foreach(i; bigitIdx .. numBigits)
+        foreach(i; 0 .. numBigits)
         {
             const UL bigit = bigits[i + offset];
 
@@ -196,7 +197,7 @@ if(is(T == ushort) || is(T == uint))
         }
     }
 
-    void massiveLeftShift(int n, byte bigitIdx)
+    void massiveLeftShift(int n)
     in(n > 0)
     {
         enum bitsPerIteration = maxLeftShift;
@@ -204,13 +205,13 @@ if(is(T == ushort) || is(T == uint))
         do
         {
             const bits = n < bitsPerIteration ? n : bitsPerIteration;
-            shiftFewBitsLeft(bits, bigitIdx);
+            shiftFewBitsLeft(bits, 0);
             n -= bits;
         }
         while(n > 0);
     }
 
-    void massiveRightShift(int n, byte bigitIdx)
+    void massiveRightShift(int n)
     in(n > 0)
     {
         enum bitsPerIteration = decimalExp;
@@ -218,12 +219,13 @@ if(is(T == ushort) || is(T == uint))
         do
         {
             const bits = n < bitsPerIteration ? n : bitsPerIteration;
-            shiftFewBitsRight(bits, bigitIdx);
+            shiftFewBitsRight(bits);
             n -= bits;
         }
         while(n > 0);
     }
 
+    //TODO: remove
     void addBigit(T val)
     in(val >= 0)
     in(val < bigitBound)
@@ -278,7 +280,7 @@ if(is(T == ushort) || is(T == uint))
             printf("v=%llu\n", v);
 
             const lessSig = v % bigitBound;
-            bigits[intPartIdx] = lessSig;
+            bigitsArr[intPartIdx] = lessSig;
             numBigits++;
 
             v /= bigitBound;
@@ -293,17 +295,19 @@ if(is(T == ushort) || is(T == uint))
 
         fractionStart = intPartIdx-1;
 
+        bigits = bigitsArr[intPartIdx .. $];
+
         printBigits();
 
         assert(intPartIdx >= 0);
 
         if(exp >= 0)
         {
-            massiveLeftShift(exp, intPartIdx);
+            massiveLeftShift(exp);
         }
         else
         {
-            massiveRightShift(-exp, intPartIdx);
+            massiveRightShift(-exp);
             fractionStart++;
         }
 
@@ -324,7 +328,7 @@ if(is(T == ushort) || is(T == uint))
     void printBigits() const
     {
         foreach(idx, b; bigits[0 .. 9])
-            printf("bigit[%llu] %d\n", idx, b);
+            printf("bigitArr[%llu] %d\n", idx, b);
     }
 }
 
