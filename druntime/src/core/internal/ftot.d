@@ -73,8 +73,8 @@ unittest
         res = dtoa_puff!uint(buf, v, 6);
         assert(res == expected, res);
 
-        //~ res = dtoa_puff!ushort(buf, v, 6);
-        //~ assert(res == expected, res);
+        res = dtoa_puff!ushort(buf, v, 6);
+        assert(res == expected, res);
     }
 
     testIt(-12.345f, "-1.23450e+1");
@@ -280,8 +280,6 @@ if(is(T == ushort) || is(T == uint))
                 break;
 
             intPartIdx--;
-
-            assert(v < bigitBound); // only for T == uint
         }
 
         fractionStart = intPartBigitsNum - intPartIdx - 1;
