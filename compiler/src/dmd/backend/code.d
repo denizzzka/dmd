@@ -22,6 +22,7 @@ import dmd.backend.x86.code_x86;
 import dmd.backend.codebuilder : CodeBuilder;
 import dmd.backend.el : elem;
 import dmd.backend.oper : OPMAX;
+import dmd.backend.symbol;
 import dmd.backend.ty;
 import dmd.backend.type;
 
@@ -200,7 +201,7 @@ struct CGstate
     char gotref;                // !=0 if the GOTsym was referenced
     int refparam;               // !=0 if we referenced any parameters
     bool accessedTLS;           // set if accessed Thread Local Storage (TLS)
-    bool calledFinally;         // true if called a BC._finally block
+    bool calledFinally;         // true if called a BC.finally_ block
     int reflocal;               // !=0 if we referenced any locals
 
     regm_t[4] lastRetregs;      // used to not allocate the same register over and over again,

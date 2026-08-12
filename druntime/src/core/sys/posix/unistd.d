@@ -114,15 +114,9 @@ else
 
 version (CRuntime_WASI)
 {
-    version (WASI_EMULATED_GETPID)
-        pid_t   getpid() @trusted;
-    else
-        deprecated("WASI lacks process identifiers; to enable emulation of"~
-                   " the `getpid` function using a placeholder value, which"~
-                   " doesn't reflect the host PID of the program, compile"~
-                   " with --d-version=WASI_EMULATED_GETPID and link with"~
-                   " -lwasi-emulated-getpid")
-        pid_t   getpid() @trusted;
+    // WASI has no processes, and wasi-libc requires you to jump through hoops
+    // to link this in. We just let D code use it silently.
+    extern(D) pid_t getpid()() @trusted => 42;
 } else
     pid_t   getpid() @trusted;
 
@@ -402,7 +396,9 @@ else version (CRuntime_Musl)
 }
 else version (CRuntime_WASI)
 {
+    int ftruncate(int, off_t) @trusted;
     off_t lseek(int, off_t, int) @trusted;
+    alias ftruncate64 = ftruncate;
     alias lseek64 = lseek;
     int   dup3(int, int, int) @trusted;
     int   faccessat(int, const scope char*, int, int);
@@ -2983,6 +2979,7 @@ else version (CRuntime_Musl)
 }
 else version (CRuntime_WASI)
 {
+    int truncate(const scope char*, off_t);
 }
 else version (Darwin)
 {

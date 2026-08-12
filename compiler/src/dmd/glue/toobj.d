@@ -78,9 +78,9 @@ import dmd.backend.cv4;
 import dmd.backend.dt;
 import dmd.backend.el;
 import dmd.backend.dout : out_readonly, outdata;
-import dmd.backend.symbol : symbol_name;
 import dmd.backend.obj;
 import dmd.backend.oper;
+import dmd.backend.symbol;
 import dmd.backend.ty;
 import dmd.backend.type;
 
@@ -170,17 +170,17 @@ void toObjFile(Dsymbol ds, bool multiobj)
 {
     //printf("toObjFile(%s %s)\n", ds.kind(), ds.toChars());
 
-    bool isCfile = ds.isCsymbol();
-
     extern (C++) final class ToObjFile : Visitor
     {
         alias visit = Visitor.visit;
     public:
         bool multiobj;
+        bool isCfile;
 
-        this(bool multiobj) scope @safe
+        this(bool multiobj, bool isCfile) scope @safe
         {
             this.multiobj = multiobj;
+            this.isCfile = isCfile;
         }
 
         void visitNoMultiObj(Dsymbol ds)
@@ -507,10 +507,10 @@ void toObjFile(Dsymbol ds, bool multiobj)
                     if (!e.isStructLiteralExp())
                         return 0;
 
-                    auto literal = e.isStructLiteralExp();
-                    assert(literal.sd);
+                    auto sle = e.isStructLiteralExp();
+                    assert(sle.sd);
 
-                    if (!isCoreUda(literal.sd, Id.udaSection))
+                    if (!isCoreUda(sle.sd, Id.udaSection))
                         return 0;
 
                     if (userDefinedSection)
@@ -519,8 +519,8 @@ void toObjFile(Dsymbol ds, bool multiobj)
                         return 1;
                     }
 
-                    assert(literal.elements.length == 1);
-                    auto se = (*literal.elements)[0].isStringExp();
+                    assert(sle.elements.length == 1);
+                    auto se = (*sle.elements)[0].isStringExp();
                     assert(se);
 
                     userDefinedSection = cast(string)se.toUTF8(vd._scope).toStringz();
@@ -927,7 +927,9 @@ void toObjFile(Dsymbol ds, bool multiobj)
          */
         static void tlsToDt(VarDeclaration vd, Symbol* s, uint sz, ref DtBuilder dtb, bool isCfile)
         {
-            assert(config.objfmt == OBJ_MACH && target.isX86_64 && (s.Stype.Tty & mTYLINK) == mTYthread);
+            assert(config.objfmt == OBJ_MACH &&
+                (target.isX86_64 || target.isAArch64) &&
+                (s.Stype.Tty & mTYLINK) == mTYthread);
 
             Symbol* tlvInit = createTLVDataSymbol(vd, s);
             auto tlvInitDtb = DtBuilder(0);
@@ -942,8 +944,8 @@ void toObjFile(Dsymbol ds, bool multiobj)
             tlvInit.Sdt = tlvInitDtb.finish();
             outdata(tlvInit);
 
-            if (target.isX86_64)
-                tlvInit.Sclass = SC.extern_;
+            tlvInit.Sclass = SC.extern_;
+            //tlvInit.Sxtrnnum = 0; // not sure about this
 
             Symbol* tlvBootstrap = objmod.tlv_bootstrap();
             dtb.xoff(tlvBootstrap, 0, TYnptr);
@@ -1018,7 +1020,7 @@ void toObjFile(Dsymbol ds, bool multiobj)
         }
     }
 
-    scope v = new ToObjFile(multiobj);
+    scope v = new ToObjFile(multiobj, ds.isCsymbol());
     ds.accept(v);
 }
 

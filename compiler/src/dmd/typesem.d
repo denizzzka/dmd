@@ -2171,7 +2171,7 @@ extern(D) Expressions* resolveNamedArgs(TypeFunction tf, ArgumentList argumentLi
  *      MATCHxxxx
  */
 extern (D) MATCH callMatch(FuncDeclaration fd, TypeFunction tf, Type tthis, ArgumentList argumentList,
-        int flag = 0, void delegate(const(char)*, Loc argloc = Loc.initial) scope errorHelper = null, Scope* sc = null)
+        int flag = 0, scope void delegate(const(char)*, Loc argloc = Loc.initial) scope errorHelper = null, Scope* sc = null)
 {
     //printf("callMatch() fd: %s, tf: %s\n", fd ? fd.ident.toChars() : "null", toChars(tf));
     MATCH match = MATCH.exact; // assume exact match
@@ -3864,7 +3864,7 @@ Type typeSemantic(Type type, Loc loc, Scope* sc)
             }
             else
             {
-                e = inferType(e, fparam.type);
+                e = inferExpType(e, fparam.type);
                 Scope* sc2 = sc.push();
                 sc2.inDefaultArg = true;
                 Initializer iz = new ExpInitializer(e.loc, e);

@@ -438,7 +438,7 @@ StringExp toStringExp(Expression _this)
     static StringExp arrayLiteralToStringExp(ArrayLiteralExp _this)
     {
         TY telem = _this.type.nextOf().toBasetype().ty;
-        if (!(telem.isSomeChar || (telem == Tvoid && (!_this.elements || _this.elements.length == 0))))
+        if (!(telem.isSomeChar || (telem == Tvoid && !_this.length)))
             return null;
 
         ubyte sz = 1;
@@ -448,20 +448,17 @@ StringExp toStringExp(Expression _this)
             sz = 4;
 
         OutBuffer buf;
-        if (_this.elements)
+        foreach (i; 0 .. _this.length)
         {
-            foreach (i; 0 .. _this.elements.length)
-            {
-                auto ch = _this[i];
-                if (ch.op != EXP.int64)
-                    return null;
-                if (sz == 1)
-                    buf.writeByte(cast(ubyte)ch.toInteger());
-                else if (sz == 2)
-                    buf.writeword(cast(uint)ch.toInteger());
-                else
-                    buf.write4(cast(uint)ch.toInteger());
-            }
+            auto ch = _this[i];
+            if (ch.op != EXP.int64)
+                return null;
+            if (sz == 1)
+                buf.writeByte(cast(ubyte)ch.toInteger());
+            else if (sz == 2)
+                buf.writeword(cast(uint)ch.toInteger());
+            else
+                buf.write4(cast(uint)ch.toInteger());
         }
         char prefix;
         if (sz == 1)
@@ -506,7 +503,7 @@ Optional!bool toBool(Expression _this)
 
     static Optional!bool arrayLiteralToBool(ArrayLiteralExp _this)
     {
-        size_t dim = _this.elements ? _this.elements.length : 0;
+        size_t dim = _this.length;
         return typeof(return)(dim != 0);
     }
 
@@ -854,11 +851,11 @@ bool canElideCopy(Expression e, Type to, bool checkMod = false)
 }
 
 // Return index of the field, or -1 if not found
-int getFieldIndex(ClassReferenceExp _this, Type fieldtype, uint fieldoffset)
+int getFieldIndex(ClassReferenceExp cre, Type fieldtype, uint fieldoffset)
 {
-    ClassDeclaration cd = _this.originalClass();
+    ClassDeclaration cd = cre.originalClass();
     uint fieldsSoFar = 0;
-    for (size_t j = 0; j <  _this.value.elements.length; j++)
+    for (size_t j = 0; j <  cre.value.elements.length; j++)
     {
         while (j - fieldsSoFar >= cd.fields.length)
         {
@@ -868,7 +865,7 @@ int getFieldIndex(ClassReferenceExp _this, Type fieldtype, uint fieldoffset)
         VarDeclaration v2 = cd.fields[j - fieldsSoFar];
         if (fieldoffset == v2.offset && fieldtype.size() == v2.type.size())
         {
-            return cast(int)( _this.value.elements.length - fieldsSoFar - cd.fields.length + (j - fieldsSoFar));
+            return cast(int)( cre.value.elements.length - fieldsSoFar - cd.fields.length + (j - fieldsSoFar));
         }
     }
     return -1;
@@ -876,28 +873,28 @@ int getFieldIndex(ClassReferenceExp _this, Type fieldtype, uint fieldoffset)
 
 /************************************
  * Get index of field.
- * Returns -1 if not found.
+ * Returns: -1 if not found.
  */
-int getFieldIndex(StructLiteralExp _this, Type type, uint offset)
+int getFieldIndex(StructLiteralExp sle, Type type, uint offset)
 {
     /* Find which field offset is by looking at the field offsets
      */
-    if (!_this.elements.length)
+    if (!sle.elements.length)
         return -1;
 
     const sz = type.size();
     if (sz == SIZE_INVALID)
         return -1;
-    foreach (i, v; _this.sd.fields)
+    foreach (i, v; sle.sd.fields)
     {
         if (offset != v.offset)
             continue;
         if (sz != v.type.size())
             continue;
         /* context fields might not be filled. */
-        if (i >= _this.sd.nonHiddenFields())
+        if (i >= sle.sd.nonHiddenFields())
             return cast(int)i;
-        if (auto e = (*_this.elements)[i])
+        if (auto e = (*sle.elements)[i])
         {
             return cast(int)i;
         }
@@ -951,20 +948,19 @@ bool equals(const Expression _this, const Expression e)
         return true;
     }
 
-    static bool arrayLiteralExpEquals(const ArrayLiteralExp _this, const ArrayLiteralExp e)
+    static bool arrayLiteralExpEquals(const ArrayLiteralExp ale1, const ArrayLiteralExp ale2)
     {
-        if (_this.elements.length != e.elements.length)
+        if (ale1.length != ale2.length)
             return false;
-        if (_this.elements.length == 0 && !_this.type.equals(e.type))
+        if (ale1.length == 0 && !ale1.type.equals(ale2.type))
         {
             return false;
         }
 
-        foreach (i, e1; *_this.elements)
+        foreach (i; 0 .. ale1.length)
         {
-            auto e2 = (*e.elements)[i];
-            auto e1x = e1 ? e1 : _this.basis;
-            auto e2x = e2 ? e2 : e.basis;
+            auto e1x = ale1[i];
+            auto e2x = ale2[i];
 
             if (e1x != e2x && (!e1x || !e2x || !e1x.equals(e2x)))
                 return false;
@@ -1913,15 +1909,36 @@ Expression resolveOpDollar(Scope* sc, ArrayExp ae, IntervalExp ie, ref Expressio
 extern(D) bool arrayExpressionSemantic(
     Expression[] exps, Scope* sc, bool preserveErrors = false)
 {
+    Expression basis = null;
+    return arrayExpressionSemantic(exps, basis, sc, preserveErrors);
+}
+
+extern(D) bool arrayExpressionSemantic(
+    Expression[] exps, ref Expression basis, Scope* sc, bool preserveErrors = false)
+{
     bool err = false;
-    foreach (ref e; exps)
+
+    Expression check(Expression e)
     {
-        if (e is null) continue;
         auto e2 = e.expressionSemantic(sc);
         if (e2.op == EXP.error)
+        {
             err = true;
-        if (preserveErrors || e2.op != EXP.error)
+            if (preserveErrors)
+                e = e2;
+        }
+        else
             e = e2;
+        return e;
+    }
+
+    if (basis)
+      basis = check(basis);
+
+    foreach (ref e; exps)
+    {
+        if (e)
+            e = check(e);
     }
     return err;
 }
@@ -4598,10 +4615,10 @@ private bool functionParameters(Loc loc, Scope* sc,
 
                 ArrayLiteralExp ale;
                 if (p.type.toBasetype().ty == Tarray &&
-                    (ale = a.isArrayLiteralExp()) !is null && ale.elements && ale.elements.length > 0)
+                    (ale = a.isArrayLiteralExp()) !is null && ale.length)
                 {
                     // allocate the array literal as temporary static array on the stack
-                    ale.type = ale.type.nextOf().sarrayOf(ale.elements.length);
+                    ale.type = ale.type.nextOf().sarrayOf(ale.length);
                     auto tmp = copyToTemp(STC.none, "__arrayliteral_on_stack", ale);
                     tmp.storage_class |= STC.exptemp;
                     auto declareTmp = new DeclarationExp(ale.loc, tmp);
@@ -5236,7 +5253,7 @@ private bool checkNestedFuncReference(FuncDeclaration fd, Scope* sc, Loc loc)
 
 Expression lowerArrayLiteral(ArrayLiteralExp ale, Scope* sc)
 {
-    const dim = ale.elements ? ale.elements.length : 0;
+    const dim = ale.length;
 
     Identifier hook = Id._d_arrayliteralTX;
     if (!verifyHookExist(ale.loc, *sc, hook, "creating array literals"))
@@ -6070,9 +6087,7 @@ private extern (C++) final class ExpressionSemanticVisitor : Visitor
         /* Perhaps an empty array literal [ ] should be rewritten as null?
          */
 
-        if (e.basis)
-            e.basis = e.basis.expressionSemantic(sc);
-        if (arrayExpressionSemantic(e.elements.peekSlice(), sc) || (e.basis && e.basis.op == EXP.error))
+        if (arrayExpressionSemantic(e.elements.peekSlice(), e.basis, sc))
             return setError();
 
         expandTuples(e.elements);
@@ -6090,7 +6105,7 @@ private extern (C++) final class ExpressionSemanticVisitor : Visitor
 
         /* Disallow array literals of type void being used.
          */
-        if (e.elements.length > 0 && t0.ty == Tvoid)
+        if (e.length > 0 && t0.ty == Tvoid)
         {
             error(e.loc, "`%s` of type `%s` has no value", e.toErrMsg(), e.type.toErrMsg());
             return setError();
@@ -8015,7 +8030,7 @@ private extern (C++) final class ExpressionSemanticVisitor : Visitor
         }
 
         FuncDeclaration resolveOverloadSet(Loc loc, Scope* sc,
-            OverloadSet os, Objects* tiargs, Type tthis, ArgumentList argumentList)
+            OverloadSet os, Objects* tiargs, Type tthis, ArgumentList argumentList) scope
         {
             FuncDeclaration f = null;
             foreach (s; os.a)
@@ -8634,20 +8649,55 @@ private extern (C++) final class ExpressionSemanticVisitor : Visitor
                 // if super is defined in C++, it sets the vtable pointer to the base class
                 // so we have to restore it, but still return 'this' from super() call:
                 // (auto __vptrTmp = this.__vptr, auto __superTmp = super()), (this.__vptr = __vptrTmp, __superTmp)
+                // the same is done for every interface vptr
                 Loc loc = exp.loc;
 
-                auto vptr = new DotIdExp(loc, new ThisExp(loc), Id.__vptr);
-                auto vptrTmpDecl = copyToTemp(STC.none, "__vptrTmp", vptr);
-                auto declareVptrTmp = new DeclarationExp(loc, vptrTmpDecl);
+                // Build expressions for accessing the vptrs.
+                Expressions *vptrs = new Expressions();
+
+                // Add expression for normal vptr
+                vptrs.push(new DotIdExp(loc, new ThisExp(loc), Id.__vptr));
+
+                // Add expressions for interface vptrs
+                for (ClassDeclaration pc = cd.baseClass; pc; pc = pc.baseClass)
+                {
+                    foreach (i; 0 .. pc.vtblInterfaces.length)
+                    {
+                        BaseClass* b = (*pc.vtblInterfaces)[i];
+
+                        // Add expression `*cast(void**)(cast(void*)this) + offset)` for accessing the interface vptr
+                        Expression vptr = new CastExp(loc, new ThisExp(loc), Type.tvoidptr);
+                        vptr = new AddExp(loc, vptr, new IntegerExp(loc, b.offset, Type.tsize_t));
+                        vptr = new PtrExp(loc, new CastExp(loc, vptr, Type.tvoidptr.pointerTo()));
+                        vptrs.push(vptr);
+                    }
+                }
 
                 auto superTmpDecl = copyToTemp(STC.none, "__superTmp", result);
                 auto declareSuperTmp = new DeclarationExp(loc, superTmpDecl);
 
-                auto declareTmps = new CommaExp(loc, declareVptrTmp, declareSuperTmp);
+                // Build expressions for declaring the temporary variables and restoring them
+                Expression declareTmps = null;
+                Expression restoreVptrs = null;
+                foreach (vptr; *vptrs)
+                {
+                    auto vptrTmpDecl = copyToTemp(STC.none, "__vptrTmp", vptr);
+                    auto declareTmp = new DeclarationExp(loc, vptrTmpDecl);
+                    if (declareTmps !is null)
+                        declareTmps = new CommaExp(loc, declareTmps, declareTmp);
+                    else
+                        declareTmps = declareTmp;
 
-                auto restoreVptr = new AssignExp(loc, vptr.syntaxCopy(), new VarExp(loc, vptrTmpDecl));
+                    auto restoreVptr = new AssignExp(loc, vptr.syntaxCopy(), new VarExp(loc, vptrTmpDecl));
+                    if (restoreVptrs !is null)
+                        restoreVptrs = new CommaExp(loc, restoreVptrs, restoreVptr);
+                    else
+                        restoreVptrs = restoreVptr;
+                }
 
-                Expression e = new CommaExp(loc, declareTmps, new CommaExp(loc, restoreVptr, new VarExp(loc, superTmpDecl)));
+                declareTmps = new CommaExp(loc, declareTmps, declareSuperTmp);
+
+                Expression e = new CommaExp(loc, declareTmps, new CommaExp(loc, restoreVptrs, new VarExp(loc, superTmpDecl)));
                 result = e.expressionSemantic(sc);
             }
         }
@@ -10849,7 +10899,7 @@ private extern (C++) final class ExpressionSemanticVisitor : Visitor
 
             // When e1 is a template lambda, this cast may instantiate it with
             // the type 'to'.
-            exp.e1 = inferType(exp.e1, exp.to);
+            exp.e1 = inferExpType(exp.e1, exp.to);
         }
 
         if (auto e = unaSemantic(exp, sc))
@@ -12280,7 +12330,7 @@ private extern (C++) final class ExpressionSemanticVisitor : Visitor
          * depends on the result of e1 in assignments.
          */
         {
-            Expression e2x = inferType(exp.e2, t1.baseElemOf());
+            Expression e2x = inferExpType(exp.e2, t1.baseElemOf());
             e2x = e2x.expressionSemantic(sc);
             if (!t1.isTypeSArray())
                 e2x = e2x.arrayFuncConv(sc);
@@ -12822,7 +12872,7 @@ private extern (C++) final class ExpressionSemanticVisitor : Visitor
                     uinteger_t dim2 = dim1;
                     if (auto ale = e2x.isArrayLiteralExp())
                     {
-                        dim2 = ale.elements ? ale.elements.length : 0;
+                        dim2 = ale.length;
                     }
                     else if (auto se = e2x.isSliceExp())
                     {
@@ -13052,7 +13102,7 @@ private extern (C++) final class ExpressionSemanticVisitor : Visitor
             TypeSArray tsa1 = cast(TypeSArray)toStaticArrayType(se1);
             TypeSArray tsa2 = null;
             if (auto ale = e2x.isArrayLiteralExp())
-                tsa2 = cast(TypeSArray)t2.nextOf().sarrayOf(ale.elements.length);
+                tsa2 = cast(TypeSArray)t2.nextOf().sarrayOf(ale.length);
             else if (auto se = e2x.isSliceExp())
                 tsa2 = cast(TypeSArray)toStaticArrayType(se);
             else
@@ -14073,6 +14123,27 @@ private extern (C++) final class ExpressionSemanticVisitor : Visitor
 
         Type tb1next = tb1.nextOf();
         Type tb2next = tb2.nextOf();
+
+        if (tb1.ty == Tarray && tb1next && tb1next.toBasetype().ty == Tsarray && exp.e2.op == EXP.arrayLiteral)
+        {
+            auto e2 = exp.e2.castTo(sc, tb1);
+            if (!e2.isErrorExp())
+            {
+                exp.e2 = e2;
+                tb2 = exp.e2.type.toBasetype();
+                tb2next = tb2.nextOf();
+            }
+        }
+        if (tb2.ty == Tarray && tb2next && tb2next.toBasetype().ty == Tsarray && exp.e1.op == EXP.arrayLiteral)
+        {
+            auto e1 = exp.e1.castTo(sc, tb2);
+            if (!e1.isErrorExp())
+            {
+                exp.e1 = e1;
+                tb1 = exp.e1.type.toBasetype();
+                tb1next = tb1.nextOf();
+            }
+        }
 
         // Check for: array ~ array
         if (tb1next && tb2next && (tb1next.implicitConvTo(tb2next) >= MATCH.constant || tb2next.implicitConvTo(tb1next) >= MATCH.constant || exp.e1.op == EXP.arrayLiteral && exp.e1.implicitConvTo(tb2) || exp.e2.op == EXP.arrayLiteral && exp.e2.implicitConvTo(tb1)))
@@ -15205,13 +15276,16 @@ private extern (C++) final class ExpressionSemanticVisitor : Visitor
                 if (eNext && !eNext.toBasetype().isTypeStruct())
                     e.type = e.type.unqualify(MODFlags.const_);
 
-                if (!e.isArrayLiteralExp())
+		auto ale = e.isArrayLiteralExp();
+                if (!ale)
                     return;
 
-                if (auto elems = e.isArrayLiteralExp().elements)
-                    foreach(elem; *elems)
-                        if (elem)
-                            unqualifyExp(elem);
+		foreach (i; 0 .. ale.length)
+		{
+		    Expression ex = ale[i];
+		    if (ex)
+			unqualifyExp(ex);
+		}
             }
             unqualifyExp(e1c);
             unqualifyExp(e2c);

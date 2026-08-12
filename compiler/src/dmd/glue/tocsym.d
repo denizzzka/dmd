@@ -59,9 +59,9 @@ import dmd.backend.cc;
 import dmd.backend.dt;
 import dmd.backend.type;
 import dmd.backend.dout : outdata, outthunk;
-import dmd.backend.symbol : symbol_calloc, symbol_func, symbol_name, SYMIDX;
 import dmd.backend.oper;
 import dmd.backend.cgcv;
+import dmd.backend.symbol;
 import dmd.backend.ty;
 
 /*************************************
@@ -481,7 +481,10 @@ Symbol* toSymbol(Dsymbol s)
                 f.Fflags |= Fstatic;
 
             if (fd.isSafe())
-                f.Fflags3 |= F3safe;
+                f.Fflags |= F3safe;
+
+            if (fd.isPure() != PURE.impure)
+                f.Fflags |= Fpure;
 
             if (fd.inlining == PINLINE.default_ && global.params.useInline ||
                 fd.inlining == PINLINE.always)
@@ -517,7 +520,7 @@ Symbol* toSymbol(Dsymbol s)
             {
                 t.Tty = TYnfunc;
                 t.Tmangle = Mangle.c;
-                f.Fflags3 |= Fmain;
+                f.Fflags |= Fmain;
             }
             else
             {
@@ -656,7 +659,7 @@ Symbol* toThunkSymbol(FuncDeclaration fd, int offset)
         return s;
 
     if (retStyle(fd.type.isTypeFunction(), fd.needThis()) == RET.stack)
-        s.Sfunc.Fflags3 |= F3hiddenPtr;
+        s.Sfunc.Fflags |= F3hiddenPtr;
 
     s.Sfunc.Fflags &= ~Finline;  // thunks are not real functions, don't inline them
 
