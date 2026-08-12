@@ -293,8 +293,7 @@ if(is(T == ushort) || is(T == uint))
 
         fractionStart = intPartIdx-1;
 
-        foreach(idx, b; bigits[0 .. 9])
-            printf("bigit[%llu] %d\n", idx, b);
+        printBigits();
 
         assert(intPartIdx >= 0);
 
@@ -308,6 +307,8 @@ if(is(T == ushort) || is(T == uint))
             fractionStart++;
         }
 
+        printBigits();
+
         printf("frac start=%d\n", fractionStart);
     }
 
@@ -318,6 +319,12 @@ if(is(T == ushort) || is(T == uint))
         //~ printf("line: %llu\n", line);
         assert(val <= T.max);
         return cast(T) val;
+    }
+
+    void printBigits() const
+    {
+        foreach(idx, b; bigits[0 .. 9])
+            printf("bigit[%llu] %d\n", idx, b);
     }
 }
 
