@@ -284,7 +284,7 @@ if(is(T == ushort) || is(T == uint))
             assert(v < bigitBound); // only for T == uint
         }
 
-        fractionStart = intPartIdx-1;
+        fractionStart = intPartBigitsNum - intPartIdx - 1;
 
         bigits = bigitsArr[intPartIdx .. $];
 
