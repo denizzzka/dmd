@@ -282,7 +282,10 @@ if(is(T == ushort) || is(T == uint))
             intPartIdx--;
         }
 
-        fractionStart = intPartBigitsNum - intPartIdx - 1;
+        const integralBigitsAcquired = intPartBigitsNum - intPartIdx;
+        fractionStart = integralBigitsAcquired - 1;
+
+        printf("integralBigitsAcquired=%d fractionStart=%d\n", integralBigitsAcquired, fractionStart);
 
         bigits = bigitsArr[intPartIdx .. $];
 
