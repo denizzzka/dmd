@@ -236,7 +236,7 @@ if(__traits(isFloating, T))
 private size_t round(T)(in T fracPart, in short precisionAfterDot, in bool addTrailingZeroes, out ubyte carry, char[] outBuf)
 if(__traits(isFloating, T))
 in(fracPart >= 0)
-in(outBuf.length > precisionAfterDot + 1 /* extra carry digit */, outBuf.length.to!string)
+in(outBuf.length > precisionAfterDot, outBuf.length.to!string)
 {
     writefln("fracPart before rounding=%e", fracPart);
 
@@ -265,7 +265,7 @@ in(outBuf.length > precisionAfterDot + 1 /* extra carry digit */, outBuf.length.
     size_t count;
     bool outputEnabled = addTrailingZeroes;
 
-    foreach_reverse(i, ref c; outBuf[$ - precisionAfterDot .. $])
+    foreach_reverse(i, ref c; outBuf[$ - precisionAfterDot+1 .. $])
     {
         ubyte digit = cast(ubyte)(asInteger % 10);
 
