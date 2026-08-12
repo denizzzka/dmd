@@ -202,6 +202,8 @@ if(__traits(isFloating, T))
 
     if(expForm)
     {
+        m.charCnt = expStartIdx;
+
         if(exponent < 0)
         {
             exponent = cast(short) -exponent;
@@ -218,11 +220,11 @@ if(__traits(isFloating, T))
         }
         else
         {
-            //~ char[2] expBuf = [
-                //~ cast(ubyte)(asciiNumStart + exponent / 10),
-                //~ cast(ubyte)(asciiNumStart + exponent % 10),
-            //~ ];
-            //~ m.append(expBuf);
+            char[2] expBuf = [
+                cast(ubyte)(asciiNumStart + exponent / 10),
+                cast(ubyte)(asciiNumStart + exponent % 10),
+            ];
+            m.append(expBuf);
         }
     }
 
