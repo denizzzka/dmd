@@ -192,11 +192,9 @@ if(__traits(isFloating, T))
     writeln("exponent=", exponent);
     writeln("carry=", carry);
 
-    {
-        char[] buf = ret.buf[0 .. fracEnd];
-        const intDigitsLen = addDigitsReverse(buf, intPart);
-        writeln("intDigitsLen=", intDigitsLen);
-    }
+    const intDigitsLen = addDigitsReverse(ret.buf[0 .. fracEnd], intPart);
+    const intDigitsStart = fracEnd - intDigitsLen;
+    writeln("intDigitsLen=", intDigitsLen);
 
     //~ const dotIdx = fracOffsetIdx;
 
@@ -230,7 +228,8 @@ if(__traits(isFloating, T))
 
     writeln("ret.buf=", ret.buf);
 
-    setResult();
+    ret.slice = ret.buf[intDigitsStart .. m.charCnt];
+
     return ret;
 }
 
