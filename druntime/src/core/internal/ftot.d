@@ -131,14 +131,16 @@ if(is(T == ushort) || is(T == uint))
     uint numBigits;
     int fractionStart;
 
-    void shiftFewBitsLeft(in int n)
+    void shiftFewBitsLeft(in int n, byte bigitIdx = 0)
     in(n > 0)
     in(n <= maxLeftShift)
     {
-        const ubyte offset = bigits[0] >= (bigitBound >> n) ? 1 : 0;
+        // Will number of blocks increase after the shifting?
+        // If so, reserves space for a new block
+        const ubyte offset = bigits[bigitIdx] >= (bigitBound >> n) ? 1 : 0;
         T carry;
 
-        foreach_reverse(i; 0 .. numBigits)
+        foreach_reverse(i; bigitIdx .. numBigits)
         {
             UL bigit = bigits[i];
             bigit = (bigit << n) + carry;
@@ -156,17 +158,15 @@ if(is(T == ushort) || is(T == uint))
 
         if(offset != 0)
         {
-            bigits[0] = carry;
+            bigits[bigitIdx] = carry;
             numBigits++;
         }
     }
 
-    void shiftFewBitsRight(in int n)
+    void shiftFewBitsRight(in int n, byte bigitIdx = 0)
     in(n > 0)
     in(n <= decimalExp)
     {
-        enum ubyte bigitIdx = 0;
-
         const T mask = assumeSafeCastT((1 << n) - 1);
         T borrow;
         int offset;
@@ -196,7 +196,7 @@ if(is(T == ushort) || is(T == uint))
         }
     }
 
-    void massiveLeftShift(int n)
+    void massiveLeftShift(int n, byte bigitIdx)
     in(n > 0)
     {
         enum bitsPerIteration = maxLeftShift;
@@ -204,13 +204,13 @@ if(is(T == ushort) || is(T == uint))
         do
         {
             const bits = n < bitsPerIteration ? n : bitsPerIteration;
-            shiftFewBitsLeft(bits);
+            shiftFewBitsLeft(bits, bigitIdx);
             n -= bits;
         }
         while(n > 0);
     }
 
-    void massiveRightShift(int n)
+    void massiveRightShift(int n, byte bigitIdx)
     in(n > 0)
     {
         enum bitsPerIteration = decimalExp;
@@ -218,7 +218,7 @@ if(is(T == ushort) || is(T == uint))
         do
         {
             const bits = n < bitsPerIteration ? n : bitsPerIteration;
-            shiftFewBitsRight(bits);
+            shiftFewBitsRight(bits, bigitIdx);
             n -= bits;
         }
         while(n > 0);
@@ -273,7 +273,7 @@ if(is(T == ushort) || is(T == uint))
 
         byte intPartIdx = intPartBigitsNum - 1;
 
-        while(v > 0 || numBigits == 0)
+        while(true)
         {
             printf("v=%llu\n", v);
 
@@ -282,23 +282,29 @@ if(is(T == ushort) || is(T == uint))
             numBigits++;
 
             v /= bigitBound;
+
+            if(v == 0)
+                break;
+
             intPartIdx--;
-            fractionStart++;
 
             assert(v < bigitBound); // only for T == uint
         }
 
+        fractionStart = intPartIdx-1;
+
         foreach(idx, b; bigits[0 .. 9])
             printf("bigit[%llu] %d\n", idx, b);
 
+        assert(intPartIdx >= 0);
+
         if(exp >= 0)
         {
-            massiveLeftShift(exp);
-            fractionStart = numBigits;
+            massiveLeftShift(exp, intPartIdx);
         }
         else
         {
-            massiveRightShift(-exp);
+            massiveRightShift(-exp, intPartIdx);
             fractionStart++;
         }
 
