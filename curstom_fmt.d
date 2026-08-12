@@ -165,25 +165,22 @@ if(__traits(isFloating, T))
 
     // Making output:
 
-    /*
-      Unusual: output fractional part first because it is subject of
-      rounding simultaneously, and the size of the integer part and
-      exponent depend on it
-    */
+    // Layout calculation
+    const expStartIdx = expForm ? ret.buf.length - maxExpLen : ret.buf.length;
 
     /// Precision after dot
     const short fracPrecision = 6;
-    ubyte carry;
-    const fracBufSize = fracPrecision + 1 /* extra carry digit - then will be used as dot place */;
-    const fracOffsetIdx = ret.buf.length - (fracBufSize + maxExpLen);
-    auto fracText = ret.buf[fracOffsetIdx .. fracOffsetIdx + fracBufSize];
-
     const libcCompat = (format == Format.StdLibc || format == Format.ExpLibc);
     const bool addTrailingZeroes = (format == Format.Exp || libcCompat);
 
-    //TODO: rename to charCnt
-    size_t i;
-    round(fracPart, fracPrecision, addTrailingZeroes, i, carry, fracText);
+    ubyte carry;
+    auto fracBuf = ret.buf[0 .. expStartIdx];
+    const fracLen = round(fracPart, fracPrecision, addTrailingZeroes, carry, fracBuf);
+
+    const fracEnd = expStartIdx - fracLen;
+    writeln("expStartIdx=", expStartIdx);
+    writeln("fracLen=", fracLen);
+    writeln("fracEnd=", fracEnd);
 
     if(carry)
     {
@@ -196,14 +193,12 @@ if(__traits(isFloating, T))
     writeln("carry=", carry);
 
     {
-        char[] buf = ret.buf[0 .. fracOffsetIdx];
+        char[] buf = ret.buf[0 .. fracEnd];
         const intDigitsLen = addDigitsReverse(buf, intPart);
         writeln("intDigitsLen=", intDigitsLen);
     }
 
-    const dotIdx = fracOffsetIdx;
-
-    m.charCnt += i;
+    //~ const dotIdx = fracOffsetIdx;
 
     if(expForm)
     {
@@ -223,11 +218,11 @@ if(__traits(isFloating, T))
         }
         else
         {
-            char[2] expBuf = [
-                cast(ubyte)(asciiNumStart + exponent / 10),
-                cast(ubyte)(asciiNumStart + exponent % 10),
-            ];
-            m.append(expBuf);
+            //~ char[2] expBuf = [
+                //~ cast(ubyte)(asciiNumStart + exponent / 10),
+                //~ cast(ubyte)(asciiNumStart + exponent % 10),
+            //~ ];
+            //~ m.append(expBuf);
         }
     }
 
@@ -237,10 +232,10 @@ if(__traits(isFloating, T))
     return ret;
 }
 
-private void round(T)(in T fracPart, in short precisionAfterDot, in bool addTrailingZeroes, out size_t len, out ubyte carry, char[] outBuf)
+private size_t round(T)(in T fracPart, in short precisionAfterDot, in bool addTrailingZeroes, out ubyte carry, char[] outBuf)
 if(__traits(isFloating, T))
 in(fracPart >= 0)
-in(outBuf.length == precisionAfterDot + 1 /* extra carry digit */, outBuf.length.to!string)
+in(outBuf.length > precisionAfterDot + 1 /* extra carry digit */, outBuf.length.to!string)
 {
     writefln("fracPart before rounding=%e", fracPart);
 
@@ -266,38 +261,38 @@ in(outBuf.length == precisionAfterDot + 1 /* extra carry digit */, outBuf.length
     writeln("asInteger rounded=", asInteger);
 
     // Carry detection combined with output
+    size_t count;
+    bool outputEnabled = addTrailingZeroes;
+
+    foreach_reverse(i, ref c; outBuf[$ - precisionAfterDot .. $])
     {
-        bool trailingZeroesPassed;
+        ubyte digit = cast(ubyte)(asInteger % 10);
 
-        foreach_reverse(i, ref c; outBuf)
+        if(digit != 0)
+            outputEnabled = true;
+
+        digit += cast(ubyte) carry;
+
+        if(digit > 9)
         {
-            ubyte digit = cast(ubyte)(asInteger % 10);
+            carry = digit / 10;
+            digit %= 10;
+        }
+        else
+            carry = 0;
 
-            if(!trailingZeroesPassed && digit != 0)
-            {
-                trailingZeroesPassed = true;
-                len = addTrailingZeroes ? i+1 : outBuf.length;
-            }
+        asInteger /= 10;
 
-            writeln("carry internal=", carry);
-
-            digit = cast(ubyte)(digit + carry);
-
-            if(digit > 9)
-            {
-                carry = digit / 10;
-                digit %= 10;
-            }
-            else
-                carry = 0;
-
+        if(outputEnabled)
+        {
             c = cast(ubyte)(asciiNumStart + digit);
-
-            asInteger /= 10;
+            count++;
         }
     }
 
-    assert(outBuf[0] == '0' || outBuf[0] == '1', outBuf[0].to!string);
+    assert(count <= precisionAfterDot);
+
+    return count;
 }
 
 private struct BufMethods
