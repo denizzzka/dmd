@@ -190,7 +190,9 @@ if(__traits(isFloating, T))
     if(carry)
         exponent++;
 
-    const intDigitsLen = roundWithCarry(intPart, 6, true, true, carry, ret.buf[0 .. fracStartIdx]);
+    const intDigitsLen = roundWithCarry(intPart, 6, true, true, carry, ret.buf[fracStartIdx-6 .. fracStartIdx]);
+    assert(carry == 0);
+
     //~ const intDigitsLen = addDigitsReverse(ret.buf[0 .. fracEnd], intPart);
     const intDigitsStartIdx = fracStartIdx - intDigitsLen;
     writeln("intDigitsLen=", intDigitsLen);
@@ -266,15 +268,17 @@ in(outBuf.length > precisionAfterDot, outBuf.length.to!string)
 }
 
 private auto roundWithCarry(ulong integer, in ushort precision, in bool skipLeadingZeros, in bool addTrailingZeroes, ref ubyte carry, char[] outBuf)
+in(precision <= outBuf.length)
 {
     bool outputEnabled = addTrailingZeroes;
     size_t count = outBuf.length - 1;
 
-    foreach_reverse(_; 1 .. precision)
+    foreach_reverse(_; 0 .. precision)
     {
-        //~ writeln("asInteger=", integer);
         ubyte digit = cast(ubyte)(integer % 10);
         digit += carry;
+
+        writeln("asInteger=", integer);
 
         if(digit > 9)
         {
