@@ -14,12 +14,12 @@ unittest
     d.addBigit(1);
     assert(d.bigits[1] == 1);
 
-    d.shiftBitsLeft(d.maxLeftShift);
-    d.shiftBitsLeft(1);
+    d.shiftFewBitsLeft(d.maxLeftShift);
+    d.shiftFewBitsLeft(1);
     assert(d.bigits[0] == 1);
 
-    d.shiftBitsLeft(d.maxLeftShift);
-    d.shiftBitsLeft(1);
+    d.shiftFewBitsLeft(d.maxLeftShift);
+    d.shiftFewBitsLeft(1);
     assert(d.bigits[0] == 1);
 }
 
@@ -46,11 +46,11 @@ unittest
         printf(">>>Rbigit=%d\n", b);
 
     // Shift left to the initial state:
-    d.shiftBitsLeft(1);
-    d.shiftBitsLeft(2);
-    d.shiftBitsLeft(5);
-    d.shiftBitsLeft(8);
-    d.shiftBitsLeft(16);
+    d.shiftFewBitsLeft(1);
+    d.shiftFewBitsLeft(2);
+    d.shiftFewBitsLeft(5);
+    d.shiftFewBitsLeft(8);
+    d.shiftFewBitsLeft(16);
 
     printf(">>> numBigits=%d\n", d.numBigits);
 
@@ -131,7 +131,7 @@ if(is(T == ushort) || is(T == uint))
     uint numBigits;
     int fractionStart;
 
-    void shiftBitsLeft(in int n)
+    void shiftFewBitsLeft(in int n)
     in(n > 0)
     in(n <= maxLeftShift)
     {
@@ -191,6 +191,20 @@ if(is(T == ushort) || is(T == uint))
             bigits[numBigits] = borrow;
             numBigits++;
         }
+    }
+
+    void massiveLeftShift(int n)
+    in(n > 0)
+    {
+        enum bitsPerIteration = maxLeftShift;
+
+        do
+        {
+            const bits = n < bitsPerIteration ? n : bitsPerIteration;
+            shiftFewBitsLeft(bits);
+            n -= bits;
+        }
+        while(n > 0);
     }
 
     void massiveRightShift(int n)
@@ -309,19 +323,7 @@ if(is(T == ushort) || is(T == uint))
         if(exp >= 0)
         {
             addBigit(v % bigitBound);
-
-            enum bits_per_iteration = maxLeftShift;
-
-            int i = 0;
-            for(; i <= exp - bits_per_iteration; i += bits_per_iteration)
-                shiftBitsLeft(bits_per_iteration);
-
-            if(i != exp)
-            {
-                assert(exp > i);
-                shiftBitsLeft(exp - i);
-            }
-
+            massiveLeftShift(exp);
             fractionStart = numBigits;
         }
         else
