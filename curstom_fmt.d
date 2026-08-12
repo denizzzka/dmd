@@ -242,11 +242,12 @@ in(outBuf.length > precisionAfterDot, outBuf.length.to!string)
 {
     writefln("fracPart before rounding=%e", fracPart);
 
+    //TODO: multiply strictly to ieee exponent - integer digits part
     const ulong mult = 10 ^^ precisionAfterDot;
     writeln("mult ", mult);
 
     // Scale to integer
-    auto scaled = (fracPart + 0.0f) * mult;
+    auto scaled = fracPart * mult;
     writefln("scaled %f", scaled);
 
     //~ scaled += 5;
@@ -269,6 +270,7 @@ in(outBuf.length > precisionAfterDot, outBuf.length.to!string)
 
     foreach_reverse(_; 0 .. precisionAfterDot - 1)
     {
+        //~ writeln("asInteger=", asInteger);
         ubyte digit = cast(ubyte)(asInteger % 10);
         digit += cast(ubyte) carry;
 
