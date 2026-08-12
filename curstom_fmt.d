@@ -171,16 +171,17 @@ if(__traits(isFloating, T))
     /// Precision after dot
     const short fracPrecision = 6;
     const libcCompat = (format == Format.StdLibc || format == Format.ExpLibc);
-    const bool addTrailingZeroes = (format == Format.Exp || libcCompat);
+    const bool addTrailingZeroes = libcCompat;
 
     ubyte carry;
     auto fracBuf = ret.buf[0 .. expStartIdx];
-    const fracLen = round(fracPart, fracPrecision, addTrailingZeroes, carry, fracBuf);
+    const fracLen = roundReverse(fracPart, fracPrecision, addTrailingZeroes, carry, fracBuf);
 
     const fracEnd = expStartIdx - fracLen;
     writeln("expStartIdx=", expStartIdx);
     writeln("fracLen=", fracLen);
     writeln("fracEnd=", fracEnd);
+    writeln("addTrailingZeroes=", addTrailingZeroes);
 
     if(carry)
     {
@@ -233,7 +234,8 @@ if(__traits(isFloating, T))
     return ret;
 }
 
-private size_t round(T)(in T fracPart, in short precisionAfterDot, in bool addTrailingZeroes, out ubyte carry, char[] outBuf)
+// Returns: left index in the outBuf
+private size_t roundReverse(T)(in T fracPart, in short precisionAfterDot, in bool addTrailingZeroes, out ubyte carry, char[] outBuf)
 if(__traits(isFloating, T))
 in(fracPart >= 0)
 in(outBuf.length > precisionAfterDot, outBuf.length.to!string)
@@ -262,10 +264,10 @@ in(outBuf.length > precisionAfterDot, outBuf.length.to!string)
     writeln("asInteger rounded=", asInteger);
 
     // Carry detection combined with output
-    size_t count;
+    size_t count = outBuf.length - 1;
     bool outputEnabled = addTrailingZeroes;
 
-    foreach_reverse(i, ref c; outBuf[$ - precisionAfterDot+1 .. $])
+    foreach_reverse(_; 0 .. precisionAfterDot - 1)
     {
         ubyte digit = cast(ubyte)(asInteger % 10);
 
@@ -286,14 +288,12 @@ in(outBuf.length > precisionAfterDot, outBuf.length.to!string)
 
         if(outputEnabled)
         {
-            c = cast(ubyte)(asciiNumStart + digit);
-            count++;
+            outBuf[count] = cast(ubyte)(asciiNumStart + digit);
+            count--;
         }
     }
 
-    assert(count <= precisionAfterDot);
-
-    return count;
+    return outBuf.length - count;
 }
 
 private struct BufMethods
