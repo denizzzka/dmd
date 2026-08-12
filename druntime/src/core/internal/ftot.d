@@ -235,19 +235,24 @@ if(is(T == ushort) || is(T == uint))
     //TODO: naming
     enum bool tooBig = (T.sizeof == 2 && !is(F == float));
 
-    // A type that is guaranteed to fit a integral part
     static if(tooBig)
     {
+        /// A type that is guaranteed to fit a integral part of floating T
         alias GF = ulong;
 
-        // ulong fits 20 decimal digits
+        /// Bigits number needed to fit GF
         enum intPartBigitsNum = 20 / decimalExp + (20 % decimalExp == 0 ? 0 : 1);
+                            //  ^^ ulong fits 20 decimal digits
         static assert(intPartBigitsNum == 5);
     }
     else
     {
         alias GF = UL;
-        enum intPartBigitsNum = 1;
+
+        static if(is(GF == ulong))
+            enum intPartBigitsNum = 5; // ulong fits into 5 bigits
+        else
+            enum intPartBigitsNum = 2; // uint fits into 2 bigits
     }
 
     // TODO: remove
