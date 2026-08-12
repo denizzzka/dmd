@@ -270,10 +270,6 @@ in(outBuf.length > precisionAfterDot, outBuf.length.to!string)
     foreach_reverse(_; 0 .. precisionAfterDot - 1)
     {
         ubyte digit = cast(ubyte)(asInteger % 10);
-
-        if(digit != 0)
-            outputEnabled = true;
-
         digit += cast(ubyte) carry;
 
         if(digit > 9)
@@ -285,6 +281,9 @@ in(outBuf.length > precisionAfterDot, outBuf.length.to!string)
             carry = 0;
 
         asInteger /= 10;
+
+        if(digit != 0)
+            outputEnabled = true;
 
         if(outputEnabled)
         {
