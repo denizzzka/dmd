@@ -8030,7 +8030,7 @@ private extern (C++) final class ExpressionSemanticVisitor : Visitor
         }
 
         FuncDeclaration resolveOverloadSet(Loc loc, Scope* sc,
-            OverloadSet os, Objects* tiargs, Type tthis, ArgumentList argumentList)
+            OverloadSet os, Objects* tiargs, Type tthis, ArgumentList argumentList) scope
         {
             FuncDeclaration f = null;
             foreach (s; os.a)
@@ -8649,20 +8649,55 @@ private extern (C++) final class ExpressionSemanticVisitor : Visitor
                 // if super is defined in C++, it sets the vtable pointer to the base class
                 // so we have to restore it, but still return 'this' from super() call:
                 // (auto __vptrTmp = this.__vptr, auto __superTmp = super()), (this.__vptr = __vptrTmp, __superTmp)
+                // the same is done for every interface vptr
                 Loc loc = exp.loc;
 
-                auto vptr = new DotIdExp(loc, new ThisExp(loc), Id.__vptr);
-                auto vptrTmpDecl = copyToTemp(STC.none, "__vptrTmp", vptr);
-                auto declareVptrTmp = new DeclarationExp(loc, vptrTmpDecl);
+                // Build expressions for accessing the vptrs.
+                Expressions *vptrs = new Expressions();
+
+                // Add expression for normal vptr
+                vptrs.push(new DotIdExp(loc, new ThisExp(loc), Id.__vptr));
+
+                // Add expressions for interface vptrs
+                for (ClassDeclaration pc = cd.baseClass; pc; pc = pc.baseClass)
+                {
+                    foreach (i; 0 .. pc.vtblInterfaces.length)
+                    {
+                        BaseClass* b = (*pc.vtblInterfaces)[i];
+
+                        // Add expression `*cast(void**)(cast(void*)this) + offset)` for accessing the interface vptr
+                        Expression vptr = new CastExp(loc, new ThisExp(loc), Type.tvoidptr);
+                        vptr = new AddExp(loc, vptr, new IntegerExp(loc, b.offset, Type.tsize_t));
+                        vptr = new PtrExp(loc, new CastExp(loc, vptr, Type.tvoidptr.pointerTo()));
+                        vptrs.push(vptr);
+                    }
+                }
 
                 auto superTmpDecl = copyToTemp(STC.none, "__superTmp", result);
                 auto declareSuperTmp = new DeclarationExp(loc, superTmpDecl);
 
-                auto declareTmps = new CommaExp(loc, declareVptrTmp, declareSuperTmp);
+                // Build expressions for declaring the temporary variables and restoring them
+                Expression declareTmps = null;
+                Expression restoreVptrs = null;
+                foreach (vptr; *vptrs)
+                {
+                    auto vptrTmpDecl = copyToTemp(STC.none, "__vptrTmp", vptr);
+                    auto declareTmp = new DeclarationExp(loc, vptrTmpDecl);
+                    if (declareTmps !is null)
+                        declareTmps = new CommaExp(loc, declareTmps, declareTmp);
+                    else
+                        declareTmps = declareTmp;
 
-                auto restoreVptr = new AssignExp(loc, vptr.syntaxCopy(), new VarExp(loc, vptrTmpDecl));
+                    auto restoreVptr = new AssignExp(loc, vptr.syntaxCopy(), new VarExp(loc, vptrTmpDecl));
+                    if (restoreVptrs !is null)
+                        restoreVptrs = new CommaExp(loc, restoreVptrs, restoreVptr);
+                    else
+                        restoreVptrs = restoreVptr;
+                }
 
-                Expression e = new CommaExp(loc, declareTmps, new CommaExp(loc, restoreVptr, new VarExp(loc, superTmpDecl)));
+                declareTmps = new CommaExp(loc, declareTmps, declareSuperTmp);
+
+                Expression e = new CommaExp(loc, declareTmps, new CommaExp(loc, restoreVptrs, new VarExp(loc, superTmpDecl)));
                 result = e.expressionSemantic(sc);
             }
         }
@@ -10864,7 +10899,7 @@ private extern (C++) final class ExpressionSemanticVisitor : Visitor
 
             // When e1 is a template lambda, this cast may instantiate it with
             // the type 'to'.
-            exp.e1 = inferType(exp.e1, exp.to);
+            exp.e1 = inferExpType(exp.e1, exp.to);
         }
 
         if (auto e = unaSemantic(exp, sc))
@@ -12295,7 +12330,7 @@ private extern (C++) final class ExpressionSemanticVisitor : Visitor
          * depends on the result of e1 in assignments.
          */
         {
-            Expression e2x = inferType(exp.e2, t1.baseElemOf());
+            Expression e2x = inferExpType(exp.e2, t1.baseElemOf());
             e2x = e2x.expressionSemantic(sc);
             if (!t1.isTypeSArray())
                 e2x = e2x.arrayFuncConv(sc);
@@ -14088,6 +14123,27 @@ private extern (C++) final class ExpressionSemanticVisitor : Visitor
 
         Type tb1next = tb1.nextOf();
         Type tb2next = tb2.nextOf();
+
+        if (tb1.ty == Tarray && tb1next && tb1next.toBasetype().ty == Tsarray && exp.e2.op == EXP.arrayLiteral)
+        {
+            auto e2 = exp.e2.castTo(sc, tb1);
+            if (!e2.isErrorExp())
+            {
+                exp.e2 = e2;
+                tb2 = exp.e2.type.toBasetype();
+                tb2next = tb2.nextOf();
+            }
+        }
+        if (tb2.ty == Tarray && tb2next && tb2next.toBasetype().ty == Tsarray && exp.e1.op == EXP.arrayLiteral)
+        {
+            auto e1 = exp.e1.castTo(sc, tb2);
+            if (!e1.isErrorExp())
+            {
+                exp.e1 = e1;
+                tb1 = exp.e1.type.toBasetype();
+                tb1next = tb1.nextOf();
+            }
+        }
 
         // Check for: array ~ array
         if (tb1next && tb2next && (tb1next.implicitConvTo(tb2next) >= MATCH.constant || tb2next.implicitConvTo(tb1next) >= MATCH.constant || exp.e1.op == EXP.arrayLiteral && exp.e1.implicitConvTo(tb2) || exp.e2.op == EXP.arrayLiteral && exp.e2.implicitConvTo(tb1)))
