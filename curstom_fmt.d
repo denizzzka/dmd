@@ -111,7 +111,7 @@ if(__traits(isFloating, T))
 
     void setResult()
     {
-        ret.slice = ret.buf[0 .. m.currIdx];
+        ret.slice = ret.buf[0 .. m.charCnt];
     }
 
     version(all) //TODO: remove
@@ -203,7 +203,7 @@ if(__traits(isFloating, T))
 
     const dotIdx = fracOffsetIdx;
 
-    m.appendSliceWidth(i);
+    m.charCnt += i;
 
     if(expForm)
     {
@@ -217,9 +217,9 @@ if(__traits(isFloating, T))
 
         if(T.max_10_exp >= 100 && exponent >= 100)
         {
-            const len = addDigits(m.getFreeBuf, exponent);
+            const len = addDigits(ret.buf[m.charCnt .. $], exponent);
             assert(len == 3);
-            m.appendSliceWidth(3);
+            m.charCnt += 3;
         }
         else
         {
@@ -307,37 +307,26 @@ private struct BufMethods
     pure:
 
     char[] buf;
-    size_t currIdx;
+    size_t charCnt;
 
     this(char[] b)
     {
         buf = b;
     }
 
-    /// Returns: unused part of the return buffer
-    char[] getFreeBuf() => buf[currIdx .. $];
-
-    void appendSliceWidth(size_t append_len)
-    {
-        currIdx += append_len;
-        assert(currIdx <= buf.length);
-    }
-
     void append(Arr)(const Arr str)
     {
-        const s = currIdx;
-        const e = currIdx + str.length;
+        const s = charCnt;
+        const e = charCnt + str.length;
 
-        appendSliceWidth(str.length);
         buf[s .. e] = str;
+        charCnt += str.length;
     }
 
     void append(char c)
     {
-        const idx = currIdx;
-
-        appendSliceWidth(1);
-        buf[idx] = c;
+        buf[charCnt] = c;
+        charCnt++;
     }
 }
 
