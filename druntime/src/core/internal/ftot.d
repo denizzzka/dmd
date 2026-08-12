@@ -161,7 +161,7 @@ if(is(T == ushort) || is(T == uint))
         }
     }
 
-    void shiftFewBitsRight(in int n)
+    void shiftFewBitsRight(in int n, ubyte bigitIdx = 0)
     in(n > 0)
     in(n <= decimalExp)
     {
@@ -169,16 +169,17 @@ if(is(T == ushort) || is(T == uint))
         T borrow;
         int offset;
 
-        if((bigits[0] >> n) == 0 && bigits[0] != 0)
+        // Number was here and moved completely to the right?
+        if((bigits[bigitIdx] >> n) == 0 && bigits[bigitIdx] != 0)
         {
             offset = 1;
             numBigits--;
             fractionStart--;
 
-            borrow = assumeSafeCastT(UL(bigits[0]) * bigitBound >> n);
+            borrow = assumeSafeCastT(UL(bigits[bigitIdx]) * bigitBound >> n);
         }
 
-        foreach(i; 0 .. numBigits)
+        foreach(i; bigitIdx .. numBigits)
         {
             const UL bigit = bigits[i + offset];
 
@@ -207,7 +208,7 @@ if(is(T == ushort) || is(T == uint))
         while(n > 0);
     }
 
-    void massiveRightShift(int n)
+    void massiveRightShift(int n, ubyte bigitToShiftIdx = 0)
     in(n > 0)
     {
         enum bitsPerIteration = decimalExp;
@@ -215,7 +216,7 @@ if(is(T == ushort) || is(T == uint))
         do
         {
             const bits = n < bitsPerIteration ? n : bitsPerIteration;
-            shiftFewBitsRight(bits);
+            shiftFewBitsRight(bits, bigitToShiftIdx);
             n -= bits;
         }
         while(n > 0);
