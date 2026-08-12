@@ -175,7 +175,7 @@ if(__traits(isFloating, T))
     const short fracPrecision = 6;
     ubyte carry;
     const fracBufSize = fracPrecision + 1 /* extra carry digit - then will be used as dot place */;
-    const fracOffsetIdx = ret.buf.length - (fracBufSize + maxExpLen);
+    const fracOffsetIdx = ret.buf.length - (fracBufSize + maxExpLen /* TODO: replace by precission after dot? */);
     auto fracText = ret.buf[fracOffsetIdx .. fracOffsetIdx + fracBufSize];
 
     const libcCompat = (format == Format.StdLibc || format == Format.ExpLibc);
@@ -188,7 +188,7 @@ if(__traits(isFloating, T))
     if(carry)
     {
         intPart += carry;
-        exponent++;
+        exponent++; //TODO: ???!!!
     }
 
     writeln("format=", format);
