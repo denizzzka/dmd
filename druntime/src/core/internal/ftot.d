@@ -70,11 +70,11 @@ unittest
 
     void testIt(T)(T v, string expected)
     {
-        //~ res = dtoa_puff!uint(buf, v, 6);
-        //~ assert(res == expected, res);
-
-        res = dtoa_puff!ushort(buf, v, 6);
+        res = dtoa_puff!uint(buf, v, 6);
         assert(res == expected, res);
+
+        //~ res = dtoa_puff!ushort(buf, v, 6);
+        //~ assert(res == expected, res);
     }
 
     testIt(-12.345f, "-1.23450e+1");
@@ -242,17 +242,12 @@ if(is(T == ushort) || is(T == uint))
 
         /// Bigits number needed to fit GF
         enum intPartBigitsNum = 20 / decimalExp + (20 % decimalExp == 0 ? 0 : 1);
-                            //  ^^ ulong fits 20 decimal digits
         static assert(intPartBigitsNum == 5);
     }
     else
     {
         alias GF = UL;
-
-        static if(is(GF == ulong))
-            enum intPartBigitsNum = 5; // ulong fits into 5 bigits
-        else
-            enum intPartBigitsNum = 2; // uint fits into 2 bigits
+        enum intPartBigitsNum = 2;
     }
 
     // TODO: remove
@@ -269,45 +264,32 @@ if(is(T == ushort) || is(T == uint))
 
         printf("mantis=%f exp=%d\n", integralPart, exp);
 
-        const v = cast(GF) (integralPart < 0 ? -integralPart : integralPart);
+        auto v = cast(GF) (integralPart < 0 ? -integralPart : integralPart);
 
         //TODO: make exp const
         exp -= numBits;
 
         //~ printf("numBits=%d integral part=%f ulong=%lld exp=%d value=%g\n", numBits, integralPart, v, exp, d);
 
-        if(v >= bigitBound)
+        byte intPartIdx = intPartBigitsNum - 1;
+
+        while(v > 0 || numBigits == 0)
         {
-            GF upper = v / bigitBound;
+            printf("v=%llu\n", v);
 
-            //~ printf("v=%llu  upper=%llu\n", v, upper);
+            const lessSig = v % bigitBound;
+            bigits[intPartIdx] = lessSig;
+            numBigits++;
 
-            // Additional division for small numbers which store large mantissa
-            static if(tooBig)
-            {
-                auto intPartIdx = intPartBigitsNum - 1;
-
-                while(upper >= bigitBound)
-                {
-                    const lessSig = upper % bigitBound;
-                    bigits[intPartIdx] = lessSig;
-
-                    upper /= bigitBound;
-                    intPartIdx--;
-                    fractionStart++;
-
-                    //~ printf("while loop, upper=%llu\n", upper);
-                }
-            }
-
-            addBigit(upper % bigitBound);
+            v /= bigitBound;
+            intPartIdx--;
             fractionStart++;
 
-            foreach(idx, b; bigits[0 .. 9])
-                printf("bigit[%llu] %d\n", idx, b);
+            assert(v < bigitBound); // only for T == uint
         }
 
-        addBigit(v % bigitBound);
+        foreach(idx, b; bigits[0 .. 9])
+            printf("bigit[%llu] %d\n", idx, b);
 
         if(exp >= 0)
         {
@@ -354,7 +336,7 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision)
     }
 
     // Integer part output
-    uint count = to_chars(buf[0 .. precision], d.bigits[bigitIndex]);
+    uint count = to_chars(buf[0 .. d.decimalExp], d.bigits[bigitIndex]);
     bigitIndex++;
 
     int exp = (d.fractionStart - bigitIndex) * d.decimalExp + count - 1;
