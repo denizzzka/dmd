@@ -9,12 +9,12 @@ private enum bool isInstanceOf(alias S, T) = is(T == S!Args, Args...);
 
 void sink(IES...)(IES ies) nothrow @nogc @safe
 {
-    sinkImpl(stdout, ies);
+    sinkImpl(true, ies);
 }
 
 void sinkErr(IES...)(IES ies) nothrow @nogc @safe
 {
-    sinkImpl(stderr, ies);
+    sinkImpl(false, ies);
 }
 
 private void sinkImpl(Pipe)(Pipe pipe, string str) nothrow @nogc @safe
@@ -22,7 +22,7 @@ private void sinkImpl(Pipe)(Pipe pipe, string str) nothrow @nogc @safe
     writeString(pipe, str);
 }
 
-private void sinkImpl(Pipe, IES...)(Pipe pipe, IES ies) nothrow @nogc @safe
+private void sinkImpl(IES...)(bool toStdout, IES ies) nothrow @nogc @safe
 if(is(IES[0] == InterpolationHeader))
 {
     //FIXME: set appropriate size for each type
@@ -36,7 +36,7 @@ if(is(IES[0] == InterpolationHeader))
             { /* skip */ }
             else static if(isInstanceOf!(InterpolatedLiteral, typeof(e)))
             {
-                writeString(pipe, e.toString);
+                writeString(toStdout, e.toString);
             }
             else static if(isInstanceOf!(InterpolatedExpression, typeof(e)))
             { /* will be processed as value passed directly, skip */ }
@@ -45,15 +45,15 @@ if(is(IES[0] == InterpolationHeader))
         }
         else static if(is(typeof(e) == string))
         {
-            writeString(pipe, e);
+            writeString(toStdout, e);
         }
         else static if(__traits(isUnsigned, typeof(e)))
         {
-            writeString(pipe, unsignedToTempString(e, buf));
+            writeString(toStdout, unsignedToTempString(e, buf));
         }
         else static if(__traits(isIntegral, typeof(e)))
         {
-            writeString(pipe, signedToTempString(e, buf));
+            writeString(toStdout, signedToTempString(e, buf));
         }
         else static if(__traits(isFloating, typeof(e)))
         {
@@ -61,21 +61,26 @@ if(is(IES[0] == InterpolationHeader))
             {
                 import core.stdc.stdio: snprintf;
                 const len = snprintf(buf.ptr, buf.length, "%f", e);
-                writeString(pipe, buf[0 .. len]);
+                writeString(toStdout, buf[0 .. len]);
             }();
         }
         else
             static assert(false, "Unsupported IES expression type: " ~ typeof(e).stringof);
     }
 
-    fflush(pipe);
+    fflush(toStdout ? stdout : stderr);
 }
 
-private void writeString(P)(P pipe, in char[] s) nothrow @nogc @trusted
+private void writeString(bool toStdout, in char[] s) nothrow @nogc @trusted
 {
-    auto r = fwrite(s.ptr, char.sizeof, s.length, pipe);
-    if(r < s.length)
+    auto r = fwrite(s.ptr, char.sizeof, s.length, toStdout ? stdout : stderr);
+    if(r != s.length)
+    {
+        if(toStdout)
+            writeString(false, "Failed to write stdout");
+
         abort();
+    }
 }
 
 unittest
