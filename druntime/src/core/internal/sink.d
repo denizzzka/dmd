@@ -1,24 +1,30 @@
 module core.internal.sink;
 
 import core.interpolation;
+import core.stdc.stdio: fflush, fprintf, fwrite, stderr, stdout;
+import core.stdc.stdlib: abort;
+
+private enum bool isInstanceOf(alias S, T) = is(T == S!Args, Args...);
 
 void sink(IES...)(IES ies) //nothrow @nogc @safe
-if(is(IES[0] == InterpolationHeader) || is(IES[0] == string) && IES.length == 1)
+if(is(IES[0] == InterpolationHeader))
 {
-    import core.stdc.stdio: fflush, fprintf, fwrite, stderr, stdout;
-    import core.stdc.stdlib: abort;
-
     static foreach(e; ies)
     {
         static if(is(typeof(e) == struct))
         {
-            pragma(msg, "Unsupported expression : " ~ typeof(e).stringof);
+            static if(is(typeof(e) == InterpolationHeader) || is(typeof(e) == InterpolationFooter))
+            { /* skip */ }
+            else static if(isInstanceOf!(InterpolatedLiteral, typeof(e)))
+            {
+                writeString(e.toString);
+            }
+            else
+                pragma(msg, "Unsupported: " ~ typeof(e).stringof);
         }
-        else static if(is(typeof(e) == string) || __traits(isSame, typeof(e), InterpolatedLiteral))
+        else static if(is(typeof(e) == string))
         {
-            auto r = fwrite(e.ptr, char.sizeof, e.length, stdout);
-            if(r < e.length)
-                abort();
+            writeString(e);
         }
         else
             static assert(false, "Unsupported IES expression type: " ~ typeof(e).stringof);
@@ -27,12 +33,18 @@ if(is(IES[0] == InterpolationHeader) || is(IES[0] == string) && IES.length == 1)
     fflush(stdout);
 }
 
+private void writeString(in char[] s)
+{
+    auto r = fwrite(s.ptr, char.sizeof, s.length, stdout);
+    if(r < s.length)
+        abort();
+}
+
 unittest
 {
     enum hello = "Hello, world!";
 
-    sink(`atr`);
-    sink(i`sink() says: "$(hello)"`);
+    sink(i"sink() says: \"$(hello)\"\n");
 
     /*
      * TODO: support for:
