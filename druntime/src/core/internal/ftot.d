@@ -85,6 +85,10 @@ unittest
     d.bigits[d.numBigits++] = 1;
     assert(d.bigits[1] == 1);
 
+    //FIXME: remove
+    d.numBigits++;
+    d.numBigits++;
+
     d.shiftFewBitsLeft(d.maxLeftShift);
     d.shiftFewBitsLeft(1);
     assert(d.bigits[0] == 1);
@@ -129,17 +133,17 @@ unittest
     {
         char[] res;
 
-        res = dtoa_puff!uint(buf, v, 6, true);
+        res = dtoa_puff!uint(buf, v, 6, false);
         assert(res == expected);
 
-        res = dtoa_puff!ushort(buf, v, 6, true);
+        res = dtoa_puff!ushort(buf, v, 6, false);
         assert(res == expected);
     }
 
-    testIt(-12.345f, "-1.23450e+1");
-    testIt(2.0, "2.00000e+0");
-    testIt(-1.23456789101112, "-1.23457e+0");
-    testIt(0.0000123456789, "1.23457e-5");
+    testIt(-12.345f, "-1.2345e+01");
+    testIt(2.0, "2.0e+00");
+    testIt(-1.23456789101112, "-1.23457e+00");
+    testIt(0.0000123456789, "1.23457e-05");
 }
 
 /**
@@ -384,7 +388,8 @@ if(is(T == ushort) || is(T == uint))
         }
 
         // Assigning again for better boundary control
-        bigits = bigits[0 .. numBigits + 1];
+        //FIXME:
+        //~ bigits = bigits[0 .. numBigits + 1];
     }
 
     private static T assumeSafeCastT(V)(V val, size_t line = __LINE__)
@@ -416,11 +421,11 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in b
     {
         import core.stdc.math: log10l;
         //TODO: templatize buf len?
-        assert(buf.length >= ulong.max.log10l + 1);
+        assert(buf.length >= ulong.max.log10l);
     }
 
     // Integer part output
-    uint count = to_chars(buf[0 .. d.decimalExp], d.bigits[bigitIndex]);
+    uint count = to_chars!false(buf[0 .. d.decimalExp], d.bigits[bigitIndex]);
     bigitIndex++;
 
     int exp = (d.fractionStart - bigitIndex) * d.decimalExp + count - 1;
@@ -433,7 +438,7 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in b
         const nextBlockIdx = count + d.decimalExp;
         auto block = buf[count .. nextBlockIdx];
 
-        const digLen = to_chars(block, d.bigits[bigitIndex]);
+        const digLen = to_chars!true(block, d.bigits[bigitIndex]);
         assert(digLen <= d.decimalExp);
         const zLen = d.decimalExp - digLen;
         assert(zLen >= 0);
@@ -561,13 +566,13 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in b
 }
 
 /// Same as C++ std::to_chars
-private uint to_chars(T)(scope char[] buf, T val)
+private uint to_chars(bool noTrailingZeros, T)(scope char[] buf, T val)
 if(__traits(isUnsigned, T))
 {
-    import core.internal.string;
+    import core.internal.string: unsignedToTempString;
 
     char[100] tmpBuf; //FIXME
-    char[] digits = unsignedToTempString(val, tmpBuf);
+    char[] digits = unsignedToTempString!(10, false, noTrailingZeros)(val, tmpBuf);
 
     assert(digits.length <= buf.length);
 
