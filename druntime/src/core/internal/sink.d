@@ -46,6 +46,11 @@ unittest
 
     sink(i"sink() says: \"$(hello)\"\n");
 
+    uint uintVal = 123;
+    int intVal = -456;
+    float floatVal = 123.456;
+    //~ sink(i"$(uintVal) $(intVal) $(floatVal)\n");
+
     /*
      * TODO: support for:
      * - compile-time strings
