@@ -415,13 +415,14 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in b
     }
 
     // Integer part output
-    uint count = to_chars(buf[0 .. d.decimalExp], d.bigits[bigitIndex]);
+    const firstBigit = d.bigits[bigitIndex];
+    uint count = to_chars(buf[0 .. d.decimalExp], firstBigit);
     bigitIndex++;
 
     int exp = (d.fractionStart - bigitIndex) * d.decimalExp + count - 1;
 
-    // Special case for zero after dot if there is no fractional part
-    if(bigitIndex == d.numBigits)
+    // Special case for zero after dot if there is no more bigits
+    if(bigitIndex == d.numBigits && firstBigit < 10)
         buf[count++] = '0';
     else for(; bigitIndex < d.numBigits && count <= precision; bigitIndex++)
     {
