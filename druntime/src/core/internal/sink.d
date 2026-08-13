@@ -17,7 +17,7 @@ void sinkErr(IES...)(IES ies) nothrow @nogc @safe
     sinkImpl(false, ies);
 }
 
-private void sinkImpl(Pipe)(Pipe pipe, string str) nothrow @nogc @safe
+private void sinkImpl(Pipe)(Pipe pipe, in char str) nothrow @nogc @safe
 {
     writeString(pipe, str);
 }
@@ -71,7 +71,7 @@ if(is(IES[0] == InterpolationHeader))
     fflush(toStdout ? stdout : stderr);
 }
 
-private void writeString(bool toStdout, scope const char[] s) nothrow @nogc @trusted
+private void writeString(bool toStdout, in char[] s) nothrow @nogc @trusted
 {
     auto r = fwrite(s.ptr, char.sizeof, s.length, toStdout ? stdout : stderr);
     if(r != s.length)
