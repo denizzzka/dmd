@@ -7,7 +7,17 @@ import core.stdc.stdlib: abort;
 
 private enum bool isInstanceOf(alias S, T) = is(T == S!Args, Args...);
 
-void sink(IES...)(IES ies) nothrow @nogc @safe
+private void sink(IES...)(IES ies) nothrow @nogc @safe
+{
+    sinkImpl(stdout, ies);
+}
+
+void sinkErr(IES...)(IES ies) nothrow @nogc @safe
+{
+    sinkImpl(stderr, ies);
+}
+
+private void sinkImpl(Pipe, IES...)(Pipe pipe, IES ies) nothrow @nogc @safe
 if(is(IES[0] == InterpolationHeader))
 {
     //FIXME: set appropriate size for each type
@@ -21,7 +31,7 @@ if(is(IES[0] == InterpolationHeader))
             { /* skip */ }
             else static if(isInstanceOf!(InterpolatedLiteral, typeof(e)))
             {
-                writeString(e.toString);
+                writeString(pipe, e.toString);
             }
             else static if(isInstanceOf!(InterpolatedExpression, typeof(e)))
             { /* will be processed as value passed directly, skip */ }
@@ -30,26 +40,26 @@ if(is(IES[0] == InterpolationHeader))
         }
         else static if(is(typeof(e) == string))
         {
-            writeString(e);
+            writeString(pipe, e);
         }
         else static if(__traits(isUnsigned, typeof(e)))
         {
-            unsignedToTempString(e, buf).writeString;
+            writeString(pipe, unsignedToTempString(e, buf));
         }
         else static if(__traits(isIntegral, typeof(e)))
         {
-            signedToTempString(e, buf).writeString;
+            writeString(pipe, signedToTempString(e, buf));
         }
         else
             static assert(false, "Unsupported IES expression type: " ~ typeof(e).stringof);
     }
 
-    fflush(stdout);
+    fflush(pipe);
 }
 
-private void writeString(in char[] s) nothrow @nogc @trusted
+private void writeString(P)(P pipe, in char[] s) nothrow @nogc @trusted
 {
-    auto r = fwrite(s.ptr, char.sizeof, s.length, stdout);
+    auto r = fwrite(s.ptr, char.sizeof, s.length, pipe);
     if(r < s.length)
         abort();
 }
@@ -71,6 +81,5 @@ unittest
     /*
      * TODO: support for:
      * - float
-     * - stdout/stderr selection
      */
 }
