@@ -7,22 +7,22 @@ import core.stdc.stdlib: abort;
 
 private enum bool isInstanceOf(alias S, T) = is(T == S!Args, Args...);
 
+void notify(IES...)(IES ies) nothrow @nogc @safe
+{
+    impl(true, ies);
+}
+
 void sink(IES...)(IES ies) nothrow @nogc @safe
 {
-    sinkImpl(true, ies);
+    impl(false, ies);
 }
 
-void sinkErr(IES...)(IES ies) nothrow @nogc @safe
+private void impl(bool toStdout, in char[] str) nothrow @nogc @safe
 {
-    sinkImpl(false, ies);
+    writeString(toStdout, str);
 }
 
-private void sinkImpl(Pipe)(Pipe pipe, in char str) nothrow @nogc @safe
-{
-    writeString(pipe, str);
-}
-
-private void sinkImpl(IES...)(bool toStdout, IES ies) nothrow @nogc @safe
+private void impl(IES...)(bool toStdout, IES ies) nothrow @nogc @safe
 if(is(IES[0] == InterpolationHeader))
 {
     // ulong can fit 20 digits
@@ -71,7 +71,7 @@ if(is(IES[0] == InterpolationHeader))
     fflush(toStdout ? stdout : stderr);
 }
 
-private void writeString(bool toStdout, in char[] s) nothrow @nogc @trusted
+private void writeString(bool toStdout, scope const char[] s) nothrow @nogc @trusted
 {
     auto r = fwrite(s.ptr, char.sizeof, s.length, toStdout ? stdout : stderr);
     if(r != s.length)
@@ -95,7 +95,7 @@ unittest
 
     int intVal = -456;
     int longVal = -456;
-    sink(i"$(intVal) $(longVal)\n");
+    notify(i"$(intVal) $(longVal)\n");
 
     float floatVal = 123.456;
     double doubleVal = -123.456;
