@@ -517,8 +517,20 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in b
     printf("precision=%d\n", precision);
     printf("numBigits=%d\n", d.numBigits);
 
-    foreach(ref c; buf[count .. count + precision])
-        c = 'x';
+    if(enableTrailingZeroes)
+    {
+        for(; count < offset + precision + 1; count++)
+            buf[count] = '0';
+    }
+    //TODO:
+    //~ else
+        //~ foreach_reverse(i, ref c; buf[1 .. count+1])
+        //~ {
+            //~ if(c == 0 && buf[i-1] != '.')
+                //~ c = 'x';
+            //~ else
+                //~ break;
+        //~ }
 
     buf[count++] = 'e';
 
