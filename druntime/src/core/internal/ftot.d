@@ -60,10 +60,10 @@ unittest
         char[] res;
 
         res = dtoa_puff!uint(buf, v, 6);
-        assert(res == expected, res);
+        assert(res == expected);
 
         res = dtoa_puff!ushort(buf, v, 6);
-        assert(res == expected, res);
+        assert(res == expected);
     }
 
     testIt(-12.345f, "-1.23450e+1");
@@ -102,7 +102,7 @@ unittest
     char[20] buf;
     auto r = floatingToTempString(-123.456789, buf);
 
-    //~ assert(r == "123", buf);
+    assert(r == "-1.23457e+2");
 }
 
 /**
