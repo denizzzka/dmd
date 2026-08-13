@@ -19,8 +19,10 @@ if(is(IES[0] == InterpolationHeader))
             {
                 writeString(e.toString);
             }
+            else static if(isInstanceOf!(InterpolatedExpression, typeof(e)))
+            { /* will be processed as value passed directly, skip */ }
             else
-                pragma(msg, "Unsupported: " ~ typeof(e).stringof);
+                pragma(msg, "Unsupported IES struct: " ~ typeof(e).stringof);
         }
         else static if(is(typeof(e) == string))
         {
