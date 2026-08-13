@@ -1,9 +1,10 @@
 /// Floating to text conversion
 module core.internal.ftot;
 
-import core.stdc.stdio;
-
-//~ @safe:
+//~ pure:
+nothrow:
+@nogc:
+@safe:
 
 unittest
 {
@@ -27,9 +28,8 @@ unittest
 {
     double val = 123.456;
     auto d = Decimal!(uint, 16)(val);
-    //~ assert(d.numBigits == 7);
 
-    const initial = d.bigits.idup;
+    const initial = d.bigits;
 
     // Shift right to 32 bits:
     d.shiftFewBitsRight(1);
@@ -39,23 +39,12 @@ unittest
     d.shiftFewBitsRight(8);
     d.shiftFewBitsRight(8);
 
-    //~ assert(d.numBigits == 4);
-
-    //~ const onRightSide = d.bigits.idup;
-    foreach(b; d.bigits)
-        printf(">>>Rbigit=%d\n", b);
-
     // Shift left to the initial state:
     d.shiftFewBitsLeft(1);
     d.shiftFewBitsLeft(2);
     d.shiftFewBitsLeft(5);
     d.shiftFewBitsLeft(8);
     d.shiftFewBitsLeft(16);
-
-    printf(">>> numBigits=%d\n", d.numBigits);
-
-    foreach(b; d.bigits)
-        printf(">>> bigit=%d\n", b);
 
     assert(initial[0 .. 2] == d.bigits[0 .. 2]);
 }
@@ -113,13 +102,8 @@ unittest
     char[20] buf;
     auto r = floatingToTempString(-123.456789, buf);
 
-    import std.stdio;
-    writeln("DDDD ", r);
+    //~ assert(r == "123", buf);
 }
-
-//~ pure:
-nothrow:
-@nogc:
 
 /**
  * A fixed-point decimal number.
@@ -289,21 +273,15 @@ if(is(T == ushort) || is(T == uint))
         enum numBits = d.mant_dig;
         const integralPart = frexp(d, &exp) * (1UL << numBits);
 
-        printf("mantis=%f exp=%d\n", integralPart, exp);
-
         auto v = cast(GF) (integralPart < 0 ? -integralPart : integralPart);
 
         //TODO: make exp const
         exp -= numBits;
 
-        //~ printf("numBits=%d integral part=%f ulong=%lld exp=%d value=%g\n", numBits, integralPart, v, exp, d);
-
         byte intPartIdx = intPartBigitsNum - 1;
 
         while(true)
         {
-            printf("v=%llu\n", v);
-
             const lessSig = v % bigitBound;
             bigitsArr[intPartIdx] = lessSig;
             numBigits++;
@@ -319,11 +297,7 @@ if(is(T == ushort) || is(T == uint))
         const integralBigitsAcquired = intPartBigitsNum - intPartIdx;
         fractionStart = integralBigitsAcquired - 1;
 
-        printf("integralBigitsAcquired=%d fractionStart=%d\n", integralBigitsAcquired, fractionStart);
-
         bigits = bigitsArr[intPartIdx .. $];
-
-        printBigits();
 
         assert(intPartIdx >= 0);
 
@@ -336,25 +310,15 @@ if(is(T == ushort) || is(T == uint))
             massiveRightShift(-exp);
             fractionStart++;
         }
-
-        printBigits();
-
-        printf("frac start=%d\n", fractionStart);
     }
 
     private static T assumeSafeCastT(V)(V val, size_t line = __LINE__)
     if(__traits(isIntegral, V))
     {
         assert(val >= 0);
-        //~ printf("line: %llu\n", line);
         assert(val <= T.max);
-        return cast(T) val;
-    }
 
-    void printBigits() const
-    {
-        foreach(idx, b; bigits[0 .. 9])
-            printf("bigitArr[%llu] %d\n", idx, b);
+        return cast(T) val;
     }
 }
 
