@@ -2,29 +2,20 @@ module core.internal.sink;
 
 import core.interpolation;
 
-enum name = "John Doe";
-auto items = i"Hello, $(name), how are you?";
+void sink(IES...)(in IES ies) //nothrow @nogc @safe
+{
+    static foreach(e; ies)
+    {
+        import std.stdio;
+        e.write;
+    }
+}
 
 unittest
 {
-    /+
-    assert(
-        items == tuple(
-            InterpolationHeader(),                       // denotes the start of an IES
-            InterpolatedLiteral!("Hello, ")(),           // literal string data
-            InterpolatedExpression!("name")(),           // expression literal data
-            name,                                        // expression passed directly
-            InterpolatedLiteral!(", how are you?")(),    // literal string data
-            InterpolationFooter()
-        )
-    );
-    +/
+    enum hello = "Hello, world!";
 
-    import std.stdio;
-    foreach(e; items[1 .. $-1])
-        e.write;
-
-    writeln;
+    sink(i`sink() says: "$(hello)"`);
 
     /*
      * TODO: support for:
