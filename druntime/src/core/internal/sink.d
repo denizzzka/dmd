@@ -50,6 +50,15 @@ if(is(IES[0] == InterpolationHeader))
         {
             writeString(pipe, signedToTempString(e, buf));
         }
+        else static if(__traits(isFloating, typeof(e)))
+        {
+            () @trusted
+            {
+                import core.stdc.stdio: snprintf;
+                const len = snprintf(buf.ptr, buf.length, "%f", e);
+                writeString(pipe, buf[0 .. len]);
+            }();
+        }
         else
             static assert(false, "Unsupported IES expression type: " ~ typeof(e).stringof);
     }
@@ -78,8 +87,7 @@ unittest
     int longVal = -456;
     sink(i"$(intVal) $(longVal)\n");
 
-    /*
-     * TODO: support for:
-     * - float
-     */
+    float floatVal = 123.456;
+    double doubleVal = -123.456;
+    sink(i"$(floatVal) $(doubleVal)\n");
 }
