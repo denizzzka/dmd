@@ -27,16 +27,18 @@ Params:
     buf   = the pre-allocated buffer used to store the result
     radix = the numeric base to use in the conversion 2 through 36 (defaults to 10)
     upperCase = use upper case letters for radices 11 - 36
+    noTrailingZeros = do not output trailing zeros
 
 Returns:
     The unsigned integer value as a string of characters
 */
-T[] unsignedToTempString(uint radix = 10, bool upperCase = false, T)(ulong value, return scope T[] buf)
+T[] unsignedToTempString(uint radix = 10, bool upperCase = false, bool noTrailingZeros = false, T)(ulong value, return scope T[] buf)
 if (radix >= 2 && radix <= 36 &&
     (is(T == char) || is(T == wchar) || is(T == dchar)))
 {
     enum baseChar = upperCase ? 'A' : 'a';
     size_t i = buf.length;
+    static if(noTrailingZeros) bool trailingPassed;
 
     static if (size_t.sizeof == 4) // 32 bit CPU
     {
@@ -57,7 +59,15 @@ if (radix >= 2 && radix <= 36 &&
                     x = cast(uint)(val % radix);
                     val /= radix;
                 }
-                buf[--i] = cast(char)((radix <= 10 || x < 10) ? x + '0' : x - 10 + baseChar);
+                auto c = cast(char)((radix <= 10 || x < 10) ? x + '0' : x - 10 + baseChar);
+                static if(noTrailingZeros)
+                {
+                    if(!trailingPassed && c == '0')
+                        continue;
+                    else
+                        trailingPassed = true;
+                }
+                buf[--i] = c;
             } while (val);
             return buf[i .. $];
         }
@@ -76,7 +86,15 @@ if (radix >= 2 && radix <= 36 &&
             x = cast(uint)(value % radix);
             value /= radix;
         }
-        buf[--i] = cast(char)((radix <= 10 || x < 10) ? x + '0' : x - 10 + baseChar);
+        auto c = cast(char)((radix <= 10 || x < 10) ? x + '0' : x - 10 + baseChar);
+        static if(noTrailingZeros)
+        {
+            if(!trailingPassed && c == '0')
+                continue;
+            else
+                trailingPassed = true;
+        }
+        buf[--i] = c;
     } while (value);
     return buf[i .. $];
 }
@@ -139,6 +157,14 @@ unittest
     assert(!is(typeof(100.unsignedToTempString!1(buf))));
     assert(!is(typeof(100.unsignedToTempString!0(buf) == "")));
     assert(!is(typeof(100.unsignedToTempString!37(buf) == "")));
+
+    // ignore trailing zeroes
+    assert(1.unsignedToTempString!(10, false, true)(buf) == "1");
+    assert(0.unsignedToTempString!(10, false, true)(buf) == "");
+    assert(1230.unsignedToTempString!(10, false, true)(buf) == "123");
+    assert(12004500.unsignedToTempString!(10, false, true)(buf) == "120045");
+    assert(0x12ab00.unsignedToTempString!(16, false, true)(buf) == "12ab");
+    assert(0x120ab.unsignedToTempString!(16, false, true)(buf) == "120ab");
 }
 
 alias SignedStringBuf = char[65];
