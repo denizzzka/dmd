@@ -98,6 +98,7 @@ unittest
 {
     double val = 123.456;
     auto d = Decimal!(uint, 16)(val);
+    d.numBigits = 2;
 
     const initial = d.bigits;
 
@@ -369,10 +370,10 @@ if(is(T == ushort) || is(T == uint))
         const integralBigitsAcquired = intPartBigitsNum - intPartIdx;
         fractionStart = integralBigitsAcquired - 1;
 
+        assert(intPartIdx >= 0);
+
         // Skip leading zero bigits
         bigits = bigitsArr[intPartIdx .. $];
-
-        assert(intPartIdx >= 0);
 
         if(exp >= 0)
         {
@@ -385,8 +386,7 @@ if(is(T == ushort) || is(T == uint))
         }
 
         // Assigning again for better boundary control
-        //FIXME:
-        //~ bigits = bigits[0 .. numBigits + 1];
+        bigits = bigits[0 .. numBigits + 1];
     }
 
     private static T assumeSafeCastT(V)(V val, size_t line = __LINE__)
