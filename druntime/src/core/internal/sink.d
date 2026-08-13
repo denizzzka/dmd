@@ -16,7 +16,7 @@ if(is(IES[0] == InterpolationHeader) || is(IES[0] == string) && IES.length == 1)
         }
         else static if(is(typeof(e) == string) || __traits(isSame, typeof(e), InterpolatedLiteral))
         {
-            auto r = fwrite(e.ptr, char.sizeof, e.length, /*cast()*/ stdout);
+            auto r = fwrite(e.ptr, char.sizeof, e.length, stdout);
             if(r < e.length)
                 abort();
         }
