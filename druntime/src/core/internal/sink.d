@@ -1,5 +1,6 @@
 module core.internal.sink;
 
+import core.internal.string: signedToTempString, unsignedToTempString;
 import core.interpolation;
 import core.stdc.stdio: fflush, fprintf, fwrite, stderr, stdout;
 import core.stdc.stdlib: abort;
@@ -9,6 +10,9 @@ private enum bool isInstanceOf(alias S, T) = is(T == S!Args, Args...);
 void sink(IES...)(IES ies) //nothrow @nogc @safe
 if(is(IES[0] == InterpolationHeader))
 {
+    //FIXME: set appropriate size for each type
+    char[100] buf;
+
     static foreach(e; ies)
     {
         static if(is(typeof(e) == struct))
@@ -27,6 +31,10 @@ if(is(IES[0] == InterpolationHeader))
         else static if(is(typeof(e) == string))
         {
             writeString(e);
+        }
+        else static if(__traits(isUnsigned, typeof(e)))
+        {
+            unsignedToTempString(e, buf).writeString;
         }
         else
             static assert(false, "Unsupported IES expression type: " ~ typeof(e).stringof);
@@ -49,9 +57,10 @@ unittest
     sink(i"sink() says: \"$(hello)\"\n");
 
     uint uintVal = 123;
+    const ulong ulongVal = 321;
     int intVal = -456;
     float floatVal = 123.456;
-    //~ sink(i"$(uintVal) $(intVal) $(floatVal)\n");
+    sink(i"$(uintVal) $(ulongVal)\n");
 
     /*
      * TODO: support for:
