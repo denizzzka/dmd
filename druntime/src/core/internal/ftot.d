@@ -220,10 +220,12 @@ if(is(T == ushort) || is(T == uint))
     uint numBigits;
     int fractionStart;
 
-    void shiftFewBitsLeft(in int n, byte bigitIdx = 0)
+    void shiftFewBitsLeft(in int n)
     in(n > 0)
     in(n <= maxLeftShift)
     {
+        enum byte bigitIdx = 0;
+
         // Will number of blocks increase after the shifting?
         // If so, reserves space for a new block
         const ubyte offset = bigits[bigitIdx] >= (bigitBound >> n) ? 1 : 0;
@@ -293,7 +295,7 @@ if(is(T == ushort) || is(T == uint))
         do
         {
             const bits = n < bitsPerIteration ? n : bitsPerIteration;
-            shiftFewBitsLeft(bits, 0);
+            shiftFewBitsLeft(bits);
             n -= bits;
         }
         while(n > 0);
