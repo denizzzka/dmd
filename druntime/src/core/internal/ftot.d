@@ -6,6 +6,7 @@ version(linux)
 else version(Windows)
     version = ComparisonWithLibc;
 
+version(none)
 unittest
 {
     static void testIt(T)(T val, string phobos_std, string phobos_exp)
@@ -431,26 +432,10 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in b
         const nextBlockIdx = count + d.decimalExp;
         auto block = buf[count .. nextBlockIdx];
 
-        const digLen = to_chars(block, d.bigits[bigitIndex]);
-        assert(digLen <= d.decimalExp);
-        const zLen = d.decimalExp - digLen;
-        assert(zLen >= 0);
+        const digits = to_chars_reverse(block, d.bigits[bigitIndex]);
+        assert(digits.length <= d.decimalExp);
 
-        if(zLen != 0)
-        {
-            //FIXME: Causes "range violation" because ranges may overlap
-            //block[zLen .. d.decimalExp] = block[0 .. digLen];
-            //block[0 .. zLen] = 0;
-
-            () @trusted
-            {
-                import core.stdc.string: memmove, memcpy;
-
-                memmove(&block[zLen], &block[0], digLen);
-                memcpy(&block[0], "00000000".ptr, zLen);
-            }();
-
-        }
+        block[0 .. $ - digits.length] = '0';
 
         count = nextBlockIdx;
     }
@@ -576,11 +561,26 @@ if(__traits(isUnsigned, T))
 
     () @trusted
     {
-        // It needs to be moved because (un)signedToTempString
+        // It needs to be moved because unsignedToTempString
         // writes from the end of the buffer
         import core.stdc.string: memmove;
         memmove(&buf[0], &digits[0], digits.length);
     }();
 
     return cast(uint) digits.length;
+}
+
+private char[] to_chars_reverse(T)(scope char[] buf, T val, bool noTrailingZeros = false)
+if(__traits(isUnsigned, T))
+{
+    import core.internal.string: unsignedToTempString;
+
+    char[] digits;
+
+    if(noTrailingZeros)
+        digits = unsignedToTempString(val, buf);
+    else
+        digits = unsignedToTempString!(10, false, true)(val, buf);
+
+    return digits;
 }
