@@ -78,23 +78,19 @@ unittest
 
 unittest
 {
-    double val = 0.0;
+    double val = 9999999.0;
     auto d = Decimal!(uint, 20)(val);
-    d.bigitsArr = 0;
+    d.bigitsArr = 0; // resets bigits storage
 
-    d.bigits[d.numBigits++] = 1;
-    assert(d.bigits[1] == 1);
+    d.bigits[0] = 1;
 
-    //FIXME: remove
-    d.numBigits++;
-    d.numBigits++;
+    foreach(i, b; d.bigits)
+        printf("%llu %d\n", i, b);
+
+    d.shiftFewBitsLeft(1);
+    assert(d.bigits[0] == 2);
 
     d.shiftFewBitsLeft(d.maxLeftShift);
-    d.shiftFewBitsLeft(1);
-    assert(d.bigits[0] == 1);
-
-    d.shiftFewBitsLeft(d.maxLeftShift);
-    d.shiftFewBitsLeft(1);
     assert(d.bigits[0] == 1);
 }
 
@@ -373,6 +369,7 @@ if(is(T == ushort) || is(T == uint))
         const integralBigitsAcquired = intPartBigitsNum - intPartIdx;
         fractionStart = integralBigitsAcquired - 1;
 
+        // Skip leading zero bigits
         bigits = bigitsArr[intPartIdx .. $];
 
         assert(intPartIdx >= 0);
@@ -409,13 +406,6 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in b
     auto d = Decimal!(T, 100)(val);
 
     uint bigitIndex;
-
-    // Skip leading zeroes
-    foreach(i; 0 .. d.intPartBigitsNum)
-        if(d.bigits[i] == 0)
-            bigitIndex++;
-        else
-            break;
 
     debug
     {
