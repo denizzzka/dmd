@@ -36,6 +36,10 @@ if(is(IES[0] == InterpolationHeader))
         {
             unsignedToTempString(e, buf).writeString;
         }
+        else static if(__traits(isIntegral, typeof(e)))
+        {
+            signedToTempString(e, buf).writeString;
+        }
         else
             static assert(false, "Unsupported IES expression type: " ~ typeof(e).stringof);
     }
@@ -58,9 +62,11 @@ unittest
 
     uint uintVal = 123;
     const ulong ulongVal = 321;
-    int intVal = -456;
-    float floatVal = 123.456;
     sink(i"$(uintVal) $(ulongVal)\n");
+
+    int intVal = -456;
+    int longVal = -456;
+    sink(i"$(intVal) $(longVal)\n");
 
     /*
      * TODO: support for:
