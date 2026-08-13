@@ -13,7 +13,7 @@ unittest
         enum precision = 6;
         char[20] buf;
         //~ const asPhobosStd = floatingToTempString(val, Format.Std);
-        const asPhobosExp = floatingToTempString(val, buf, precision);
+        const asPhobosExp = floatingToTempString(val, buf, precision, false);
 
         //~ assert(asPhobosStd == phobos_std, `"`~asPhobosStd~`" but expected "`~phobos_std~`" (as prints writeln())`);
         assert(asPhobosExp == phobos_exp, `"`~asPhobosExp~`" but expected "`~phobos_exp~`" (as prints writefln())`);
@@ -35,7 +35,7 @@ unittest
             const stdcTextExp = getLibcText(val, true);
 
             //~ const asLibcStd = floatingToTempString(val, buf, precision);
-            const asLibcExp = floatingToTempString(val, buf, precision);
+            const asLibcExp = floatingToTempString(val, buf, precision, true);
 
             //~ assert(asLibcStd == stdcTextStd, `"`~asLibcStd~`" but stdc snprintf() returns: "`~stdcTextStd~`"`);
             assert(asLibcExp == stdcTextExp, `"`~asLibcExp~`" but stdc snprintf() returns: "`~stdcTextExp~`"`);
@@ -71,10 +71,10 @@ unittest
     //~ onAll(double(-1.0e-8), "errrr 111", "errrr xxxxx");
 }
 
-pure:
-nothrow:
-@nogc:
-@safe:
+//~ pure:
+//~ nothrow:
+//~ @nogc:
+//~ @safe:
 
 unittest
 {
@@ -125,14 +125,14 @@ unittest
     // Just in case of debugging using stdc:
     buf[$-1] = '\0';
 
-    void testIt(T)(T v, string expected) pure
+    void testIt(T)(T v, string expected)
     {
         char[] res;
 
-        res = dtoa_puff!uint(buf, v, 6);
+        res = dtoa_puff!uint(buf, v, 6, true);
         assert(res == expected);
 
-        res = dtoa_puff!ushort(buf, v, 6);
+        res = dtoa_puff!ushort(buf, v, 6, true);
         assert(res == expected);
     }
 
@@ -155,14 +155,14 @@ Params:
 Returns:
     The floating value as a string of characters
 */
-char[] floatingToTempString(T)(T value, return scope char[] buf, in ushort precision = 6)
+char[] floatingToTempString(T)(T value, return scope char[] buf, in ushort precision = 6, bool enableTrailingZeroes = false)
 if(is(T == float) || is(T == double))
 {
     //TODO: try to use ushort on 32-bit systems to increase performance
     alias BigitType = uint;
 
     auto d = Decimal!(BigitType, 20 /*FIXME*/)(value);
-    auto slice = dtoa_puff!ushort(buf, value, precision);
+    auto slice = dtoa_puff!ushort(buf, value, precision, enableTrailingZeroes);
 
     return slice;
 }
@@ -397,7 +397,7 @@ if(is(T == ushort) || is(T == uint))
     }
 }
 
-char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision)
+char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in bool enableTrailingZeroes)
 {
     auto d = Decimal!(T, 100)(val);
 
@@ -506,9 +506,15 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision)
     }
 
     buf[offset] = '.';
+    count += offset;
 
-    for (count += offset; count <= precision; ++count)
-        buf[count] = '0';
+    import core.stdc.stdio: printf;
+    printf("count=%d\n", count);
+    printf("precision=%d\n", precision);
+    printf("numBigits=%d\n", d.numBigits);
+
+    foreach(ref c; buf[count .. count + precision])
+        c = 'x';
 
     buf[count++] = 'e';
 
