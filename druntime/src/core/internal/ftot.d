@@ -382,6 +382,9 @@ if(is(T == ushort) || is(T == uint))
             massiveRightShift(-exp);
             fractionStart++;
         }
+
+        // Assigning again for better boundary control
+        bigits = bigits[0 .. numBigits + 1];
     }
 
     private static T assumeSafeCastT(V)(V val, size_t line = __LINE__)
