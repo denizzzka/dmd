@@ -507,27 +507,40 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision)
 
     buf[count++] = 'e';
 
-    if(exp >= 0)
-        buf[count++] = '+';
-    else { /* '-' is output by the integer-to-text function */ }
+    {
+        if(exp >= 0)
+            buf[count] = '+';
+        else
+        {
+            buf[count] = '-';
+            exp = -exp;
+        }
+        count++;
 
-    const expLen = to_chars(buf[count .. $], exp);
+        if(exp > 100)
+        {
+            assert(exp < 999);
 
-    return buf[0 .. count + expLen];
+            const hund = exp / 100;
+            buf[count++] = cast(char)('0' + hund);
+            exp -= hund;
+        }
+
+        buf[count++] = cast(char)('0' + exp / 10);
+        buf[count++] = cast(char)('0' + exp % 10);
+    }
+
+    return buf[0 .. count];
 }
 
 /// Same as C++ std::to_chars
 private uint to_chars(T)(scope char[] buf, T val)
-if(__traits(isIntegral, T))
+if(__traits(isUnsigned, T))
 {
     import core.internal.string;
 
-    char[100] tmpBuf;
-
-    static if(__traits(isUnsigned, T))
-        char[] digits = unsignedToTempString(val, tmpBuf);
-    else
-        char[] digits = signedToTempString(val, tmpBuf);
+    char[100] tmpBuf; //FIXME
+    char[] digits = unsignedToTempString(val, tmpBuf);
 
     assert(digits.length <= buf.length);
 
