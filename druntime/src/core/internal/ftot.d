@@ -1,7 +1,7 @@
 /// Floating to text conversion
 module core.internal.ftot;
 
-//~ pure:
+pure:
 nothrow:
 @nogc:
 @safe:
@@ -51,14 +51,14 @@ unittest
 
 unittest
 {
-    static char[100] buf = '|';
+    char[100] buf = '|';
     // Just in case of debugging using stdc:
     buf[$-1] = '\0';
 
-    static char[] res;
-
-    void testIt(T)(T v, string expected)
+    void testIt(T)(T v, string expected) pure
     {
+        char[] res;
+
         res = dtoa_puff!uint(buf, v, 6);
         assert(res == expected, res);
 
