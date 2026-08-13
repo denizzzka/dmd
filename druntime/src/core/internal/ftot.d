@@ -57,7 +57,7 @@ unittest
     //TODO: add test with leading zero
     //TODO: add tests for all numeric types
 
-    //~ onAll(1.0f, "1", "1.0e+00");
+    onAll(1.0f, "1", "1.0e+00");
     //~ onAll(0.0f, "0", "0.0e+00");
     //~ onAll(float.nan, "nan", "nan");
     //~ onAll(float.infinity, "inf", "inf");
@@ -67,7 +67,7 @@ unittest
     //~ onAll(0.001f, "0.001", "1.0e-03" /* FIXME: should be 1e-03 */);
     //~ onAll(1000.0f, "1000", "1.0e+03" /* FIXME: should be 1e+03 */);
     //~ onAll(0.001f, "0.001", "1.0e-03");
-    onAll(0.0001f, "0.0001", "1.0e-04");
+    //~ onAll(0.0001f, "0.0001", "1.0e-04");
     //~ onAll(double(-1.0e-8), "errrr 111", "errrr xxxxx");
 }
 
@@ -397,6 +397,8 @@ if(is(T == ushort) || is(T == uint))
     }
 }
 
+import core.stdc.stdio: printf;
+
 char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in bool enableTrailingZeroes)
 {
     auto d = Decimal!(T, 100)(val);
@@ -423,7 +425,10 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in b
 
     int exp = (d.fractionStart - bigitIndex) * d.decimalExp + count - 1;
 
-    for(; bigitIndex < d.numBigits && count <= precision; bigitIndex++)
+    // Special case for zero after dot if there is no fractional part
+    if(bigitIndex == d.numBigits)
+        buf[count++] = '0';
+    else for(; bigitIndex < d.numBigits && count <= precision; bigitIndex++)
     {
         const nextBlockIdx = count + d.decimalExp;
         auto block = buf[count .. nextBlockIdx];
@@ -508,7 +513,6 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in b
     buf[offset] = '.';
     count += offset;
 
-    import core.stdc.stdio: printf;
     printf("count=%d\n", count);
     printf("precision=%d\n", precision);
     printf("numBigits=%d\n", d.numBigits);
