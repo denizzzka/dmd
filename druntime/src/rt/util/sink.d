@@ -25,4 +25,13 @@ unittest
         e.write;
 
     writeln;
+
+    /*
+     * TODO: support for:
+     * - compile-time strings
+     * - variable strings
+     * - integers
+     * - float
+     * - stdout/stderr selection
+     */
 }
