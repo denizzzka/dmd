@@ -25,8 +25,8 @@ private void sinkImpl(Pipe)(Pipe pipe, in char str) nothrow @nogc @safe
 private void sinkImpl(IES...)(bool toStdout, IES ies) nothrow @nogc @safe
 if(is(IES[0] == InterpolationHeader))
 {
-    //FIXME: set appropriate size for each type
-    char[100] buf;
+    // ulong can fit 20 digits
+    char[20] buf;
 
     static foreach(e; ies)
     {
