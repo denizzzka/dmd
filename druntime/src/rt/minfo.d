@@ -184,7 +184,7 @@ struct ModuleGroup
         {
         case "deprecate":
             // Option deprecated in 2.101, remove in 2.111
-            fprintf(cast()stderr, "`--DRT-oncycle=deprecate` is no longer supported, using `abort` instead\n");
+            sinkErr("`--DRT-oncycle=deprecate` is no longer supported, using `abort` instead\n");
             break;
         case "abort":
             onCycle = abort;
