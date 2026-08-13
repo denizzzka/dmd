@@ -42,6 +42,7 @@ SRCS=\
 	src\core\internal\postblit.d \
 	src\core\internal\profile_gc.d \
 	src\core\internal\qsort.d \
+	src\core\internal\sink.d \
 	src\core\internal\spinlock.d \
 	src\core\internal\string.d \
 	src\core\internal\switch_.d \
@@ -605,7 +606,6 @@ SRCS=\
 	src\rt\trace.d \
 	src\rt\tracegc.d \
 	\
-	src\rt\util\sink.d \
 	src\rt\util\typeinfo.d \
 	src\rt\util\utility.d \
 	\

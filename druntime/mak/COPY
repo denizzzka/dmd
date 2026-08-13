@@ -45,6 +45,7 @@ COPY=\
 	$(IMPDIR)\core\internal\postblit.d \
 	$(IMPDIR)\core\internal\profile_gc.d \
 	$(IMPDIR)\core\internal\qsort.d \
+	$(IMPDIR)\core\internal\sink.d \
 	$(IMPDIR)\core\internal\spinlock.d \
 	$(IMPDIR)\core\internal\string.d \
 	$(IMPDIR)\core\internal\switch_.d \

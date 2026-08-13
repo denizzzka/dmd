@@ -1,4 +1,4 @@
-module rt.sink;
+module core.internal.sink;
 
 import core.interpolation;
 
