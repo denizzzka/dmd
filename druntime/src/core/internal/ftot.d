@@ -422,9 +422,11 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in b
     int exp = (d.fractionStart - bigitIndex) * d.decimalExp + count - 1;
 
     // Special case for zero after dot if there is no more bigits
-    if(bigitIndex == d.numBigits && firstBigit < 10)
-        buf[count++] = '0';
-    else for(; bigitIndex < d.numBigits && count <= precision; bigitIndex++)
+    //FIXME: need use offset value instead
+    //~ if(bigitIndex == d.numBigits && firstBigit < 10)
+        //~ buf[count++] = '0';
+    //~ else
+    for(; bigitIndex < d.numBigits && count <= precision; bigitIndex++)
     {
         const nextBlockIdx = count + d.decimalExp;
         auto block = buf[count .. nextBlockIdx];
@@ -518,15 +520,15 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in b
         for(; count < offset + precision + 1; count++)
             buf[count] = '0';
     }
-    //TODO:
     //~ else
-        //~ foreach_reverse(i, ref c; buf[1 .. count+1])
+    //~ {
+        //~ // Remove trailing zeros
+        //~ for(; count > offset; count--)
         //~ {
-            //~ if(c == 0 && buf[i-1] != '.')
-                //~ c = 'x';
-            //~ else
+            //~ if(buf[count-1] != '0' || buf[count-2] == '.')
                 //~ break;
         //~ }
+    //~ }
 
     buf[count++] = 'e';
 
