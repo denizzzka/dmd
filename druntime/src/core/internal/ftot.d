@@ -425,7 +425,7 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in b
     }
 
     // Integer part output
-    uint count = to_chars!false(buf[0 .. d.decimalExp], d.bigits[bigitIndex]);
+    uint count = to_chars(buf[0 .. d.decimalExp], d.bigits[bigitIndex]);
     bigitIndex++;
 
     int exp = (d.fractionStart - bigitIndex) * d.decimalExp + count - 1;
@@ -438,7 +438,7 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in b
         const nextBlockIdx = count + d.decimalExp;
         auto block = buf[count .. nextBlockIdx];
 
-        const digLen = to_chars!true(block, d.bigits[bigitIndex]);
+        const digLen = to_chars(block, d.bigits[bigitIndex]);
         assert(digLen <= d.decimalExp);
         const zLen = d.decimalExp - digLen;
         assert(zLen >= 0);
@@ -566,13 +566,18 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in b
 }
 
 /// Same as C++ std::to_chars
-private uint to_chars(bool noTrailingZeros, T)(scope char[] buf, T val)
+private uint to_chars(T)(scope char[] buf, T val, bool noTrailingZeros = false)
 if(__traits(isUnsigned, T))
 {
     import core.internal.string: unsignedToTempString;
 
     char[100] tmpBuf; //FIXME
-    char[] digits = unsignedToTempString!(10, false, noTrailingZeros)(val, tmpBuf);
+    char[] digits;
+
+    if(noTrailingZeros)
+        digits = unsignedToTempString(val, tmpBuf);
+    else
+        digits = unsignedToTempString!(10, false, true)(val, tmpBuf);
 
     assert(digits.length <= buf.length);
 
