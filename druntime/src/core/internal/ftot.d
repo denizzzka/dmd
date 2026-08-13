@@ -550,18 +550,11 @@ if(__traits(isUnsigned, T))
     import core.internal.string: unsignedToTempString;
 
     char[100] tmpBuf; //FIXME
-    char[] digits;
-
-    if(noTrailingZeros)
-        digits = unsignedToTempString(val, tmpBuf);
-    else
-        digits = unsignedToTempString!(10, false, true)(val, tmpBuf);
-
-    assert(digits.length <= buf.length);
+    char[] digits = to_chars_reverse(tmpBuf, val, noTrailingZeros);
 
     () @trusted
     {
-        // It needs to be moved because unsignedToTempString
+        // It needs to be moved because to_chars_reverse()
         // writes from the end of the buffer
         import core.stdc.string: memmove;
         memmove(&buf[0], &digits[0], digits.length);
