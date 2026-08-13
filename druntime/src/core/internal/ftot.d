@@ -88,7 +88,7 @@ Returns:
 char[] floatingToTempString(T)(T value, return scope char[] buf, in ushort precision = 6)
 if(is(T == float) || is(T == double))
 {
-    //TODO: try to use ushort on 32-bit sytems to increase performance
+    //TODO: try to use ushort on 32-bit systems to increase performance
     alias BigitType = uint;
 
     auto d = Decimal!(BigitType, 20 /*FIXME*/)(value);
