@@ -7,7 +7,7 @@ import core.stdc.stdlib: abort;
 
 private enum bool isInstanceOf(alias S, T) = is(T == S!Args, Args...);
 
-void sink(IES...)(IES ies) //nothrow @nogc @safe
+void sink(IES...)(IES ies) nothrow @nogc @safe
 if(is(IES[0] == InterpolationHeader))
 {
     //FIXME: set appropriate size for each type
@@ -47,7 +47,7 @@ if(is(IES[0] == InterpolationHeader))
     fflush(stdout);
 }
 
-private void writeString(in char[] s)
+private void writeString(in char[] s) nothrow @nogc @trusted
 {
     auto r = fwrite(s.ptr, char.sizeof, s.length, stdout);
     if(r < s.length)
