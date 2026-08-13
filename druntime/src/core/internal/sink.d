@@ -7,7 +7,7 @@ import core.stdc.stdlib: abort;
 
 private enum bool isInstanceOf(alias S, T) = is(T == S!Args, Args...);
 
-private void sink(IES...)(IES ies) nothrow @nogc @safe
+void sink(IES...)(IES ies) nothrow @nogc @safe
 {
     sinkImpl(stdout, ies);
 }
@@ -15,6 +15,11 @@ private void sink(IES...)(IES ies) nothrow @nogc @safe
 void sinkErr(IES...)(IES ies) nothrow @nogc @safe
 {
     sinkImpl(stderr, ies);
+}
+
+private void sinkImpl(Pipe)(Pipe pipe, string str) nothrow @nogc @safe
+{
+    writeString(pipe, str);
 }
 
 private void sinkImpl(Pipe, IES...)(Pipe pipe, IES ies) nothrow @nogc @safe

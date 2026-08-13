@@ -12,6 +12,7 @@
 
 module rt.minfo;
 
+import core.internal.sink : sinkErr;
 import core.stdc.stdio : fprintf, stderr;
 import core.stdc.stdlib : free, malloc, realloc;
 import core.stdc.string : memcpy, memset;
@@ -520,7 +521,7 @@ struct ModuleGroup
             !doSort(MItlsctor | MItlsdtor, _tlsctors))
         {
             // print a warning
-            fprintf(cast()stderr, "Deprecation 16211 warning:\n"
+            sinkErr("Deprecation 16211 warning:\n"
                 ~ "A cycle has been detected in your program that was undetected prior to DMD\n"
                 ~ "2.072. This program will continue, but will not operate when using DMD 2.074\n"
                 ~ "to compile. Use runtime option --DRT-oncycle=print to see the cycle details.\n");
