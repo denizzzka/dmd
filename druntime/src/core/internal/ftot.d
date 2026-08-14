@@ -417,17 +417,24 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in b
 
     // Integer part output
     const firstBigit = d.bigits[bigitIndex];
-    uint count = to_chars(buf[0 .. d.decimalExp], firstBigit);
+    const firstDigits = to_chars_reverse(buf[0 .. d.decimalExp], firstBigit);
     bigitIndex++;
 
-    int exp = (d.fractionStart - bigitIndex) * d.decimalExp + count - 1;
+    // First digits are aligned to the right side of the block
+    uint count = d.decimalExp;
+
+    printf("buf=%s\n", buf.ptr);
+
+    int exp = (d.fractionStart - bigitIndex) * d.decimalExp + cast(ubyte)firstDigits.length - 1;
+
+    printf("exp=%d\n", exp);
 
     // Special case for zero after dot if there is no more bigits
     //FIXME: need use offset value instead
     //~ if(bigitIndex == d.numBigits && firstBigit < 10)
         //~ buf[count++] = '0';
     //~ else
-    for(; bigitIndex < d.numBigits && count <= precision; bigitIndex++)
+    for(; bigitIndex < d.numBigits && count - d.decimalExp <= precision; bigitIndex++)
     {
         const nextBlockIdx = count + d.decimalExp;
         auto block = buf[count .. nextBlockIdx];
@@ -435,7 +442,12 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in b
         const digits = to_chars_reverse(block, d.bigits[bigitIndex]);
         assert(digits.length <= d.decimalExp);
 
+        printf("digits=%s\n", digits.ptr);
+        printf("buf=%s\n", buf.ptr);
+
         block[0 .. $ - digits.length] = '0';
+
+        printf("buf=%s\n", buf.ptr);
 
         count = nextBlockIdx;
     }
@@ -485,11 +497,11 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in b
         memmove(&buf[2 + (negative ? 1 : 0)], &buf[1], count - 1);
     }();
 
-    int offset = 1;
+    int offset = d.decimalExp + 1;
     if (negative)
     {
-        buf[1] = buf[0];
-        buf[0] = '-';
+        buf[offset] = buf[d.decimalExp];
+        buf[d.decimalExp] = '-';
         ++offset;
     }
 
@@ -540,29 +552,13 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in b
         buf[count++] = cast(char)('0' + exp % 10);
     }
 
-    return buf[0 .. count];
+    const digitsStart = int(d.decimalExp) - firstDigits.length;
+    //~ const digitsStart = 0;
+
+    return buf[digitsStart .. count];
 }
 
-/// Same as C++ std::to_chars
-private uint to_chars(T)(scope char[] buf, T val, bool noTrailingZeros = false)
-if(__traits(isUnsigned, T))
-{
-    import core.internal.string: unsignedToTempString;
-
-    char[100] tmpBuf; //FIXME
-    char[] digits = to_chars_reverse(tmpBuf, val, noTrailingZeros);
-
-    () @trusted
-    {
-        // It needs to be moved because to_chars_reverse()
-        // writes from the end of the buffer
-        import core.stdc.string: memmove;
-        memmove(&buf[0], &digits[0], digits.length);
-    }();
-
-    return cast(uint) digits.length;
-}
-
+/// Same as C++ std::to_chars but prints from right side of buf
 private char[] to_chars_reverse(T)(scope char[] buf, T val, bool noTrailingZeros = false)
 if(__traits(isUnsigned, T))
 {
