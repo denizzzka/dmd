@@ -33,45 +33,34 @@ Returns:
     The unsigned integer value as a string of characters
 */
 T[] unsignedToTempString(uint radix = 10, bool upperCase = false, bool noTrailingZeros = false, T)(ulong value, return scope T[] buf)
-if (radix >= 2 && radix <= 36 &&
-    (is(T == char) || is(T == wchar) || is(T == dchar)))
 {
-    enum baseChar = upperCase ? 'A' : 'a';
-    size_t i = buf.length;
-    static if(noTrailingZeros) bool trailingPassed;
-
     static if (size_t.sizeof == 4) // 32 bit CPU
     {
         if (value <= uint.max)
         {
             // use faster 32 bit arithmetic
             uint val = cast(uint) value;
-            do
-            {
-                uint x = void;
-                if (val < radix)
-                {
-                    x = cast(uint)val;
-                    val = 0;
-                }
-                else
-                {
-                    x = cast(uint)(val % radix);
-                    val /= radix;
-                }
-                auto c = cast(char)((radix <= 10 || x < 10) ? x + '0' : x - 10 + baseChar);
-                static if(noTrailingZeros)
-                {
-                    if(!trailingPassed && c == '0')
-                        continue;
-                    else
-                        trailingPassed = true;
-                }
-                buf[--i] = c;
-            } while (val);
-            return buf[i .. $];
+            return toTempStringImpl!(radix, upperCase, noTrailingZeros)(val, buf);
         }
     }
+
+    return toTempStringImpl!(radix, upperCase, noTrailingZeros)(value, buf);
+}
+
+/// ditto
+T[] unsignedToTempString(uint radix = 10, bool upperCase = false, bool noTrailingZeros = false, T)(uint value, return scope T[] buf)
+{
+    return toTempStringImpl!(radix, upperCase, noTrailingZeros)(value, buf);
+}
+
+private T[] toTempStringImpl(uint radix, bool upperCase, bool noTrailingZeros, V, T)(V value, ref scope T[] buf)
+if (radix >= 2 && radix <= 36 &&
+    __traits(isUnsigned, V) &&
+    (is(T == char) || is(T == wchar) || is(T == dchar)))
+{
+    enum baseChar = upperCase ? 'A' : 'a';
+    size_t i = buf.length;
+    static if(noTrailingZeros) bool trailingPassed;
 
     do
     {
