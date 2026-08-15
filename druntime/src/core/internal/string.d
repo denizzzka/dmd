@@ -46,6 +46,12 @@ T[] unsignedToTempString(uint radix = 10, bool upperCase = false, T)(ulong value
     return toTempStringImpl!(radix, upperCase)(value, buf);
 }
 
+/// ditto
+T[] unsignedToTempString(uint radix = 10, bool upperCase = false, T)(uint value, return scope T[] buf)
+{
+    return toTempStringImpl!(radix, upperCase)(value, buf);
+}
+
 private T[] toTempStringImpl(uint radix, bool upperCase, V, T)(V value, ref scope T[] buf)
 if (radix >= 2 && radix <= 36 &&
     __traits(isUnsigned, V) &&
