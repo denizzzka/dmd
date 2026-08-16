@@ -138,6 +138,7 @@ unittest
         assert(res == expected);
     }
 
+    testIt(-12.345678f, "-1.2345678f+01");
     testIt(-12.345f, "-1.2345e+01");
     testIt(2.0, "2.0e+00");
     testIt(-1.23456789101112, "-1.23457e+00");
@@ -440,41 +441,8 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in b
         count = nextBlockIdx;
     }
 
-    bool has_nonzero()
-    {
-        for(int i = precision + 1; i < count; i++)
-            if (buf[i] != '0')
-                return true;
-
-        for(int i = bigitIndex + 1; i < d.numBigits; i++)
-            if (d.bigits[i] != 0)
-                return true;
-
-        return false;
-    };
-
-    if (count > precision)
-    {
-        const digit = buf[precision];
-
-        if (digit > '5' || digit == '5' && ((buf[precision - 1] % 2) == 1 || has_nonzero()))
-        {
-            // TODO: foreach_reverse
-            int i = precision - 1;
-            for (; i >= 0 && buf[i] == '9'; --i)
-                buf[i] = '0';
-
-            if (i >= 0)
-                ++buf[i];
-            else
-            {
-                buf[0] = '1';
-                exp++;
-            }
-        }
-
-        count = precision;
-    }
+    if(count > precision)
+        count = round(buf[0 .. count], precision, d.bigits, exp);
 
     const bool negative = val < 0;
 
@@ -541,6 +509,43 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in b
     }
 
     return buf[0 .. count];
+}
+
+private ushort round(T)(return scope char[] buf, in ushort precision, in T[] bigits, ref int exp)
+{
+    bool hasNonzero()
+    {
+        foreach(ref c; buf[precision + 1 .. $])
+            if(c != '0')
+                return true;
+
+        //TODO: remove?
+        foreach(ref b; bigits[precision + 1 .. $])
+            if(b != 0)
+                return true;
+
+        return false;
+    };
+
+    const digit = buf[$-1];
+
+    if(digit > '5' || digit == '5' && ((buf[$ - 2] % 2) == 1 || hasNonzero))
+    {
+        // TODO: foreach_reverse
+        int i = precision - 1;
+        for (; i >= 0 && buf[i] == '9'; --i)
+            buf[i] = '0';
+
+        if (i >= 0)
+            ++buf[i];
+        else
+        {
+            buf[0] = '1';
+            exp++;
+        }
+    }
+
+    return precision;
 }
 
 /// Same as C++ std::to_chars
