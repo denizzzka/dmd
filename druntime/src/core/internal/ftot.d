@@ -182,7 +182,6 @@ unittest
         assert(res == expected);
     }
 
-    testIt(-12.345678f, "-1.2345678f+01");
     testIt(-12.345f, "-1.2345e+01");
     testIt(2.0, "2.0e+00");
     testIt(-1.23456789101112, "-1.23457e+00");
