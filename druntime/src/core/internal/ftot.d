@@ -182,7 +182,8 @@ unittest
         assert(res == expected);
     }
 
-    testIt(-12.345f, "-1.2346e+02", 5);
+    testIt(-12.345f, "-1.2345e+02");
+    testIt(-12.345f, "-1.2345e+02", 5);
     testIt(2.0, "2.0e+00");
     testIt(-1.23456789101112, "-1.23457e+00");
     testIt(0.0000123456789, "1.23457e-05");
@@ -480,6 +481,9 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in b
 
     int exp = (d.fractionStart - bigitIndex) * d.decimalExp + cast(uint)digitsCount - 1;
 
+    // Decimal dot is not counted yet
+    digitsCount -= 1;
+
     // Fractional part output
     for(; bigitIndex < d.numBigits && digitsCount <= precision; bigitIndex++)
     {
@@ -496,7 +500,6 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in b
     }
 
     printf("firstDigitIdx=%d\n", cast(int)firstDigitIdx);
-    printf("count=%d\n", cast(int)count);
 
     if(digitsCount > precision)
     {
@@ -562,7 +565,6 @@ private ushort round(T)(return scope char[] buf, in uint precision, in T[] notPr
     // Checks: exactly 0.5 or a little higher?
     bool hasNonzero()
     {
-        //~ version(none)
         foreach(i, ref c; buf[precision + 1 .. $])
             if(c != '0')
             {
@@ -582,10 +584,9 @@ private ushort round(T)(return scope char[] buf, in uint precision, in T[] notPr
 
     //~ printf("hasNonzero=%d\n", hasNonzero);
 
-    const digit = buf[$-1];
+    const digit = buf[precision];
 
     if(digit > '5' || (digit == '5' && ((buf[precision - 1] % 2) == 1 || hasNonzero)))
-    //~ if(digit > '5' || (digit == '5' && hasNonzero))
     {
         // TODO: foreach_reverse
         int i = precision - 1;
