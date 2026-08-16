@@ -417,8 +417,14 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in b
 
     // Integer part output
     const firstBigit = d.bigits[bigitIndex];
-    uint count = to_chars(buf[0 .. d.decimalExp], firstBigit);
+    uint count = d.decimalExp + 1;
+    const startBuf = count - to_chars_reverse(buf[0 .. count], firstBigit).length;
+    printf("bigit=%d\n", firstBigit);
+    printf("count=%d\n", count);
+    printf("buf=%s\n", buf.ptr);
     bigitIndex++;
+
+    return buf[startBuf .. count];
 
     int exp = (d.fractionStart - bigitIndex) * d.decimalExp + count - 1;
 
@@ -485,26 +491,26 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in b
         memmove(&buf[2 + (negative ? 1 : 0)], &buf[1], count - 1);
     }();
 
-    int offset = 1;
-    if (negative)
-    {
-        buf[1] = buf[0];
-        buf[0] = '-';
-        ++offset;
-    }
+    //~ int offset = 1;
+    //~ if (negative)
+    //~ {
+        //~ buf[1] = buf[0];
+        //~ buf[0] = '-';
+        //~ ++offset;
+    //~ }
 
-    buf[offset] = '.';
-    count += offset;
+    //~ buf[offset] = '.';
+    //~ count += offset;
 
     printf("count=%d\n", count);
     printf("precision=%d\n", precision);
     printf("numBigits=%d\n", d.numBigits);
 
-    if(enableTrailingZeroes)
-    {
-        for(; count < offset + precision + 1; count++)
-            buf[count] = '0';
-    }
+    //~ if(enableTrailingZeroes)
+    //~ {
+        //~ for(; count < offset + precision + 1; count++)
+            //~ buf[count] = '0';
+    //~ }
     //~ else
     //~ {
         //~ // Remove trailing zeros
@@ -543,26 +549,7 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in b
     return buf[0 .. count];
 }
 
-/// Same as C++ std::to_chars
-private uint to_chars(T)(scope char[] buf, T val, bool noTrailingZeros = false)
-if(__traits(isUnsigned, T))
-{
-    import core.internal.string: unsignedToTempString;
-
-    char[100] tmpBuf; //FIXME
-    char[] digits = to_chars_reverse(tmpBuf, val, noTrailingZeros);
-
-    () @trusted
-    {
-        // It needs to be moved because to_chars_reverse()
-        // writes from the end of the buffer
-        import core.stdc.string: memmove;
-        memmove(&buf[0], &digits[0], digits.length);
-    }();
-
-    return cast(uint) digits.length;
-}
-
+/// Same as C++ std::to_chars but outputs from right boundary
 private char[] to_chars_reverse(T)(scope char[] buf, T val, bool noTrailingZeros = false)
 if(__traits(isUnsigned, T))
 {
