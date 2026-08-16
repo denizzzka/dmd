@@ -416,17 +416,24 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in b
     }
 
     // Integer part output
+    enum firstBigitEnd = d.decimalExp + 1 /* possible minus sign */;
     const firstBigit = d.bigits[bigitIndex];
-    uint count = d.decimalExp + 1;
-    const startBuf = count - to_chars_reverse(buf[0 .. count], firstBigit).length;
+    const firstLen = to_chars_reverse(buf[1 .. firstBigitEnd], firstBigit).length;
+    bigitIndex++;
+
+    size_t startIdx = firstBigitEnd - firstLen;
+    if(val < 0)
+        buf[--startIdx] = '-';
+
+    uint count = firstBigitEnd;
+
     printf("bigit=%d\n", firstBigit);
     printf("count=%d\n", count);
     printf("buf=%s\n", buf.ptr);
-    bigitIndex++;
 
-    return buf[startBuf .. count];
+    return buf[startIdx .. count];
 
-    int exp = (d.fractionStart - bigitIndex) * d.decimalExp + count - 1;
+    int exp = 1; //FIXME = (d.fractionStart - bigitIndex) * d.decimalExp + count - 1;
 
     // Special case for zero after dot if there is no more bigits
     //FIXME: need use offset value instead
@@ -482,26 +489,6 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in b
         count = precision;
     }
 
-    const bool negative = val < 0;
-
-    //TODO: replace by native D code:
-    () @trusted
-    {
-        import core.stdc.string: memmove;
-        memmove(&buf[2 + (negative ? 1 : 0)], &buf[1], count - 1);
-    }();
-
-    //~ int offset = 1;
-    //~ if (negative)
-    //~ {
-        //~ buf[1] = buf[0];
-        //~ buf[0] = '-';
-        //~ ++offset;
-    //~ }
-
-    //~ buf[offset] = '.';
-    //~ count += offset;
-
     printf("count=%d\n", count);
     printf("precision=%d\n", precision);
     printf("numBigits=%d\n", d.numBigits);
@@ -546,7 +533,7 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in b
         buf[count++] = cast(char)('0' + exp % 10);
     }
 
-    return buf[0 .. count];
+    return buf[startIdx .. count];
 }
 
 /// Same as C++ std::to_chars but outputs from right boundary
