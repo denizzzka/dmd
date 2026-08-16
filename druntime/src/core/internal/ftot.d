@@ -77,6 +77,50 @@ unittest
 //~ @nogc:
 //~ @safe:
 
+private char[] toCharsWithDot(size_t bufLen, T)(ref scope char[bufLen] buf, T val, ref size_t dotIdx, bool noTrailingZeros)
+{
+    scope char[bufLen - 1 /* no dot here */] tmp;
+    const digits = to_chars_reverse(tmp, val, noTrailingZeros);
+    char[] ret;
+
+    const len = digits.length;
+    if(dotIdx == 0 || dotIdx > len)
+    {
+        ret = buf[$-len .. $];
+        ret[] = digits;
+
+        if(dotIdx > 0)
+            dotIdx -= len;
+    }
+    else
+    {
+        ret = buf[$-len-1 .. $];
+
+        ret[0 .. dotIdx] = digits[0 .. dotIdx];
+        ret[dotIdx] = '.';
+
+        if(dotIdx < digits.length)
+            ret[dotIdx + 1 .. $] = digits[dotIdx .. $];
+
+        dotIdx = 0;
+    }
+
+    return ret;
+}
+
+unittest
+{
+    char[100] buf;
+    size_t dotIdx = 23;
+
+    assert(toCharsWithDot(buf, 1234567890u, dotIdx, false) == "1234567890");
+    assert(dotIdx == 13);
+    assert(toCharsWithDot(buf, 1234567890u, dotIdx, true) == "123456789");
+    assert(dotIdx == 4);
+    assert(toCharsWithDot(buf, 1234567890u, dotIdx, true) == "1234.56789");
+    assert(dotIdx == 0);
+}
+
 unittest
 {
     double val = 9999999.0;
@@ -556,9 +600,9 @@ if(__traits(isUnsigned, T))
     char[] digits;
 
     if(noTrailingZeros)
-        digits = unsignedToTempString(val, buf);
-    else
         digits = unsignedToTempString!(10, false, true)(val, buf);
+    else
+        digits = unsignedToTempString(val, buf);
 
     return digits;
 }
