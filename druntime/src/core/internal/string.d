@@ -32,9 +32,11 @@ Params:
 Returns:
     The unsigned integer value as a string of characters
 */
-T[] unsignedToTempString(uint radix = 10, bool upperCase = false, bool noTrailingZeros = false, T)(ulong value, return scope T[] buf)
+T[] unsignedToTempString(uint radix = 10, bool upperCase = false, bool noTrailingZeros = false, T, U)(in U value, return scope T[] buf)
+if(__traits(isUnsigned, U))
 {
-    static if (size_t.sizeof == 4) // 32 bit CPU
+    // Process oversized unsigned on 32 bit CPU?
+    static if (size_t.sizeof == 4 && U.sizeof > 4)
     {
         if (value <= uint.max)
         {
@@ -44,13 +46,15 @@ T[] unsignedToTempString(uint radix = 10, bool upperCase = false, bool noTrailin
         }
     }
 
-    return toTempStringImpl!(radix, upperCase, noTrailingZeros)(value, buf);
+    return toTempStringImpl!(radix, upperCase, noTrailingZeros)(cast()value, buf);
 }
 
-/// ditto
-T[] unsignedToTempString(uint radix = 10, bool upperCase = false, bool noTrailingZeros = false, T)(uint value, return scope T[] buf)
+///ditto
+//TODO: remove after Phobos will acquire necessary changes
+T[] unsignedToTempString(uint radix = 10, bool upperCase = false, T, V)(in V value, return scope T[] buf)
+if(!__traits(isUnsigned, V))
 {
-    return toTempStringImpl!(radix, upperCase, noTrailingZeros)(value, buf);
+    return unsignedToTempString!(radix, upperCase)(cast(ulong)value, buf);
 }
 
 private T[] toTempStringImpl(uint radix, bool upperCase, bool noTrailingZeros, V, T)(V value, ref scope T[] buf)
@@ -124,11 +128,11 @@ auto unsignedToTempString(uint radix = 10)(ulong value)
 unittest
 {
     UnsignedStringBuf buf = void;
-    assert(0.unsignedToTempString(buf) == "0");
-    assert(1.unsignedToTempString(buf) == "1");
-    assert(12.unsignedToTempString(buf) == "12");
-    assert(0x12ABCF .unsignedToTempString!16(buf) == "12abcf");
-    assert(0x12ABCF .unsignedToTempString!(16, true)(buf) == "12ABCF");
+    assert(0u.unsignedToTempString(buf) == "0");
+    assert(1u.unsignedToTempString(buf) == "1");
+    assert(12u.unsignedToTempString(buf) == "12");
+    assert(0x12ABCFu .unsignedToTempString!16(buf) == "12abcf");
+    assert(0x12ABCFu .unsignedToTempString!(16, true)(buf) == "12ABCF");
     assert(long.sizeof.unsignedToTempString(buf) == "8");
     assert(uint.max.unsignedToTempString(buf) == "4294967295");
     assert(ulong.max.unsignedToTempString(buf) == "18446744073709551615");
@@ -148,12 +152,12 @@ unittest
     assert(!is(typeof(100.unsignedToTempString!37(buf) == "")));
 
     // ignore trailing zeroes
-    assert(1.unsignedToTempString!(10, false, true)(buf) == "1");
-    assert(0.unsignedToTempString!(10, false, true)(buf) == "");
-    assert(1230.unsignedToTempString!(10, false, true)(buf) == "123");
-    assert(12004500.unsignedToTempString!(10, false, true)(buf) == "120045");
-    assert(0x12ab00.unsignedToTempString!(16, false, true)(buf) == "12ab");
-    assert(0x120ab.unsignedToTempString!(16, false, true)(buf) == "120ab");
+    assert(1u.unsignedToTempString!(10, false, true)(buf) == "1");
+    assert(0u.unsignedToTempString!(10, false, true)(buf) == "");
+    assert(1230u.unsignedToTempString!(10, false, true)(buf) == "123");
+    assert(12004500u.unsignedToTempString!(10, false, true)(buf) == "120045");
+    assert(0x12ab00u.unsignedToTempString!(16, false, true)(buf) == "12ab");
+    assert(0x120abu.unsignedToTempString!(16, false, true)(buf) == "120ab");
 }
 
 alias SignedStringBuf = char[65];
@@ -161,9 +165,8 @@ alias SignedStringBuf = char[65];
 T[] signedToTempString(uint radix = 10, bool upperCase = false, T)(long value, return scope T[] buf)
 {
     bool neg = value < 0;
-    if (neg)
-        value = cast(ulong)-value;
-    auto r = unsignedToTempString!(radix, upperCase)(value, buf);
+    ulong v = neg ? -value : value;
+    auto r = unsignedToTempString!(radix, upperCase)(v, buf);
     if (neg)
     {
         // about to do a slice without a bounds check
