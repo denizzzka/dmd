@@ -448,6 +448,7 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in b
         digitsCount += block.length;
     }
 
+    // TODO: move into the conditional branch
     bool has_nonzero()
     {
         for(int i = precision + 1; i < count; i++)
@@ -461,14 +462,18 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in b
         return false;
     };
 
+    //~ version(none)
     if(digitsCount > precision)
     {
-        const digit = buf[precision];
+        const lastSignificantIdx = cast(uint)(startIdx + precision /* + 1 dec dot */);
+        printf("lastSignificantIdx=%d\n", lastSignificantIdx);
+        printf("buf=%s\n", buf.ptr);
+        const digit = buf[lastSignificantIdx];
 
-        if (digit > '5' || digit == '5' && ((buf[precision - 1] % 2) == 1 || has_nonzero()))
+        if (digit > '5' || digit == '5' && ((buf[lastSignificantIdx - 1] % 2) == 1 || has_nonzero()))
         {
             // TODO: foreach_reverse
-            int i = precision - 1;
+            int i = lastSignificantIdx - 1;
             for (; i >= 0 && buf[i] == '9'; --i)
                 buf[i] = '0';
 
@@ -481,7 +486,7 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in b
             }
         }
 
-        count = precision;
+        count = lastSignificantIdx;
     }
 
     printf("digitsCount=%d\n", cast(uint)digitsCount);
