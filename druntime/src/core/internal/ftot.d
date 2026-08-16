@@ -171,18 +171,18 @@ unittest
     // Just in case of debugging using stdc:
     buf[$-1] = '\0';
 
-    void testIt(T)(T v, string expected)
+    void testIt(T)(T v, string expected, ushort precision = 6)
     {
         char[] res;
 
-        res = dtoa_puff!uint(buf, v, 6, false);
+        res = dtoa_puff!uint(buf, v, precision, false);
         assert(res == expected);
 
-        res = dtoa_puff!ushort(buf, v, 6, false);
+        res = dtoa_puff!ushort(buf, v, precision, false);
         assert(res == expected);
     }
 
-    testIt(-12.345f, "-1.2346e+02");
+    testIt(-12.345f, "-1.2346e+02", 5);
     testIt(2.0, "2.0e+00");
     testIt(-1.23456789101112, "-1.23457e+00");
     testIt(0.0000123456789, "1.23457e-05");
@@ -495,17 +495,19 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in b
         digitsCount += block.length;
     }
 
+    printf("firstDigitIdx=%d\n", cast(int)firstDigitIdx);
+    printf("count=%d\n", cast(int)count);
+
     if(digitsCount > precision)
     {
         auto toRound = buf[firstDigitIdx .. count];
-        count = count - toRound.length + round(toRound, precision, d.bigits, exp);
+        count = count - toRound.length + round(toRound, precision + 1 /*decimal dot*/, d.bigits[bigitIndex .. $], exp);
         digitsCount = precision;
         printf("aft round buf=%s\n", buf.ptr);
     }
 
     printf("startIdx=%d\n", cast(int)startIdx);
     printf("digitsCount=%d\n", cast(uint)digitsCount);
-    printf("count=%d\n", cast(int)count);
     printf("precision=%d\n", precision);
     printf("numBigits=%d\n", d.numBigits);
 
@@ -552,7 +554,7 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in b
     return buf[startIdx .. count];
 }
 
-private ushort round(T)(return scope char[] buf, in ushort precision, in T[] bigits, ref int exp)
+private ushort round(T)(return scope char[] buf, in uint precision, in T[] notProcessedBigits, ref int exp)
 {
     printf("to round buf=%s\n", buf.ptr);
     printf("to round buf.length=%llu\n", buf.length);
@@ -560,20 +562,30 @@ private ushort round(T)(return scope char[] buf, in ushort precision, in T[] big
     // Checks: exactly 0.5 or a little higher?
     bool hasNonzero()
     {
-        foreach(ref c; buf[precision + 1 .. $])
+        //~ version(none)
+        foreach(i, ref c; buf[precision + 1 .. $])
             if(c != '0')
+            {
+                printf("found nonzero at idx=%d\n", cast(int)i);
                 return true;
+            }
 
-        foreach(ref b; bigits[precision + 1 .. $])
+        foreach(i, ref b; notProcessedBigits)
             if(b != 0)
+            {
+                printf("found nonzero at bigit idx=%d\n", cast(int)i);
                 return true;
+            }
 
         return false;
     };
 
+    //~ printf("hasNonzero=%d\n", hasNonzero);
+
     const digit = buf[$-1];
 
-    if(digit > '5' || digit == '5' && ((buf[$ - 2] % 2) == 1 || hasNonzero))
+    if(digit > '5' || (digit == '5' && ((buf[precision - 1] % 2) == 1 || hasNonzero)))
+    //~ if(digit > '5' || (digit == '5' && hasNonzero))
     {
         // TODO: foreach_reverse
         int i = precision - 1;
@@ -589,7 +601,7 @@ private ushort round(T)(return scope char[] buf, in ushort precision, in T[] big
         }
     }
 
-    return precision;
+    return cast(ushort) precision;
 }
 
 /// Same as C++ std::to_chars but outputs from right boundary
