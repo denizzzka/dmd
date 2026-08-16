@@ -138,6 +138,7 @@ unittest
         assert(res == expected);
     }
 
+    testIt(-12.345678f, "-1.2345678f+01");
     testIt(-12.345f, "-1.2345e+01");
     testIt(2.0, "2.0e+00");
     testIt(-1.23456789101112, "-1.23457e+00");
@@ -421,15 +422,16 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in b
     size_t digitsCount = to_chars_reverse(buf[1 .. firstBigitEnd], firstBigit).length;
     bigitIndex++;
 
-    size_t startIdx = firstBigitEnd - digitsCount;
+    const firstDigitIdx = firstBigitEnd - digitsCount;
+    size_t startIdx = firstDigitIdx;
     if(val < 0)
         buf[--startIdx] = '-';
 
-    uint count = firstBigitEnd;
+    size_t count = firstBigitEnd;
 
     printf("bigit=%d\n", firstBigit);
     printf("buf=%s\n", buf.ptr);
-    printf("count=%d\n", count);
+    printf("count=%d\n", cast(int)count);
 
     int exp = (d.fractionStart - bigitIndex) * d.decimalExp + cast(uint)digitsCount - 1;
 
@@ -448,49 +450,16 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in b
         digitsCount += block.length;
     }
 
-    // TODO: move into the conditional branch
-    bool has_nonzero()
+    if(count > precision)
     {
-        for(int i = precision + 1; i < count; i++)
-            if (buf[i] != '0')
-                return true;
-
-        for(int i = bigitIndex + 1; i < d.numBigits; i++)
-            if (d.bigits[i] != 0)
-                return true;
-
-        return false;
-    };
-
-    //~ version(none)
-    if(digitsCount > precision)
-    {
-        const lastSignificantIdx = cast(uint)(startIdx + precision /* + 1 dec dot */);
-        printf("lastSignificantIdx=%d\n", lastSignificantIdx);
-        printf("buf=%s\n", buf.ptr);
-        const digit = buf[lastSignificantIdx];
-
-        if (digit > '5' || digit == '5' && ((buf[lastSignificantIdx - 1] % 2) == 1 || has_nonzero()))
-        {
-            // TODO: foreach_reverse
-            int i = lastSignificantIdx - 1;
-            for (; i >= 0 && buf[i] == '9'; --i)
-                buf[i] = '0';
-
-            if (i >= 0)
-                ++buf[i];
-            else
-            {
-                buf[0] = '1';
-                exp++;
-            }
-        }
-
-        count = lastSignificantIdx;
+        auto toRound = buf[firstDigitIdx .. count];
+        count = count - toRound.length + round(toRound, precision, d.bigits, exp);
+        printf("aft round buf=%s\n", buf.ptr);
     }
 
+    printf("startIdx=%d\n", cast(int)startIdx);
     printf("digitsCount=%d\n", cast(uint)digitsCount);
-    printf("count=%d\n", count);
+    printf("count=%d\n", cast(int)count);
     printf("precision=%d\n", precision);
     printf("numBigits=%d\n", d.numBigits);
 
@@ -535,6 +504,46 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in b
     }
 
     return buf[startIdx .. count];
+}
+
+private ushort round(T)(return scope char[] buf, in ushort precision, in T[] bigits, ref int exp)
+{
+    printf("to round buf=%s\n", buf.ptr);
+    printf("to round buf.length=%llu\n", buf.length);
+
+    bool hasNonzero()
+    {
+        foreach(ref c; buf[precision + 1 .. $])
+            if(c != '0')
+                return true;
+
+        //TODO: remove?
+        foreach(ref b; bigits[precision + 1 .. $])
+            if(b != 0)
+                return true;
+
+        return false;
+    };
+
+    const digit = buf[$-1];
+
+    if(digit > '5' || digit == '5' && ((buf[$ - 2] % 2) == 1 || hasNonzero))
+    {
+        // TODO: foreach_reverse
+        int i = precision - 1;
+        for (; i >= 0 && buf[i] == '9'; --i)
+            buf[i] = '0';
+
+        if (i >= 0)
+            ++buf[i];
+        else
+        {
+            buf[0] = '1';
+            exp++;
+        }
+    }
+
+    return precision;
 }
 
 /// Same as C++ std::to_chars but outputs from right boundary
