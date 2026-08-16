@@ -404,7 +404,7 @@ import core.stdc.stdio: printf;
 
 char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in bool enableTrailingZeroes)
 {
-    auto d = Decimal!(T, 100)(val);
+    const d = Decimal!(T, 100)(val);
 
     uint bigitIndex;
 
