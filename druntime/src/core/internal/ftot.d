@@ -418,29 +418,23 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in b
     // Integer part output
     enum firstBigitEnd = d.decimalExp + 1 /* possible minus sign */;
     const firstBigit = d.bigits[bigitIndex];
-    const firstLen = to_chars_reverse(buf[1 .. firstBigitEnd], firstBigit).length;
+    size_t digitsCount = to_chars_reverse(buf[1 .. firstBigitEnd], firstBigit).length;
     bigitIndex++;
 
-    size_t startIdx = firstBigitEnd - firstLen;
+    size_t startIdx = firstBigitEnd - digitsCount;
     if(val < 0)
         buf[--startIdx] = '-';
 
     uint count = firstBigitEnd;
 
     printf("bigit=%d\n", firstBigit);
-    printf("count=%d\n", count);
     printf("buf=%s\n", buf.ptr);
+    printf("count=%d\n", count);
 
-    return buf[startIdx .. count];
+    int exp = (d.fractionStart - bigitIndex) * d.decimalExp + cast(uint)digitsCount - 1;
 
-    int exp = 1; //FIXME = (d.fractionStart - bigitIndex) * d.decimalExp + count - 1;
-
-    // Special case for zero after dot if there is no more bigits
-    //FIXME: need use offset value instead
-    //~ if(bigitIndex == d.numBigits && firstBigit < 10)
-        //~ buf[count++] = '0';
-    //~ else
-    for(; bigitIndex < d.numBigits && count <= precision; bigitIndex++)
+    // Fractional part output
+    for(; bigitIndex < d.numBigits && digitsCount <= precision; bigitIndex++)
     {
         const nextBlockIdx = count + d.decimalExp;
         auto block = buf[count .. nextBlockIdx];
@@ -451,6 +445,7 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in b
         block[0 .. $ - digits.length] = '0';
 
         count = nextBlockIdx;
+        digitsCount += block.length;
     }
 
     bool has_nonzero()
@@ -466,7 +461,7 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in b
         return false;
     };
 
-    if (count > precision)
+    if(digitsCount > precision)
     {
         const digit = buf[precision];
 
@@ -489,6 +484,7 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in b
         count = precision;
     }
 
+    printf("digitsCount=%d\n", cast(uint)digitsCount);
     printf("count=%d\n", count);
     printf("precision=%d\n", precision);
     printf("numBigits=%d\n", d.numBigits);
