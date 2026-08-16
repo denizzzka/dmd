@@ -450,10 +450,11 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in b
         digitsCount += block.length;
     }
 
-    if(count > precision)
+    if(digitsCount > precision)
     {
         auto toRound = buf[firstDigitIdx .. count];
         count = count - toRound.length + round(toRound, precision, d.bigits, exp);
+        digitsCount = precision;
         printf("aft round buf=%s\n", buf.ptr);
     }
 
@@ -463,20 +464,20 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in b
     printf("precision=%d\n", precision);
     printf("numBigits=%d\n", d.numBigits);
 
-    //~ if(enableTrailingZeroes)
-    //~ {
-        //~ for(; count < offset + precision + 1; count++)
-            //~ buf[count] = '0';
-    //~ }
-    //~ else
-    //~ {
-        //~ // Remove trailing zeros
-        //~ for(; count > offset; count--)
-        //~ {
-            //~ if(buf[count-1] != '0' || buf[count-2] == '.')
-                //~ break;
-        //~ }
-    //~ }
+    if(enableTrailingZeroes)
+    {
+        for(ushort i = 0; digitsCount < precision; i++)
+            buf[count++] = '0';
+    }
+    else
+    {
+        // Remove trailing zeros
+        for(; count > firstDigitIdx; count--)
+        {
+            if(buf[count-1] != '0' || buf[count-2] == '.')
+                break;
+        }
+    }
 
     buf[count++] = 'e';
 
