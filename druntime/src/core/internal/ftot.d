@@ -462,7 +462,9 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in b
     // Integer part output
     enum firstBigitEnd = d.decimalExp + 1 /* possible minus sign */;
     const firstBigit = d.bigits[bigitIndex];
-    size_t digitsCount = to_chars_reverse(buf[1 .. firstBigitEnd], firstBigit).length;
+    size_t dotIdx = 1;
+    size_t digitsCount = toCharsWithDot(buf[1 .. firstBigitEnd], firstBigit, dotIdx, false).length;
+    assert(dotIdx == 0);
     bigitIndex++;
 
     const firstDigitIdx = firstBigitEnd - digitsCount;
@@ -555,13 +557,13 @@ private ushort round(T)(return scope char[] buf, in ushort precision, in T[] big
     printf("to round buf=%s\n", buf.ptr);
     printf("to round buf.length=%llu\n", buf.length);
 
+    // Checks: exactly 0.5 or a little higher?
     bool hasNonzero()
     {
         foreach(ref c; buf[precision + 1 .. $])
             if(c != '0')
                 return true;
 
-        //TODO: remove?
         foreach(ref b; bigits[precision + 1 .. $])
             if(b != 0)
                 return true;
