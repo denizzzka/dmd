@@ -1,6 +1,8 @@
 /// Floating to text conversion
 module core.internal.ftot;
 
+import core.internal.string: signedToTempString, unsignedToTempString;
+
 //~ pure:
 //~ nothrow:
 //~ @nogc:
@@ -574,6 +576,17 @@ char[] dtoa_puff(bool stdcCompat, T, F)(return scope char[] buf, F val, in ushor
 
     buf[count++] = 'e';
 
+    assert(exp <= 999);
+    static if(stdcCompat == false)
+    {
+        char[4] tmp;
+        auto digits = signedToTempString(exp);
+
+        const end = count + digits.length;
+        buf[count .. end] = digits;
+        count = end;
+    }
+    else
     {
         if(exp >= 0)
             buf[count] = '+';
@@ -586,8 +599,6 @@ char[] dtoa_puff(bool stdcCompat, T, F)(return scope char[] buf, F val, in ushor
 
         if(exp > 100)
         {
-            assert(exp < 999);
-
             const hund = exp / 100;
             buf[count++] = cast(char)('0' + hund);
             exp -= hund;
@@ -653,8 +664,6 @@ private ushort round(T)(return scope char[] buf, in uint precision, in T[] notPr
 private char[] to_chars_reverse(T)(scope char[] buf, T val, bool noTrailingZeros = false)
 if(__traits(isUnsigned, T))
 {
-    import core.internal.string: unsignedToTempString;
-
     char[] digits;
 
     if(noTrailingZeros)
