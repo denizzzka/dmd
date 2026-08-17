@@ -1,77 +1,6 @@
 /// Floating to text conversion
 module core.internal.ftot;
 
-version(linux)
-    version = ComparisonWithLibc;
-else version(Windows)
-    version = ComparisonWithLibc;
-
-version(none)
-unittest
-{
-    static void testIt(T)(T val, string phobos_std, string phobos_exp)
-    {
-        enum precision = 6;
-        char[20] buf;
-        //~ const asPhobosStd = floatingToTempString(val, Format.Std);
-        const asPhobosExp = floatingToTempString(val, buf, precision, false);
-
-        //~ assert(asPhobosStd == phobos_std, `"`~asPhobosStd~`" but expected "`~phobos_std~`" (as prints writeln())`);
-        assert(asPhobosExp == phobos_exp, `"`~asPhobosExp~`" but expected "`~phobos_exp~`" (as prints writefln())`);
-
-        version(ComparisonWithLibc)
-        {
-            static string getLibcText(T val, bool expForm)
-            {
-                import core.stdc.stdio: snprintf;
-
-                const fmt = expForm ? "%e" : "%f";
-
-                char[256] buf = 'a';
-                const len = snprintf(buf.ptr, buf.length, &fmt[0], val);
-                return buf[0 .. len].idup;
-            }
-
-            const stdcTextStd = getLibcText(val, false);
-            const stdcTextExp = getLibcText(val, true);
-
-            //~ const asLibcStd = floatingToTempString(val, buf, precision);
-            const asLibcExp = floatingToTempString(val, buf, precision, true);
-
-            //~ assert(asLibcStd == stdcTextStd, `"`~asLibcStd~`" but stdc snprintf() returns: "`~stdcTextStd~`"`);
-            assert(asLibcExp == stdcTextExp, `"`~asLibcExp~`" but stdc snprintf() returns: "`~stdcTextExp~`"`);
-        }
-    }
-
-    // Test on all posible types
-    static void onAll(T, ARGS...)(T val, ARGS args)
-    {
-        static if(T.dig <= float.dig)
-            testIt(cast(float) val, args);
-        else static if(T.dig <= double.dig)
-            testIt(cast(double) val, args);
-        //TODO: implement
-        //~ else static if(T.dig <= real.dig)
-            //~ testIt(cast(real) val, args);
-    }
-
-    //TODO: add test with leading zero
-    //TODO: add tests for all numeric types
-
-    onAll(1.0f, "1", "1.0e+00");
-    //~ onAll(0.0f, "0", "0.0e+00");
-    //~ onAll(float.nan, "nan", "nan");
-    //~ onAll(float.infinity, "inf", "inf");
-    //~ onAll(-float.infinity, "-inf", "-inf");
-    //~ onAll(-123.45678f, "-123.456779" /* FIXME: should be -123.456 */, "-1.234568e+02");
-    //~ onAll(1e3f, "1000", "1.0e+03" /* FIXME: should be 1e+03 */);
-    //~ onAll(0.001f, "0.001", "1.0e-03" /* FIXME: should be 1e-03 */);
-    //~ onAll(1000.0f, "1000", "1.0e+03" /* FIXME: should be 1e+03 */);
-    //~ onAll(0.001f, "0.001", "1.0e-03");
-    //~ onAll(0.0001f, "0.0001", "1.0e-04");
-    //~ onAll(double(-1.0e-8), "errrr 111", "errrr xxxxx");
-}
-
 //~ pure:
 //~ nothrow:
 //~ @nogc:
@@ -220,6 +149,76 @@ unittest
     auto r = floatingToTempString(-123.456789, buf);
 
     assert(r == "-1.23457e+02");
+}
+
+version(linux)
+    version = ComparisonWithLibc;
+else version(Windows)
+    version = ComparisonWithLibc;
+
+unittest
+{
+    static void testIt(T)(T val, string phobos_std, string phobos_exp)
+    {
+        enum precision = 6;
+        char[20] buf;
+        //~ const asPhobosStd = floatingToTempString(val, Format.Std);
+        const asPhobosExp = floatingToTempString(val, buf, precision, false);
+
+        //~ assert(asPhobosStd == phobos_std, `"`~asPhobosStd~`" but expected "`~phobos_std~`" (as prints writeln())`);
+        assert(asPhobosExp == phobos_exp, `"`~asPhobosExp~`" but expected "`~phobos_exp~`" (as prints writefln())`);
+
+        version(ComparisonWithLibc)
+        {
+            static string getLibcText(T val, bool expForm)
+            {
+                import core.stdc.stdio: snprintf;
+
+                const fmt = expForm ? "%e" : "%f";
+
+                char[256] buf = 'a';
+                const len = snprintf(buf.ptr, buf.length, &fmt[0], val);
+                return buf[0 .. len].idup;
+            }
+
+            const stdcTextStd = getLibcText(val, false);
+            const stdcTextExp = getLibcText(val, true);
+
+            //~ const asLibcStd = floatingToTempString(val, buf, precision);
+            const asLibcExp = floatingToTempString(val, buf, precision, true);
+
+            //~ assert(asLibcStd == stdcTextStd, `"`~asLibcStd~`" but stdc snprintf() returns: "`~stdcTextStd~`"`);
+            assert(asLibcExp == stdcTextExp, `"`~asLibcExp~`" but stdc snprintf() returns: "`~stdcTextExp~`"`);
+        }
+    }
+
+    // Test on all posible types
+    static void onAll(T, ARGS...)(T val, ARGS args)
+    {
+        static if(T.dig <= float.dig)
+            testIt(cast(float) val, args);
+        else static if(T.dig <= double.dig)
+            testIt(cast(double) val, args);
+        //TODO: implement
+        //~ else static if(T.dig <= real.dig)
+            //~ testIt(cast(real) val, args);
+    }
+
+    //TODO: add test with leading zero
+    //TODO: add tests for all numeric types
+
+    onAll(1.0f, "1", "1.0e+00");
+    //~ onAll(0.0f, "0", "0.0e+00");
+    //~ onAll(float.nan, "nan", "nan");
+    //~ onAll(float.infinity, "inf", "inf");
+    //~ onAll(-float.infinity, "-inf", "-inf");
+    //~ onAll(-123.45678f, "-123.456779" /* FIXME: should be -123.456 */, "-1.234568e+02");
+    //~ onAll(1e3f, "1000", "1.0e+03" /* FIXME: should be 1e+03 */);
+    //~ onAll(0.001f, "0.001", "1.0e-03" /* FIXME: should be 1e-03 */);
+    //~ onAll(1000.0f, "1000", "1.0e+03" /* FIXME: should be 1e+03 */);
+    //~ onAll(0.001f, "0.001", "1.0e-03");
+    //~ onAll(0.0001f, "0.0001", "1.0e-04");
+    //~ onAll(double(-1.0e-8), "errrr 111", "errrr xxxxx");
 }
 
 /**
