@@ -208,7 +208,7 @@ unittest
     //TODO: add tests for all numeric types
 
     onAll(1.0f, "1", "1.0e+00");
-    //~ onAll(0.0f, "0", "0.0e+00");
+    onAll(0.0f, "0", "0.0e+00");
     //~ onAll(float.nan, "nan", "nan");
     //~ onAll(float.infinity, "inf", "inf");
     //~ onAll(-float.infinity, "-inf", "-inf");
