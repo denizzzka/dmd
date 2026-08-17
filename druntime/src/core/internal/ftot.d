@@ -133,7 +133,7 @@ Params:
 Returns:
     The floating value as a string of characters
 */
-char[] floatingToTempString(T)(T value, return scope char[] buf, in ushort precision, bool enableTrailingZeroes, bool stdcCompat, bool expForm)
+char[] floatingToTempString(T)(T value, return scope char[] buf, in ushort precision, bool enableTrailingZeroes, bool expForm, bool stdcCompat)
 if(is(T == float) || is(T == double))
 {
     //TODO: try to use uint on 64-bit systems to increase performance
