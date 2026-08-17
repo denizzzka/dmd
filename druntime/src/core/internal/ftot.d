@@ -104,10 +104,10 @@ unittest
     {
         char[] res;
 
-        res = dtoa_puff!uint(buf, v, precision, false);
+        res = dtoa_puff!(true, uint)(buf, v, precision, false);
         assert(res == expected);
 
-        res = dtoa_puff!ushort(buf, v, precision, false);
+        res = dtoa_puff!(true, ushort)(buf, v, precision, false);
         assert(res == expected);
     }
 
@@ -131,14 +131,17 @@ Params:
 Returns:
     The floating value as a string of characters
 */
-char[] floatingToTempString(T)(T value, return scope char[] buf, in ushort precision = 6, bool enableTrailingZeroes = false)
+char[] floatingToTempString(T)(T value, return scope char[] buf, in ushort precision = 6, bool enableTrailingZeroes = false, bool stdcCompat = true)
 if(is(T == float) || is(T == double))
 {
-    //TODO: try to use ushort on 32-bit systems to increase performance
-    alias BigitType = uint;
+    //TODO: try to use uint on 64-bit systems to increase performance
+    alias BigitType = ushort;
 
-    auto d = Decimal!(BigitType, 20 /*FIXME*/)(value);
-    auto slice = dtoa_puff!ushort(buf, value, precision, enableTrailingZeroes);
+    char[] slice;
+    if(stdcCompat)
+        slice = dtoa_puff!(true, BigitType)(buf, value, precision, enableTrailingZeroes);
+    else
+        slice = dtoa_puff!(false, BigitType)(buf, value, precision, enableTrailingZeroes);
 
     return slice;
 }
@@ -446,7 +449,7 @@ if(is(T == ushort) || is(T == uint))
 
 import core.stdc.stdio: printf;
 
-char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in bool enableTrailingZeroes)
+char[] dtoa_puff(bool stdcCompat, T, F)(return scope char[] buf, F val, in ushort precision, in bool enableTrailingZeroes)
 {
     static char[] setRet(return scope char[] buf, string s)
     {
@@ -463,7 +466,7 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in b
     else if(val < -F.max)
         return setRet(buf, "-inf");
 
-    const d = Decimal!(T, 100)(val);
+    const d = Decimal!(T, 100 /* FIXME: remove magic number */)(val);
 
     uint bigitIndex;
 
