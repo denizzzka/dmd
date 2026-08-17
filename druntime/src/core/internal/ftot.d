@@ -217,7 +217,7 @@ unittest
     onAll(0.001f, "0.001", "1.0e-03" /* FIXME: should be 1e-03 */);
     onAll(1000.0f, "1000", "1.0e+03" /* FIXME: should be 1e+03 */);
     onAll(0.001f, "0.001", "1.0e-03");
-    //~ onAll(0.0001f, "0.0001", "1.0e-04");
+    onAll(0.0001f, "0.0001", "1.0e-04");
     //~ onAll(double(-1.0e-8), "errrr 111", "errrr xxxxx");
 }
 
@@ -475,10 +475,11 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in b
     }
 
     // First bigit output
-    enum firstBigitEnd = d.decimalExp + 2 /* possible minus and dot signs */;
+    enum firstBigitEnd = d.decimalExp + 1 /* possible minus sign*/;
     const firstBigit = d.bigits[bigitIndex];
     const dotPlace = 1;
-    size_t dotIdx = dotPlace;
+    size_t dotIdx = 0;
+    //TODO: remove
     size_t digitsCount = toCharsWithDot(buf[0 .. firstBigitEnd], firstBigit, dotIdx, false).length;
     assert(dotIdx == 0);
     bigitIndex++;
@@ -487,9 +488,6 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in b
     size_t startIdx = firstDigitIdx;
     if(val < 0)
         buf[--startIdx] = '-';
-
-    // Decimal dot is not longer counted as digit
-    digitsCount -= 1;
 
     size_t count = firstBigitEnd;
 
@@ -506,11 +504,8 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in b
     printf("remainedIntDigits=%d\n", cast(int)remainedIntDigits);
     printf("exp=%d\n", cast(int)exp);
 
-    // Special case for adding 0 after dot if no more digits expected
-    if(!enableTrailingZeroes && bigitIndex == d.numBigits && buf[count-1] == '.')
-        buf[count++] = '0';
     // Remaining bigits output
-    else for(; bigitIndex < d.numBigits && digitsCount <= precision; bigitIndex++)
+    for(; bigitIndex < d.numBigits && digitsCount <= precision; bigitIndex++)
     {
         const nextBlockIdx = count + d.decimalExp;
         auto block = buf[count .. nextBlockIdx];
@@ -529,7 +524,7 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in b
     if(digitsCount > precision)
     {
         auto toRound = buf[firstDigitIdx .. count];
-        count = count - toRound.length + round(toRound, precision + 1 /*decimal dot*/, d.bigits[bigitIndex .. $], exp);
+        count = count - toRound.length + round(toRound, precision, d.bigits[bigitIndex .. $], exp);
         digitsCount = precision;
         printf("aft round buf=%s\n", buf.ptr);
     }
@@ -539,6 +534,22 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in b
     printf("precision=%d\n", precision);
     printf("numBigits=%d\n", d.numBigits);
 
+    // Add decimal dot
+    const _dotIdx= firstDigitIdx + dotPlace;
+    {
+        printf("before dot buf=%s\n", buf.ptr);
+
+        count++;
+
+        //TODO: char-by-char shift is too slow
+        foreach_reverse(i; _dotIdx .. count)
+            buf[i] = buf[i-1];
+
+        buf[_dotIdx] = '.';
+
+        printf("after  dot buf=%s\n", buf.ptr);
+    }
+
     if(enableTrailingZeroes)
     {
         for(; digitsCount < precision; digitsCount++)
@@ -546,6 +557,10 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in b
     }
     else
     {
+        // Special case for adding 0 after dot if no more digits after dot
+        if(_dotIdx == count - 1)
+            buf[count++] = '0';
+
         // Remove trailing zeros
         for(; count > firstDigitIdx; count--)
         {
