@@ -166,12 +166,16 @@ unittest
     static void testIt(T)(T val, string phobos_std, string phobos_exp)
     {
         enum precision = 7;
-        char[20] buf;
-        //~ const asPhobosStd = floatingToTempString(val, Format.Std);
-        const asPhobosExp = floatingToTempString(val, buf, precision, false);
 
-        //~ assert(asPhobosStd == phobos_std, `"`~asPhobosStd~`" but expected "`~phobos_std~`" (as prints writeln())`);
-        assert(asPhobosExp == phobos_exp, `"`~asPhobosExp~`" but expected "`~phobos_exp~`" (as prints writefln())`);
+        {
+            //FIXME: why 20?
+            char[20] buf;
+            //~ const asPhobosStd = floatingToTempString(val, Format.Std);
+            const asPhobosExp = floatingToTempString(val, buf, precision, false);
+
+            //~ assert(asPhobosStd == phobos_std, `"`~asPhobosStd~`" but expected "`~phobos_std~`" (as prints writeln())`);
+            assert(asPhobosExp == phobos_exp, `"`~asPhobosExp~`" but expected "`~phobos_exp~`" (as prints writefln())`);
+        }
 
         version(ComparisonWithLibc)
         {
@@ -188,6 +192,9 @@ unittest
 
             const stdcTextStd = getLibcText(val, false);
             const stdcTextExp = getLibcText(val, true);
+
+            //FIXME: why 20?
+            char[20] buf;
 
             //~ const asLibcStd = floatingToTempString(val, buf, precision);
             const asLibcExp = floatingToTempString(val, buf, precision, true);
