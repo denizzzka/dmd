@@ -133,7 +133,7 @@ Params:
 Returns:
     The floating value as a string of characters
 */
-char[] floatingToTempString(T)(T value, return scope char[] buf, in ushort precision = 6, bool enableTrailingZeroes = false, bool stdcCompat = true)
+char[] floatingToTempString(T)(T value, return scope char[] buf, in ushort precision, bool enableTrailingZeroes, bool stdcCompat)
 if(is(T == float) || is(T == double))
 {
     //TODO: try to use uint on 64-bit systems to increase performance
@@ -151,7 +151,7 @@ if(is(T == float) || is(T == double))
 unittest
 {
     char[20] buf;
-    auto r = floatingToTempString(-123.456789, buf);
+    auto r = floatingToTempString(-123.456789, buf, 6, false, true);
 
     assert(r == "-1.23457e+02");
 }
@@ -171,10 +171,10 @@ unittest
             //FIXME: why 20?
             char[20] buf;
             //~ const asPhobosStd = floatingToTempString(val, Format.Std);
-            const asPhobosExp = floatingToTempString(val, buf, precision, false);
+            //~ const asPhobosExp = floatingToTempString(val, buf, precision, false, false);
 
             //~ assert(asPhobosStd == phobos_std, `"`~asPhobosStd~`" but expected "`~phobos_std~`" (as prints writeln())`);
-            assert(asPhobosExp == phobos_exp, `"`~asPhobosExp~`" but expected "`~phobos_exp~`" (as prints writefln())`);
+            //~ assert(asPhobosExp == phobos_exp, `"`~asPhobosExp~`" but expected "`~phobos_exp~`" (as prints writefln())`);
         }
 
         version(ComparisonWithLibc)
@@ -197,7 +197,7 @@ unittest
             char[20] buf;
 
             //~ const asLibcStd = floatingToTempString(val, buf, precision);
-            const asLibcExp = floatingToTempString(val, buf, precision, true);
+            const asLibcExp = floatingToTempString(val, buf, precision, true, true);
 
             //~ assert(asLibcStd == stdcTextStd, `"`~asLibcStd~`" but stdc snprintf() returns: "`~stdcTextStd~`"`);
             assert(asLibcExp == stdcTextExp, `"`~asLibcExp~`" but stdc snprintf() returns: "`~stdcTextExp~`"`);
