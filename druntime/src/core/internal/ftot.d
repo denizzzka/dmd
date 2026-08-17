@@ -461,11 +461,11 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in b
     }
 
     // First bigit output
-    enum firstBigitEnd = d.decimalExp + 1 /* possible minus sign */;
+    enum firstBigitEnd = d.decimalExp + 2 /* possible minus and dot signs */;
     const firstBigit = d.bigits[bigitIndex];
     const dotPlace = 1;
     size_t dotIdx = dotPlace;
-    size_t digitsCount = toCharsWithDot(buf[1 .. firstBigitEnd], firstBigit, dotIdx, false).length;
+    size_t digitsCount = toCharsWithDot(buf[0 .. firstBigitEnd], firstBigit, dotIdx, false).length;
     assert(dotIdx == 0);
     bigitIndex++;
 
@@ -492,8 +492,11 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in b
     printf("remainedIntDigits=%d\n", cast(int)remainedIntDigits);
     printf("exp=%d\n", cast(int)exp);
 
+    // Special case for adding 0 after dot if no more digits expected
+    if(bigitIndex == d.numBigits && buf[count-1] == '.')
+        buf[count++] = '0';
     // Remaining bigits output
-    for(; bigitIndex < d.numBigits && digitsCount <= precision; bigitIndex++)
+    else for(; bigitIndex < d.numBigits && digitsCount <= precision; bigitIndex++)
     {
         const nextBlockIdx = count + d.decimalExp;
         auto block = buf[count .. nextBlockIdx];
