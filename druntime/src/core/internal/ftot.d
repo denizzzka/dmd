@@ -182,8 +182,8 @@ unittest
         assert(res == expected);
     }
 
-    testIt(-12.345f, "-1.2345e+02");
-    testIt(-12.345f, "-1.2345e+02", 5);
+    testIt(-12.345f, "-1.2345e+01");
+    testIt(-12.345f, "-1.2345e+01", 5);
     testIt(2.0, "2.0e+00");
     testIt(-1.23456789101112, "-1.23457e+00");
     testIt(0.0000123456789, "1.23457e-05");
@@ -460,10 +460,11 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in b
         assert(buf.length >= ulong.max.log10l);
     }
 
-    // Integer part output
+    // First bigit output
     enum firstBigitEnd = d.decimalExp + 1 /* possible minus sign */;
     const firstBigit = d.bigits[bigitIndex];
-    size_t dotIdx = 1;
+    const dotPlace = 1;
+    size_t dotIdx = dotPlace;
     size_t digitsCount = toCharsWithDot(buf[1 .. firstBigitEnd], firstBigit, dotIdx, false).length;
     assert(dotIdx == 0);
     bigitIndex++;
@@ -473,18 +474,25 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in b
     if(val < 0)
         buf[--startIdx] = '-';
 
+    // Decimal dot is not longer counted as digit
+    digitsCount -= 1;
+
     size_t count = firstBigitEnd;
 
     printf("bigit=%d\n", firstBigit);
     printf("buf=%s\n", buf.ptr);
     printf("count=%d\n", cast(int)count);
+    printf("digitsCount=%d\n", cast(uint)digitsCount);
+    printf("fractionStart=%d\n", cast(int)d.fractionStart);
+    printf("bigitIndex=%d\n", cast(int)bigitIndex);
 
-    int exp = (d.fractionStart - bigitIndex) * d.decimalExp + cast(uint)digitsCount - 1;
+    const remainedIntDigits = (d.fractionStart - bigitIndex) * d.decimalExp;
+    int exp = cast(int)digitsCount - dotPlace + remainedIntDigits;
 
-    // Decimal dot is not counted yet
-    digitsCount -= 1;
+    printf("remainedIntDigits=%d\n", cast(int)remainedIntDigits);
+    printf("exp=%d\n", cast(int)exp);
 
-    // Fractional part output
+    // Remaining bigits output
     for(; bigitIndex < d.numBigits && digitsCount <= precision; bigitIndex++)
     {
         const nextBlockIdx = count + d.decimalExp;
