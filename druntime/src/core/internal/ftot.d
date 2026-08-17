@@ -562,15 +562,34 @@ char[] dtoa_puff(bool stdcCompat, T, F)(return scope char[] buf, F val, in ushor
     }
     else
     {
-        // Special case for adding 0 after dot if no more digits after dot
-        if(_dotIdx == count - 1)
-            buf[count++] = '0';
+        static if(stdcCompat)
+        {
+            // Special case for adding 0 after dot if no more digits after dot
+            if(_dotIdx == count - 1)
+                buf[count++] = '0';
+        }
 
         // Remove trailing zeros
         for(; count > firstDigitIdx; count--)
         {
-            if(buf[count-1] != '0' || buf[count-2] == '.')
+            const c = buf[count-1];
+
+            if(c != '0')
                 break;
+
+            static if(stdcCompat)
+            {
+                if(buf[count-2] == '.')
+                    break;
+            }
+            else
+            {
+                if(c == '.')
+                {
+                    count--;
+                    break;
+                }
+            }
         }
     }
 
