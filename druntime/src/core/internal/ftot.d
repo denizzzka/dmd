@@ -209,9 +209,9 @@ unittest
 
     onAll(1.0f, "1", "1.0e+00");
     onAll(0.0f, "0", "0.0e+00");
-    //~ onAll(float.nan, "nan", "nan");
-    //~ onAll(float.infinity, "inf", "inf");
-    //~ onAll(-float.infinity, "-inf", "-inf");
+    onAll(float.nan, "nan", "nan");
+    onAll(float.infinity, "inf", "inf");
+    onAll(-float.infinity, "-inf", "-inf");
     //~ onAll(-123.45678f, "-123.456779" /* FIXME: should be -123.456 */, "-1.234568e+02");
     //~ onAll(1e3f, "1000", "1.0e+03" /* FIXME: should be 1e+03 */);
     //~ onAll(0.001f, "0.001", "1.0e-03" /* FIXME: should be 1e-03 */);
@@ -448,6 +448,21 @@ import core.stdc.stdio: printf;
 
 char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in bool enableTrailingZeroes)
 {
+    static char[] setRet(return scope char[] buf, string s)
+    {
+        auto ret = buf[0 .. s.length];
+        ret[] = s.dup;
+        return ret;
+    }
+
+    // Special cases
+    if(val != val)
+        return setRet(buf, "nan");
+    else if(val > F.max)
+        return setRet(buf, "inf");
+    else if(val < -F.max)
+        return setRet(buf, "-inf");
+
     const d = Decimal!(T, 100)(val);
 
     uint bigitIndex;
