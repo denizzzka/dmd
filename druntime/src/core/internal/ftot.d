@@ -160,7 +160,7 @@ unittest
 {
     static void testIt(T)(T val, string phobos_std, string phobos_exp)
     {
-        enum precision = 6;
+        enum precision = 7;
         char[20] buf;
         //~ const asPhobosStd = floatingToTempString(val, Format.Std);
         const asPhobosExp = floatingToTempString(val, buf, precision, false);
@@ -212,7 +212,7 @@ unittest
     onAll(float.nan, "nan", "nan");
     onAll(float.infinity, "inf", "inf");
     onAll(-float.infinity, "-inf", "-inf");
-    //~ onAll(-123.45678f, "-123.456779" /* FIXME: should be -123.456 */, "-1.234568e+02");
+    onAll(-123.45678f, "-123.456779" /* FIXME: should be -123.456 */, "-1.234568e+02");
     //~ onAll(1e3f, "1000", "1.0e+03" /* FIXME: should be 1e+03 */);
     //~ onAll(0.001f, "0.001", "1.0e-03" /* FIXME: should be 1e-03 */);
     //~ onAll(1000.0f, "1000", "1.0e+03" /* FIXME: should be 1e+03 */);
@@ -507,7 +507,7 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in b
     printf("exp=%d\n", cast(int)exp);
 
     // Special case for adding 0 after dot if no more digits expected
-    if(bigitIndex == d.numBigits && buf[count-1] == '.')
+    if(!enableTrailingZeroes && bigitIndex == d.numBigits && buf[count-1] == '.')
         buf[count++] = '0';
     // Remaining bigits output
     else for(; bigitIndex < d.numBigits && digitsCount <= precision; bigitIndex++)
