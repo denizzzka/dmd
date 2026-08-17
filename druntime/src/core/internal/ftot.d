@@ -219,7 +219,7 @@ unittest
     char[20] buf;
     auto r = floatingToTempString(-123.456789, buf);
 
-    assert(r == "-1.23457e+2");
+    assert(r == "-1.23457e+02");
 }
 
 /**
@@ -561,8 +561,9 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in b
             exp -= hund;
         }
 
-        buf[count++] = cast(char)('0' + exp / 10);
-        buf[count++] = cast(char)('0' + exp % 10);
+        const tens = exp / 10;
+        buf[count++] = cast(char)('0' + tens);
+        buf[count++] = cast(char)('0' + exp - tens);
     }
 
     return buf[startIdx .. count];
