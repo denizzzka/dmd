@@ -526,7 +526,7 @@ char[] dtoa_puff(T, F)(return scope char[] buf, F val, in ushort precision, in b
 
     if(enableTrailingZeroes)
     {
-        for(ushort i = 0; digitsCount < precision; i++)
+        for(; digitsCount < precision; digitsCount++)
             buf[count++] = '0';
     }
     else
