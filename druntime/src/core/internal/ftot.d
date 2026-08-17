@@ -600,40 +600,8 @@ char[] dtoa_puff(bool stdcCompat, T, F)(return scope char[] buf, F val, in ushor
         }
     }
 
-    buf[count++] = 'e';
-
-    assert(exp <= 999);
-    static if(stdcCompat == false)
-    {
-        char[4] tmp;
-        auto digits = signedToTempString(exp);
-
-        const end = count + digits.length;
-        buf[count .. end] = digits;
-        count = end;
-    }
-    else
-    {
-        if(exp >= 0)
-            buf[count] = '+';
-        else
-        {
-            buf[count] = '-';
-            exp = -exp;
-        }
-        count++;
-
-        if(exp > 100)
-        {
-            const hund = exp / 100;
-            buf[count++] = cast(char)('0' + hund);
-            exp -= hund;
-        }
-
-        const tens = exp / 10;
-        buf[count++] = cast(char)('0' + tens);
-        buf[count++] = cast(char)('0' + exp - tens);
-    }
+    if(expForm)
+        exponentOutput!stdcCompat(buf, count, exp);
 
     return buf[startIdx .. count];
 }
@@ -684,6 +652,45 @@ private ushort round(T)(return scope char[] buf, in uint precision, in T[] notPr
     }
 
     return cast(ushort) precision;
+}
+
+private void exponentOutput(bool stdcCompat)(char[] buf, ref size_t count, int exp)
+in(exp <= 999)
+in(exp >= -999)
+{
+    buf[count++] = 'e';
+
+    static if(stdcCompat == false)
+    {
+        char[4] tmp;
+        auto digits = signedToTempString(exp);
+
+        const end = count + digits.length;
+        buf[count .. end] = digits;
+        count = end;
+    }
+    else
+    {
+        if(exp >= 0)
+            buf[count] = '+';
+        else
+        {
+            buf[count] = '-';
+            exp = -exp;
+        }
+        count++;
+
+        if(exp > 100)
+        {
+            const hund = exp / 100;
+            buf[count++] = cast(char)('0' + hund);
+            exp -= hund;
+        }
+
+        const tens = exp / 10;
+        buf[count++] = cast(char)('0' + tens);
+        buf[count++] = cast(char)('0' + exp - tens);
+    }
 }
 
 /// Same as C++ std::to_chars but outputs from right boundary
