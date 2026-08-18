@@ -530,7 +530,12 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
     if(digitsCount > precision)
     {
         auto toRound = buf[firstDigitIdx .. count];
-        count = count - toRound.length + round(toRound, precision, d.bigits[bigitIndex .. $], exp);
+        count += precision - toRound.length;
+        auto deltaExp = round(toRound, precision, d.bigits[bigitIndex .. $]);
+
+        static if(expForm)
+            exp += deltaExp;
+
         digitsCount = precision;
         printf("aft round buf=%s\n", buf.ptr);
     }
@@ -600,7 +605,7 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
     return buf[startIdx .. count];
 }
 
-private ushort round(T)(return scope char[] buf, in uint precision, in T[] notProcessedBigits, ref int exp)
+private auto round(T)(return scope char[] buf, in uint precision, in T[] notProcessedBigits)
 {
     printf("to round buf=%s\n", buf.ptr);
     printf("to round buf.length=%llu\n", buf.length);
@@ -627,6 +632,7 @@ private ushort round(T)(return scope char[] buf, in uint precision, in T[] notPr
 
     //~ printf("hasNonzero=%d\n", hasNonzero);
 
+    int expDelta;
     const digit = buf[precision];
 
     if(digit > '5' || (digit == '5' && ((buf[precision - 1] % 2) == 1 || hasNonzero)))
@@ -641,11 +647,11 @@ private ushort round(T)(return scope char[] buf, in uint precision, in T[] notPr
         else
         {
             buf[0] = '1';
-            exp++;
+            expDelta++;
         }
     }
 
-    return cast(ushort) precision;
+    return expDelta;
 }
 
 private void exponentOutput(bool stdcCompat)(char[] buf, ref size_t count, int exp)
