@@ -107,10 +107,10 @@ unittest
     {
         char[] res;
 
-        res = dtoa_puff!(true, uint)(buf, v, precision, false, true);
+        res = dtoa_puff!(true, true, uint)(buf, v, precision, false);
         assert(res == expected);
 
-        res = dtoa_puff!(true, ushort)(buf, v, precision, false, true);
+        res = dtoa_puff!(true, true, ushort)(buf, v, precision, false);
         assert(res == expected);
     }
 
@@ -134,17 +134,13 @@ Params:
 Returns:
     The floating value as a string of characters
 */
-char[] floatingToTempString(T)(T value, return scope char[] buf, in ushort precision, bool enableTrailingZeroes, bool expForm, bool stdcCompat)
+char[] floatingToTempString(bool expForm, bool stdcCompat, T)(T value, return scope char[] buf, in ushort precision, bool enableTrailingZeroes)
 if(is(T == float) || is(T == double))
 {
     //TODO: try to use uint on 64-bit systems to increase performance
     alias BigitType = ushort;
 
-    char[] slice;
-    if(stdcCompat)
-        slice = dtoa_puff!(true, BigitType)(buf, value, precision, enableTrailingZeroes, expForm);
-    else
-        slice = dtoa_puff!(false, BigitType)(buf, value, precision, enableTrailingZeroes, expForm);
+    char[] slice = dtoa_puff!(expForm, stdcCompat, BigitType)(buf, value, precision, enableTrailingZeroes);
 
     return slice;
 }
@@ -152,7 +148,7 @@ if(is(T == float) || is(T == double))
 unittest
 {
     char[20] buf;
-    auto r = floatingToTempString(-123.456789, buf, 6, false, true, true);
+    auto r = floatingToTempString!(true, true)(-123.456789, buf, 6, false);
 
     assert(r == "-1.23457e+02");
 }
@@ -197,8 +193,8 @@ unittest
             //FIXME: why 20?
             char[20] buf;
 
-            const asLibcStd = floatingToTempString(val, buf, precision, true, false, true);
-            const asLibcExp = floatingToTempString(val, buf, precision, true, true, true);
+            const asLibcStd = floatingToTempString!(false, true)(val, buf, precision, true);
+            const asLibcExp = floatingToTempString!(true, true)(val, buf, precision, true);
 
             assert(asLibcStd == stdcTextStd, `"`~asLibcStd~`" but stdc snprintf("%f") returns: "`~stdcTextStd~`"`);
             assert(asLibcExp == stdcTextExp, `"`~asLibcExp~`" but stdc snprintf("%e") returns: "`~stdcTextExp~`"`);
@@ -459,7 +455,7 @@ if(is(T == ushort) || is(T == uint))
 
 import core.stdc.stdio: printf;
 
-char[] dtoa_puff(bool stdcCompat, T, F)(return scope char[] buf, F val, in ushort precision, in bool enableTrailingZeroes, in bool expForm)
+char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F val, in ushort precision, in bool enableTrailingZeroes)
 {
     static char[] setRet(return scope char[] buf, string s)
     {
