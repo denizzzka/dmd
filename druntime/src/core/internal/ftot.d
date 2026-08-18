@@ -197,11 +197,11 @@ unittest
             //FIXME: why 20?
             char[20] buf;
 
-            //~ const asLibcStd = floatingToTempString(val, buf, precision);
+            const asLibcStd = floatingToTempString(val, buf, precision, true, false, true);
             const asLibcExp = floatingToTempString(val, buf, precision, true, true, true);
 
-            //~ assert(asLibcStd == stdcTextStd, `"`~asLibcStd~`" but stdc snprintf() returns: "`~stdcTextStd~`"`);
-            assert(asLibcExp == stdcTextExp, `"`~asLibcExp~`" but stdc snprintf() returns: "`~stdcTextExp~`"`);
+            assert(asLibcStd == stdcTextStd, `"`~asLibcStd~`" but stdc snprintf("%f") returns: "`~stdcTextStd~`"`);
+            assert(asLibcExp == stdcTextExp, `"`~asLibcExp~`" but stdc snprintf("%e") returns: "`~stdcTextExp~`"`);
         }
     }
 
@@ -490,7 +490,6 @@ char[] dtoa_puff(bool stdcCompat, T, F)(return scope char[] buf, F val, in ushor
     // First bigit output
     enum firstBigitEnd = d.decimalExp + 1 /* possible minus sign*/;
     const firstBigit = d.bigits[bigitIndex];
-    const dotPlace = 1;
     size_t digitsCount = to_chars_reverse(buf[0 .. firstBigitEnd], firstBigit).length;
     bigitIndex++;
 
@@ -508,6 +507,7 @@ char[] dtoa_puff(bool stdcCompat, T, F)(return scope char[] buf, F val, in ushor
     printf("fractionStart=%d\n", cast(int)d.fractionStart);
     printf("bigitIndex=%d\n", cast(int)bigitIndex);
 
+    const dotPlace = 1;
     const remainedIntDigits = (d.fractionStart - bigitIndex) * d.decimalExp;
     int exp = cast(int)digitsCount - dotPlace + remainedIntDigits;
 
