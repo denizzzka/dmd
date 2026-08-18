@@ -8,6 +8,7 @@ import core.internal.string: signedToTempString, unsignedToTempString;
 //~ @nogc:
 //~ @safe:
 
+//TODO: remove
 private char[] toCharsWithDot(size_t bufLen, T)(ref scope char[bufLen] buf, T val, ref size_t dotIdx, bool noTrailingZeros)
 {
     scope char[bufLen - 1 /* no dot here */] tmp;
@@ -490,10 +491,7 @@ char[] dtoa_puff(bool stdcCompat, T, F)(return scope char[] buf, F val, in ushor
     enum firstBigitEnd = d.decimalExp + 1 /* possible minus sign*/;
     const firstBigit = d.bigits[bigitIndex];
     const dotPlace = 1;
-    size_t dotIdx = 0;
-    //TODO: remove
-    size_t digitsCount = toCharsWithDot(buf[0 .. firstBigitEnd], firstBigit, dotIdx, false).length;
-    assert(dotIdx == 0);
+    size_t digitsCount = to_chars_reverse(buf[0 .. firstBigitEnd], firstBigit).length;
     bigitIndex++;
 
     const firstDigitIdx = firstBigitEnd - digitsCount;
@@ -704,5 +702,6 @@ if(__traits(isUnsigned, T))
     else
         digits = unsignedToTempString(val, buf);
 
+    //TODO: return len, not slice
     return digits;
 }
