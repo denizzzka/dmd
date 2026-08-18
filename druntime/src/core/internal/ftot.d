@@ -221,7 +221,7 @@ unittest
     onAll(float.nan, "nan", "nan");
     onAll(float.infinity, "inf", "inf");
     onAll(-float.infinity, "-inf", "-inf");
-    onAll(-123.45678f, "-123.456779" /* FIXME: should be -123.456 */, "-1.234568e+02");
+    onAll(-123.45678f, "-123.456779", "-1.234568e+02");
     onAll(1e3f, "1000", "1.0e+03" /* FIXME: should be 1e+03 */);
     onAll(0.001f, "0.001", "1.0e-03" /* FIXME: should be 1e-03 */);
     onAll(1000.0f, "1000", "1.0e+03" /* FIXME: should be 1e+03 */);
@@ -456,7 +456,7 @@ if(is(T == ushort) || is(T == uint))
 import core.stdc.stdio: printf;
 
 //TODO: enableTrailingZeroes -> enableTrailingZeros
-char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F val, in ushort precision, in bool enableTrailingZeroes)
+char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F val, ushort precision, in bool enableTrailingZeroes)
 {
     static char[] setRet(return scope char[] buf, string s)
     {
@@ -536,6 +536,12 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
 
         count = nextBlockIdx;
         digitsCount += block.length;
+    }
+
+    static if(!expForm)
+    {
+        // Precision value is taken into account only after dot
+        precision += dotPlace - 1;
     }
 
     printf("firstDigitIdx=%d\n", cast(int)firstDigitIdx);
