@@ -483,7 +483,7 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
         assert(buf.length >= ulong.max.log10l);
     }
 
-    void blockOut(T)(T bigit)
+    void blockOut(bool enableLeadingZeros, T)(T bigit)
     {
         const nextBlockIdx = count + d.decimalExp;
         auto block = buf[count .. nextBlockIdx];
@@ -491,10 +491,15 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
         const digits = to_chars_reverse(block, bigit);
         assert(digits.length <= d.decimalExp);
 
-        block[0 .. $ - digits.length] = '0';
+        static if(enableLeadingZeros)
+        {
+            block[0 .. $ - digits.length] = '0';
+            digitsCount += block.length;
+        }
+        else
+            digitsCount += digits.length;
 
         count = nextBlockIdx;
-        digitsCount += block.length;
     }
 
     // First bigit output
@@ -539,7 +544,7 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
             if(d.fractionStart == bigitIndex)
                 dotPlace = digitsCount;
 
-        blockOut(d.bigits[bigitIndex]);
+        blockOut!true(d.bigits[bigitIndex]);
     }
 
     static if(!expForm)
