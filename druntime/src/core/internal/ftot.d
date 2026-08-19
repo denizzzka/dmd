@@ -485,6 +485,7 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
 
     void blockOut(bool enableLeadingZeros, T)(T bigit)
     {
+        //TODO: rename to blockEnd
         const nextBlockIdx = count + d.decimalExp;
         auto block = buf[count .. nextBlockIdx];
 
@@ -503,17 +504,17 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
     }
 
     // First bigit output
-    enum firstBigitEnd = d.decimalExp + 1 /* possible minus sign*/;
     const firstBigit = d.bigits[bigitIndex];
-    size_t digitsCount = to_chars_reverse(buf[0 .. firstBigitEnd], firstBigit).length;
+    size_t digitsCount;
+    size_t count = 1; // possible minus sign
+
+    blockOut!false(firstBigit);
     bigitIndex++;
 
-    const firstDigitIdx = firstBigitEnd - digitsCount;
+    const firstDigitIdx = count - digitsCount;
     size_t startIdx = firstDigitIdx;
     if(val < 0)
         buf[--startIdx] = '-';
-
-    size_t count = firstBigitEnd;
 
     printf("bigit=%d\n", firstBigit);
     printf("buf=%s\n", buf.ptr);
