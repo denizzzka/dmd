@@ -482,18 +482,37 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
         assert(buf.length >= ulong.max.log10l);
     }
 
-    // First bigit output
-    enum firstBigitEnd = d.decimalExp + 1 /* possible minus sign*/;
-    const firstBigit = d.bigits[bigitIndex];
-    size_t digitsCount = to_chars_reverse(buf[0 .. firstBigitEnd], firstBigit).length;
-    bigitIndex++;
+    void blockOut(bool enableLeadingZeros, T)(T bigit)
+    {
+        const end = count + d.decimalExp;
+        auto block = buf[count .. end];
 
-    const firstDigitIdx = firstBigitEnd - digitsCount;
+        const digits = to_chars_reverse(block, bigit);
+        assert(digits.length <= d.decimalExp);
+
+        static if(enableLeadingZeros)
+        {
+            block[0 .. $ - digits.length] = '0';
+            digitsCount += block.length;
+        }
+        else
+            digitsCount += digits.length;
+
+        count = end;
+        bigitIndex++;
+    }
+
+    // First bigit output
+    const firstBigit = d.bigits[bigitIndex];
+    size_t digitsCount;
+    size_t count = 1; // possible minus sign
+
+    blockOut!false(firstBigit);
+
+    const firstDigitIdx = count - digitsCount;
     size_t startIdx = firstDigitIdx;
     if(val < 0)
         buf[--startIdx] = '-';
-
-    size_t count = firstBigitEnd;
 
     printf("bigit=%d\n", firstBigit);
     printf("buf=%s\n", buf.ptr);
@@ -518,22 +537,13 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
     }
 
     // Remaining bigits output
-    for(; bigitIndex < d.numBigits && digitsCount <= precision; bigitIndex++)
+    for(; bigitIndex < d.numBigits && digitsCount <= precision;)
     {
         static if(!expForm)
             if(d.fractionStart == bigitIndex)
                 dotPlace = digitsCount;
 
-        const nextBlockIdx = count + d.decimalExp;
-        auto block = buf[count .. nextBlockIdx];
-
-        const digits = to_chars_reverse(block, d.bigits[bigitIndex]);
-        assert(digits.length <= d.decimalExp);
-
-        block[0 .. $ - digits.length] = '0';
-
-        count = nextBlockIdx;
-        digitsCount += block.length;
+        blockOut!true(d.bigits[bigitIndex]);
     }
 
     static if(!expForm)
