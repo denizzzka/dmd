@@ -501,6 +501,7 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
             digitsCount += digits.length;
 
         count = nextBlockIdx;
+        bigitIndex++;
     }
 
     // First bigit output
@@ -509,7 +510,6 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
     size_t count = 1; // possible minus sign
 
     blockOut!false(firstBigit);
-    bigitIndex++;
 
     const firstDigitIdx = count - digitsCount;
     size_t startIdx = firstDigitIdx;
@@ -539,7 +539,7 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
     }
 
     // Remaining bigits output
-    for(; bigitIndex < d.numBigits && digitsCount <= precision; bigitIndex++)
+    for(; bigitIndex < d.numBigits && digitsCount <= precision;)
     {
         static if(!expForm)
             if(d.fractionStart == bigitIndex)
