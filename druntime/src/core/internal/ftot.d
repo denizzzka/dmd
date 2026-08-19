@@ -485,9 +485,8 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
 
     void blockOut(bool enableLeadingZeros, T)(T bigit)
     {
-        //TODO: rename to blockEnd
-        const nextBlockIdx = count + d.decimalExp;
-        auto block = buf[count .. nextBlockIdx];
+        const end = count + d.decimalExp;
+        auto block = buf[count .. end];
 
         const digits = to_chars_reverse(block, bigit);
         assert(digits.length <= d.decimalExp);
@@ -500,7 +499,7 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
         else
             digitsCount += digits.length;
 
-        count = nextBlockIdx;
+        count = end;
         bigitIndex++;
     }
 
