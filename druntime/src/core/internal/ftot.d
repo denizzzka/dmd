@@ -506,10 +506,27 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
     const firstBigit = d.bigits[bigitIndex];
     size_t digitsCount;
     size_t count = 1; // possible minus sign
+    size_t firstDigitIdx;
 
-    blockOut!false(firstBigit);
+    if(!expForm && d.fractionStart < 0)
+    {
+        auto zNum = -d.fractionStart * d.decimalExp;
+        if(zNum > precision)
+            zNum = precision;
 
-    const firstDigitIdx = count - digitsCount;
+        firstDigitIdx = count;
+        const end = count + zNum;
+        buf[count .. end] = 'x';
+        count = end;
+
+        blockOut!true(firstBigit);
+    }
+    else
+    {
+        blockOut!false(firstBigit);
+        firstDigitIdx = count - digitsCount;
+    }
+
     size_t startIdx = firstDigitIdx;
     if(val < 0)
         buf[--startIdx] = '-';
