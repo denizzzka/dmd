@@ -508,6 +508,9 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
     size_t count = 1; // possible minus sign
     size_t firstDigitIdx;
 
+    static if(!expForm)
+        size_t dotPlace = 1;
+
     if(!expForm && d.fractionStart < 0)
     {
         auto zNum = -d.fractionStart * d.decimalExp;
@@ -516,8 +519,10 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
 
         firstDigitIdx = count;
         const end = count + zNum;
-        buf[count .. end] = 'x';
+        buf[count .. end] = '0';
         count = end;
+
+        digitsCount += zNum;
 
         blockOut!true(firstBigit);
     }
@@ -540,8 +545,8 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
 
     static if(!expForm)
     {
-        size_t dotPlace = digitsCount;
-        assert(dotPlace > 0);
+        if(d.fractionStart >= 0)
+            dotPlace = digitsCount;
     }
     else
     {
@@ -552,6 +557,8 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
         printf("remainedIntDigits=%d\n", cast(int)remainedIntDigits);
         printf("exp=%d\n", cast(int)exp);
     }
+
+    assert(dotPlace > 0);
 
     // Remaining bigits output
     for(; bigitIndex < d.numBigits && digitsCount <= precision;)
