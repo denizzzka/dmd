@@ -223,7 +223,7 @@ unittest
     //~ onAll(-float.infinity, "-inf", "-inf");
     //~ onAll(-123.45678f, "-123.456779", "-1.234568e+02");
     //~ onAll(1e3f, "1000", "1.0e+03" /* FIXME: should be 1e+03 */);
-    //~ onAll(0.001f, "0.001", "1.0e-03" /* FIXME: should be 1e-03 */);
+    onAll(0.001f, "0.001", "1.0e-03" /* FIXME: should be 1e-03 */);
     onAll(-1.0e-8f, "0.000000001", "1.0e-08");
     //FIXME:
 }
@@ -511,14 +511,14 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
     static if(!expForm)
         size_t dotPlace = 1;
 
-    if(!expForm && d.fractionStart < 0)
+    if(!expForm && d.fractionStart <= 0)
     {
         auto zNum = -d.fractionStart * d.decimalExp;
         if(zNum > precision)
             zNum = precision;
 
         firstDigitIdx = count;
-        const end = count + zNum;
+        const end = count + zNum + 1;
         buf[count .. end] = '0';
         count = end;
 
@@ -545,7 +545,7 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
 
     static if(!expForm)
     {
-        if(d.fractionStart >= 0)
+        if(d.fractionStart > 0)
             dotPlace = digitsCount;
     }
     else
