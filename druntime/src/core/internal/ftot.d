@@ -507,9 +507,6 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
     size_t count = 1; // possible minus sign
     size_t firstDigitIdx;
 
-    static if(!expForm)
-        size_t dotPlace = 1;
-
     if(!expForm && d.fractionStart <= 0)
     {
         auto zNum = -d.fractionStart * d.decimalExp;
@@ -544,8 +541,7 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
 
     static if(!expForm)
     {
-        if(d.fractionStart > 0)
-            dotPlace = digitsCount;
+        size_t dotPlace = d.fractionStart <= 0 ? 1 : digitsCount;
     }
     else
     {
