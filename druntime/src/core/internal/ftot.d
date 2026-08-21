@@ -509,6 +509,7 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
 
     if(!expForm && d.fractionStart <= 0)
     {
+        // At first need to add leading zeros
         auto zNum = -d.fractionStart * d.decimalExp;
         if(zNum > precision)
             zNum = precision;
