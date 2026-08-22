@@ -569,7 +569,7 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
         blockOut!true;
 
         static if(!expForm)
-            if(d.fractionStart == bigitIndex)
+            if(d.fractionStart >= bigitIndex)
                 dotPlace = digitsCount;
     }
 
