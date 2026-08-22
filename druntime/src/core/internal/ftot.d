@@ -184,7 +184,9 @@ unittest
 
                 const fmt = fmtStr(expForm);
 
-                char[precision * 2 + 1 /*dot*/] buf = 'a';
+                char[precision * 2 + 1 /*dot*/] buf = '|';
+                buf[$-1] = '\0';
+
                 auto len = snprintf(buf.ptr, buf.length, &fmt[0], val);
                 assert(len > 0);
 
