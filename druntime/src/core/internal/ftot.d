@@ -199,8 +199,10 @@ unittest
             {
                 const stdcText = getLibcText(val, expForm);
 
-                //FIXME: why 20?
-                char[20] buf;
+                //TODO: test dtoa_puff() using both storage types, not floatingToTempString()
+                mixin Estimation!ushort;
+
+                char[maxBufSize!T] buf;
 
                 const asLibc = floatingToTempString!(expForm, true)(val, buf, precision, true);
                 assert(asLibc == stdcText, `"`~asLibc~`" but stdc snprintf("`~fmtStr(expForm)~`") returns: "`~stdcText~`"`);
@@ -253,6 +255,12 @@ if(is(T == ushort) || is(T == uint))
         enum decimalExp = 4; // 10^4 - largest decimal number less than 16-bit value
         enum bigitBitWidth = 13; // 2^13 - largest binary number less than 10^4
         alias UL = uint;
+    }
+
+    template maxBufSize(F)
+    {
+        //TODO: implement more precise calculation
+        enum maxBufSize = F.dig * 2 /*twice for libc-style precission*/ + 1 /*sign*/ + 1 /*dot*/ + 5 /*exponent*/;
     }
 }
 
@@ -489,13 +497,6 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
     const d = Decimal!(T, 100 /* FIXME: remove magic number */)(val);
 
     uint bigitIndex;
-
-    debug
-    {
-        import core.stdc.math: log10l;
-        //TODO: templatize buf len?
-        assert(buf.length >= ulong.max.log10l);
-    }
 
     void blockOut(bool enableLeadingZeros)()
     {
