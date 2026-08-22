@@ -575,6 +575,9 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
     printf("fractionStart=%d\n", cast(int)d.fractionStart);
     printf("bigitIndex=%d\n", cast(int)bigitIndex);
 
+    //~ foreach(i, b; d.bigits)
+        //~ printf("bigits[%d] = %d\n", cast(uint)i, cast(uint)b);
+
     static if(!expForm)
     {
         size_t dotPlace = d.fractionStart <= 0 ? 1 : digitsCount;
@@ -681,7 +684,7 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
         }
 
         // Remove trailing zeros
-        for(; count > firstDigitIdx + 1 /* possible leading zero */; count--)
+        for(; count > _dotIdx; count--)
         {
             const c = buf[count-1];
 
