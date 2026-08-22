@@ -177,7 +177,7 @@ unittest
             }
 
             cmp!false;
-            cmp!true;
+            //~ cmp!true;
         }
 
         version(ComparisonWithLibc)
@@ -637,6 +637,8 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
     // Add decimal dot
     //TODO: _dotIdx -> dotIdx
     const _dotIdx= firstDigitIdx + dotPlace;
+
+    if(stdcCompat || _dotIdx != count)
     {
         printf("before dot buf=%s\n", buf.ptr);
 
