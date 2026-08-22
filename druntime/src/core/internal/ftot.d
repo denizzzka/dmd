@@ -594,16 +594,42 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
     printf("Remaining bigits output\n");
 
     // Remaining bigits output
-    for(; bigitIndex < d.numBigits && digitsCount <= precision;)
+    //TODO: first bigit can be printed in this loop too
+    while(bigitIndex < d.numBigits)
     {
-        blockOut!true;
-
-        static if(!expForm)
+        static if(expForm)
+            const currPrecision = digitsCount;
+        else
         {
             printf("type=%s\n", F.stringof.ptr);
             printf("fractionStart=%d\n", cast(int)d.fractionStart);
             printf("bigitIndex=%d\n", cast(int)bigitIndex);
-            if(d.fractionStart >= bigitIndex)
+
+            size_t currPrecision;
+
+            // Is on integer part?
+            if(bigitIndex <= d.fractionStart)
+            {
+                currPrecision = 0;
+
+                if(d.fractionStart > 0)
+                    dotPlace = digitsCount;
+            }
+            else
+                currPrecision = digitsCount - dotPlace;
+        }
+
+        printf("precision=%d\n", cast(int)precision);
+        printf("currPrecision=%d\n", cast(int)currPrecision);
+
+        if(currPrecision > precision)
+            break;
+
+        blockOut!true;
+
+        static if(!expForm) if(bigitIndex <= d.fractionStart)
+        {
+            if(d.fractionStart > 0)
                 dotPlace = digitsCount;
         }
     }
