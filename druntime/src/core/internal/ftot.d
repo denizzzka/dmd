@@ -176,11 +176,13 @@ unittest
 
         version(ComparisonWithLibc)
         {
+            static string fmtStr(bool expForm) => expForm ? "%e" : "%f";
+
             static string getLibcText(T val, bool expForm)
             {
                 import core.stdc.stdio: snprintf;
 
-                const fmt = expForm ? "%e" : "%f";
+                const fmt = fmtStr(expForm);
 
                 char[precision * 2 + 1 /*dot*/] buf = 'a';
                 auto len = snprintf(buf.ptr, buf.length, &fmt[0], val);
@@ -193,17 +195,19 @@ unittest
                 return buf[0 .. len].idup;
             }
 
-            const stdcTextStd = getLibcText(val, false);
-            const stdcTextExp = getLibcText(val, true);
+            void libcCmp(bool expForm)()
+            {
+                const stdcText = getLibcText(val, expForm);
 
-            //FIXME: why 20?
-            char[20] buf;
+                //FIXME: why 20?
+                char[20] buf;
 
-            const asLibcStd = floatingToTempString!(false, true)(val, buf, precision, true);
-            //~ const asLibcExp = floatingToTempString!(true, true)(val, buf, precision, true);
+                const asLibc = floatingToTempString!(expForm, true)(val, buf, precision, true);
+                assert(asLibc == stdcText, `"`~asLibc~`" but stdc snprintf("`~fmtStr(expForm)~`") returns: "`~stdcText~`"`);
+            }
 
-            assert(asLibcStd == stdcTextStd, `"`~asLibcStd~`" but stdc snprintf("%f") returns: "`~stdcTextStd~`"`);
-            //~ assert(asLibcExp == stdcTextExp, `"`~asLibcExp~`" but stdc snprintf("%e") returns: "`~stdcTextExp~`"`);
+            libcCmp!(false);
+            libcCmp!(true);
         }
     }
 
