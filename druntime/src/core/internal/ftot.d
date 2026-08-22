@@ -165,13 +165,19 @@ unittest
         enum precision = 7;
 
         {
-            //FIXME: why 20?
-            char[20] buf;
-            //~ const asPhobosStd = floatingToTempString(val, Format.Std);
-            //~ const asPhobosExp = floatingToTempString(val, buf, precision, false, false);
+            void cmp(bool expForm)()
+            {
+                //FIXME: hardcoded buf size
+                char[1000] buf;
 
-            //~ assert(asPhobosStd == phobos_std, `"`~asPhobosStd~`" but expected "`~phobos_std~`" (as prints writeln())`);
-            //~ assert(asPhobosExp == phobos_exp, `"`~asPhobosExp~`" but expected "`~phobos_exp~`" (as prints writefln())`);
+                const shouldBe = expForm ? phobos_exp : phobos_std;
+                const r = floatingToTempString!(expForm, false)(val, buf, precision, true);
+
+                assert(r == shouldBe, `"`~r~`" but expected "`~shouldBe~`" (as prints writeln())`);
+            }
+
+            cmp!false;
+            cmp!true;
         }
 
         version(ComparisonWithLibc)
