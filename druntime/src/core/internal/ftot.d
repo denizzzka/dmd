@@ -169,6 +169,7 @@ unittest
             {
                 //FIXME: hardcoded buf size
                 char[1000] buf;
+                buf[$-1] = '\0';
 
                 const shouldBe = expForm ? phobos_exp : phobos_std;
                 const r = floatingToTempString!(expForm, false)(val, buf, precision, false);
@@ -176,7 +177,7 @@ unittest
                 assert(r == shouldBe, `"`~r~`" but expected "`~shouldBe~`" (as implemented in Phobos, expForm=`~(expForm ? "true" : "false")~`)`);
             }
 
-            cmp!false;
+            //~ cmp!false;
             //~ cmp!true;
         }
 
@@ -190,15 +191,14 @@ unittest
 
                 const fmt = fmtStr(expForm);
 
-                char[precision * 2 + 1 /*dot*/] buf = '|';
+                //FIXME: hardcoded buf size
+                //~ char[precision * 2 + 1 /*dot*/] buf = '|';
+                char[1000] buf = '|';
                 buf[$-1] = '\0';
 
                 auto len = snprintf(buf.ptr, buf.length, &fmt[0], val);
                 assert(len > 0);
-
-                // Truncated output?
-                if(len > buf.length)
-                    len = buf.length;
+                assert(len <= buf.length);
 
                 return buf[0 .. len].idup;
             }
@@ -217,7 +217,7 @@ unittest
                 assert(asLibc == stdcText, `"`~asLibc~`" but stdc snprintf("`~fmtStr(expForm)~`") returns: "`~stdcText~`"`);
             }
 
-            //~ libcCmp!(false);
+            libcCmp!(false);
             libcCmp!(true);
         }
     }
