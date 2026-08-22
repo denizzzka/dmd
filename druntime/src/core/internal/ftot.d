@@ -202,7 +202,8 @@ unittest
                 //TODO: test dtoa_puff() using both storage types, not floatingToTempString()
                 mixin Estimation!ushort;
 
-                char[maxBufSize!T] buf;
+                char[maxBufSize!T] buf = '|';
+                buf[$-1] = '\0';
 
                 const asLibc = floatingToTempString!(expForm, true)(val, buf, precision, true);
                 assert(asLibc == stdcText, `"`~asLibc~`" but stdc snprintf("`~fmtStr(expForm)~`") returns: "`~stdcText~`"`);
@@ -238,6 +239,7 @@ unittest
     onAll(0.001f, "0.001", "1.0e-03" /* FIXME: should be 1e-03 */);
     onAll(-1.0e-8f, "0.000000001", "1.0e-08");
     onAll(-3.75733371660706733e+254, "0.000000001", "1.0e-08");
+    onAll(-3.75733371660706733e-254, "0.000000001", "1.0e-08");
     //~ onAll(-8.18508608421076634e+196, "0.000000001", "1.0e-08");
     //~ onAll(1.75385519873894074e+84, "0.000000001", "1.0e-08");
     //~ onAll(1.28088869978930773e+262, "0.000000001", "1.0e-08");
@@ -500,7 +502,7 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
     else if(val < -F.max)
         return setRet(buf, "-inf");
 
-    const d = Decimal!(T, 100 /* FIXME: remove magic number */)(val);
+    const d = Decimal!(T, 1000 /* FIXME: remove magic number */)(val);
 
     uint bigitIndex;
 
