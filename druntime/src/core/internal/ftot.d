@@ -601,22 +601,8 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
             const currPrecision = digitsCount;
         else
         {
-            printf("type=%s\n", F.stringof.ptr);
-            printf("fractionStart=%d\n", cast(int)d.fractionStart);
-            printf("bigitIndex=%d\n", cast(int)bigitIndex);
-
-            size_t currPrecision;
-
-            // Is on integer part?
-            if(bigitIndex <= d.fractionStart)
-            {
-                currPrecision = 0;
-
-                if(d.fractionStart > 0)
-                    dotPlace = digitsCount;
-            }
-            else
-                currPrecision = digitsCount - dotPlace;
+            const onIntegerPart = (bigitIndex < d.fractionStart);
+            const currPrecision = onIntegerPart ? 0 : digitsCount - dotPlace;
         }
 
         printf("precision=%d\n", cast(int)precision);
@@ -627,10 +613,10 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
 
         blockOut!true;
 
-        static if(!expForm) if(bigitIndex <= d.fractionStart)
+        static if(!expForm)
         {
-            if(d.fractionStart > 0)
-                dotPlace = digitsCount;
+            if(onIntegerPart && d.fractionStart > 0)
+                    dotPlace = digitsCount;
         }
     }
 
