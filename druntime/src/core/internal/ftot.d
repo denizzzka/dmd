@@ -566,11 +566,11 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
     // Remaining bigits output
     for(; bigitIndex < d.numBigits && digitsCount <= precision;)
     {
+        blockOut!true;
+
         static if(!expForm)
             if(d.fractionStart == bigitIndex)
                 dotPlace = digitsCount;
-
-        blockOut!true;
     }
 
     static if(!expForm)
