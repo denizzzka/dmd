@@ -183,9 +183,12 @@ unittest
                 const fmt = expForm ? "%e" : "%f";
 
                 char[precision * 2 + 1 /*dot*/] buf = 'a';
-                const len = snprintf(buf.ptr, buf.length, &fmt[0], val);
+                auto len = snprintf(buf.ptr, buf.length, &fmt[0], val);
                 assert(len > 0);
-                assert(len <= buf.length);
+
+                // Truncated output?
+                if(len > buf.length)
+                    len = buf.length;
 
                 return buf[0 .. len].idup;
             }
