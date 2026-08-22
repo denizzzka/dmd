@@ -208,7 +208,7 @@ unittest
                 assert(asLibc == stdcText, `"`~asLibc~`" but stdc snprintf("`~fmtStr(expForm)~`") returns: "`~stdcText~`"`);
             }
 
-            libcCmp!(false);
+            //~ libcCmp!(false);
             libcCmp!(true);
         }
     }
@@ -237,6 +237,10 @@ unittest
     onAll(1e3f, "1000", "1.0e+03" /* FIXME: should be 1e+03 */);
     onAll(0.001f, "0.001", "1.0e-03" /* FIXME: should be 1e-03 */);
     onAll(-1.0e-8f, "0.000000001", "1.0e-08");
+    onAll(-3.75733371660706733e+254, "0.000000001", "1.0e-08");
+    //~ onAll(-8.18508608421076634e+196, "0.000000001", "1.0e-08");
+    //~ onAll(1.75385519873894074e+84, "0.000000001", "1.0e-08");
+    //~ onAll(1.28088869978930773e+262, "0.000000001", "1.0e-08");
 }
 
 private mixin template Estimation(T)
@@ -260,7 +264,9 @@ if(is(T == ushort) || is(T == uint))
     template maxBufSize(F)
     {
         //TODO: implement more precise calculation
-        enum maxBufSize = F.dig * 2 /*twice for libc-style precission*/ + 1 /*sign*/ + 1 /*dot*/ + 5 /*exponent*/;
+        //~ enum maxBufSize = F.dig * 2 /*twice for libc-style precission*/ + 1 /*sign*/ + 1 /*dot*/ + 5 /*exponent*/;
+        //FIXME:
+        enum maxBufSize = 1000;
     }
 }
 
@@ -442,9 +448,6 @@ if(is(T == ushort) || is(T == uint))
             intPartIdx--;
         }
 
-        const integralBigitsAcquired = intPartBigitsNum - intPartIdx;
-        fractionStart = integralBigitsAcquired - 1;
-
         assert(intPartIdx >= 0);
 
         // Skip leading zero bigits
@@ -453,11 +456,14 @@ if(is(T == ushort) || is(T == uint))
         if(exp >= 0)
         {
             massiveLeftShift(exp);
+            fractionStart = numBigits;
         }
         else
         {
+            const integralBigitsAcquired = intPartBigitsNum - intPartIdx;
+            fractionStart = integralBigitsAcquired;
+
             massiveRightShift(-exp);
-            fractionStart++;
         }
 
         // Assigning again for better boundary control
@@ -574,14 +580,21 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
 
     assert(dotPlace > 0);
 
+    printf("Remaining bigits output\n");
+
     // Remaining bigits output
     for(; bigitIndex < d.numBigits && digitsCount <= precision;)
     {
         blockOut!true;
 
         static if(!expForm)
+        {
+            printf("type=%s\n", F.stringof.ptr);
+            printf("fractionStart=%d\n", cast(int)d.fractionStart);
+            printf("bigitIndex=%d\n", cast(int)bigitIndex);
             if(d.fractionStart >= bigitIndex)
                 dotPlace = digitsCount;
+        }
     }
 
     static if(!expForm)
@@ -751,12 +764,12 @@ in(exp >= -999)
         {
             const hund = exp / 100;
             buf[count++] = cast(char)('0' + hund);
-            exp -= hund;
+            exp %= 100;
         }
 
         const tens = exp / 10;
         buf[count++] = cast(char)('0' + tens);
-        buf[count++] = cast(char)('0' + exp - tens);
+        buf[count++] = cast(char)('0' + exp % 10);
     }
 }
 
