@@ -171,9 +171,9 @@ unittest
                 char[1000] buf;
 
                 const shouldBe = expForm ? phobos_exp : phobos_std;
-                const r = floatingToTempString!(expForm, false)(val, buf, precision, true);
+                const r = floatingToTempString!(expForm, false)(val, buf, precision, false);
 
-                assert(r == shouldBe, `"`~r~`" but expected "`~shouldBe~`" (as prints writeln())`);
+                assert(r == shouldBe, `"`~r~`" but expected "`~shouldBe~`" (as implemented in Phobos, expForm=`~(expForm ? "true" : "false")~`)`);
             }
 
             cmp!false;
