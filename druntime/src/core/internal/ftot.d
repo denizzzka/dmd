@@ -177,7 +177,7 @@ unittest
                 assert(r == shouldBe, `"`~r~`" but expected "`~shouldBe~`" (as implemented in Phobos, expForm=`~(expForm ? "true" : "false")~`)`);
             }
 
-            //~ cmp!false;
+            cmp!false;
             //~ cmp!true;
         }
 
@@ -681,7 +681,7 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
         }
 
         // Remove trailing zeros
-        for(; count > firstDigitIdx; count--)
+        for(; count > firstDigitIdx + 1 /* possible leading zero */; count--)
         {
             const c = buf[count-1];
 
