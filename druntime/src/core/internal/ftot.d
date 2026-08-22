@@ -237,6 +237,25 @@ unittest
     onAll(-1.0e-8f, "0.000000001", "1.0e-08");
 }
 
+private mixin template Estimation(T)
+if(is(T == ushort) || is(T == uint))
+{
+    // Set decimal exponent. The most effective is to use
+    // the largest power of 10 that is less than T.max.
+    static if(T.sizeof == 4)
+    {
+        enum decimalExp = 9; // 10^9 - largest decimal number less than 32-bit value
+        enum bigitBitWidth = 29; // 2^29 - largest binary number less than 10^9
+        alias UL = ulong; // Twice longer than T
+    }
+    else static if(T.sizeof == 2)
+    {
+        enum decimalExp = 4; // 10^4 - largest decimal number less than 16-bit value
+        enum bigitBitWidth = 13; // 2^13 - largest binary number less than 10^4
+        alias UL = uint;
+    }
+}
+
 /**
  * A fixed-point decimal number.
  *
@@ -254,20 +273,7 @@ if(is(T == ushort) || is(T == uint))
     private T[maxLen] bigitsArr;
     T[] bigits;
 
-    // Set decimal exponent. The most effective is to use
-    // the largest power of 10 that is less than T.max.
-    static if(T.sizeof == 4)
-    {
-        enum decimalExp = 9; // 10^9 - largest decimal number less than 32-bit value
-        enum bigitBitWidth = 29; // 2^29 - largest binary number less than 10^9
-        alias UL = ulong; // Twice longer than T
-    }
-    else static if(T.sizeof == 2)
-    {
-        enum decimalExp = 4; // 10^4 - largest decimal number less than 16-bit value
-        enum bigitBitWidth = 13; // 2^13 - largest binary number less than 10^4
-        alias UL = uint;
-    }
+    mixin Estimation!T;
 
     //TODO: add bigitsArr.length assert
 
