@@ -481,8 +481,10 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
         assert(buf.length >= ulong.max.log10l);
     }
 
-    void blockOut(bool enableLeadingZeros, T)(T bigit)
+    void blockOut(bool enableLeadingZeros)()
     {
+        ref const bigit = d.bigits[bigitIndex];
+
         const end = count + d.decimalExp;
         auto block = buf[count .. end];
 
@@ -502,7 +504,6 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
     }
 
     // First bigit output
-    const firstBigit = d.bigits[bigitIndex];
     size_t digitsCount;
     size_t count = 1; // possible minus sign
     size_t firstDigitIdx;
@@ -521,11 +522,11 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
 
         digitsCount += zNum;
 
-        blockOut!true(firstBigit);
+        blockOut!true;
     }
     else
     {
-        blockOut!false(firstBigit);
+        blockOut!false;
         firstDigitIdx = count - digitsCount;
     }
 
@@ -533,7 +534,7 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
     if(val < 0)
         buf[--startIdx] = '-';
 
-    printf("bigit=%d\n", firstBigit);
+    printf("bigit=%d\n", d.bigits[bigitIndex]);
     printf("buf=%s\n", buf.ptr);
     printf("count=%d\n", cast(int)count);
     printf("digitsCount=%d\n", cast(uint)digitsCount);
@@ -563,7 +564,7 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
             if(d.fractionStart == bigitIndex)
                 dotPlace = digitsCount;
 
-        blockOut!true(d.bigits[bigitIndex]);
+        blockOut!true;
     }
 
     static if(!expForm)
