@@ -489,6 +489,7 @@ if(is(T == ushort) || is(T == uint))
         }
 
         // Assigning again for better boundary control
+        version(D_NoBoundsChecks){} else
         bigits = bigits[0 .. numBigits + 1];
     }
 
