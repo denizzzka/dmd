@@ -433,7 +433,7 @@ if(is(T == ushort) || is(T == uint))
     this(F)(F d)
     if(__traits(isFloating, F))
     {
-        //TODO: replace libc frexp() call by core.internal.convert
+        //TODO: replace libc frexp() call
         import core.stdc.math;
 
         enum numBits = d.mant_dig;
@@ -442,6 +442,18 @@ if(is(T == ushort) || is(T == uint))
             const integralPart = frexpf(d, &exp) * (1U << numBits);
         else static if(is(F == double))
             const integralPart = frexp(d, &exp) * (1UL << numBits);
+        else static if(is(F == real))
+        {
+            static assert(F.dig <= 20 /* decimal width of two ulong values */);
+
+            real integr;
+            const fract = modfl(d, &integr);
+
+            const integralUpper = cast(long) integr;
+            assert(integralUpper % 1 == 0);
+
+            const integralPart = frexp(cast(double) fract, &exp) * (1UL << double.mant_dig);
+        }
 
         auto v = cast(GF) (integralPart < 0 ? -integralPart : integralPart);
 
