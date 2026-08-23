@@ -135,7 +135,7 @@ Returns:
     The floating value as a string of characters
 */
 char[] floatingToTempString(bool expForm, bool stdcCompat, T)(T value, return scope char[] buf, in ushort precision, bool enableTrailingZeroes)
-if(is(T == float) || is(T == double))
+if(__traits(isFloating, T))
 {
     //TODO: try to use uint on 64-bit systems to increase performance
     alias BigitType = ushort;
@@ -231,9 +231,8 @@ unittest
         static if(T.dig <= double.dig)
             testIt(double(val), args);
 
-        //TODO: implement
-        //~ static if(T.dig <= real.dig)
-            //~ testIt(real(val), args);
+        static if(T.dig <= real.dig)
+            testIt(real(val), args);
     }
 
     //TODO: add test with leading zero
