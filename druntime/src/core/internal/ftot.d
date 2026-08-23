@@ -434,11 +434,15 @@ if(is(T == ushort) || is(T == uint))
     this(F)(F d)
     if(__traits(isFloating, F))
     {
-        //TODO: replace libc call by core.internal.convert
-        import core.stdc.math: frexp;
+        //TODO: replace libc frexp() call by core.internal.convert
+        import core.stdc.math;
 
         enum numBits = d.mant_dig;
-        const integralPart = frexp(d, &exp) * (1UL << numBits);
+
+        static if(is(F == float))
+            const integralPart = frexpf(d, &exp) * (1U << numBits);
+        else static if(is(F == double))
+            const integralPart = frexp(d, &exp) * (1UL << numBits);
 
         auto v = cast(GF) (integralPart < 0 ? -integralPart : integralPart);
 
