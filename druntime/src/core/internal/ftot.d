@@ -245,7 +245,7 @@ unittest
     onAll(-123.45678f, "-123.456779", "-1.234568e+02");
     onAll(1e3f, "1000", "1.0e+03" /* FIXME: should be 1e+03 */);
     onAll(0.001f, "0.001", "1.0e-03" /* FIXME: should be 1e-03 */);
-    onAll(-1.0e-8f, "0.000000001", "1.0e-08");
+    onAll(-1.0e-8f, "-0", "-1e-08");
     onAll(-3.75733371660706733e+254, "0.000000001", "1.0e-08");
     onAll(-3.75733371660706733e-254, "0.000000001", "1.0e-08");
     onAll(float.max, "0.000000001", "1.0e-08");
@@ -676,6 +676,8 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
     }
     else
     {
+        printf("remove trailing zeros branch\n");
+
         static if(stdcCompat)
         {
             // Special case for adding 0 after dot if no more digits after dot
@@ -687,9 +689,6 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
         for(; count > _dotIdx; count--)
         {
             const c = buf[count-1];
-
-            if(c != '0')
-                break;
 
             static if(stdcCompat)
             {
@@ -704,6 +703,9 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
                     break;
                 }
             }
+
+            if(c != '0')
+                break;
         }
     }
 
