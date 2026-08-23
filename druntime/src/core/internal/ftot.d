@@ -226,12 +226,14 @@ unittest
     static void onAll(T, ARGS...)(T val, ARGS args)
     {
         static if(T.dig <= float.dig)
-            testIt(cast(float) val, args);
-        else static if(T.dig <= double.dig)
-            testIt(cast(double) val, args);
+            testIt(float(val), args);
+
+        static if(T.dig <= double.dig)
+            testIt(double(val), args);
+
         //TODO: implement
-        //~ else static if(T.dig <= real.dig)
-            //~ testIt(cast(real) val, args);
+        //~ static if(T.dig <= real.dig)
+            //~ testIt(real(val), args);
     }
 
     //TODO: add test with leading zero
