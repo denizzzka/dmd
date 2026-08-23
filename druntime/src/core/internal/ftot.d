@@ -444,26 +444,31 @@ if(is(T == ushort) || is(T == uint))
         else static if(is(F == double))
             const integralPart = frexp(d, &exp) * (1UL << numBits);
 
-        auto v = cast(GF) (integralPart < 0 ? -integralPart : integralPart);
-
         //TODO: make exp const
         exp -= numBits;
 
         byte intPartIdx = intPartBigitsNum - 1;
 
-        while(true)
+        void addIntPart(INT)(INT integralPart)
         {
-            const lessSig = v % bigitBound;
-            bigitsArr[intPartIdx] = lessSig;
-            numBigits++;
+            auto v = cast(GF) (integralPart < 0 ? -integralPart : integralPart);
 
-            v /= bigitBound;
+            while(true)
+            {
+                const lessSig = v % bigitBound;
+                v /= bigitBound;
 
-            if(v == 0)
-                break;
+                bigitsArr[intPartIdx] = lessSig;
+                numBigits++;
 
-            intPartIdx--;
+                if(v == 0)
+                    break;
+
+                intPartIdx--;
+            }
         }
+
+        addIntPart(integralPart);
 
         assert(intPartIdx >= 0);
 
