@@ -7652,11 +7652,15 @@ Expression defaultInit(Type mt, Loc loc, const bool isCfile = false)
         case Tfloat32:
         case Tfloat64:
         case Tfloat80:
+            if (!isCfile && global.params.v.nanInit)
+                eSink.message(loc, "default NaN initialization of floating point variable");
             return new RealExp(loc, isCfile ? CTFloat.zero : target.RealProperties.nan, mt);
 
         case Tcomplex32:
         case Tcomplex64:
         case Tcomplex80:
+            if (!isCfile && global.params.v.nanInit)
+                eSink.message(loc, "default NaN initialization of complex floating point variable");
             {
                 // Can't use fvalue + I*fvalue (the im part becomes a quiet NaN).
                 const cvalue = isCfile ? complex_t(CTFloat.zero, CTFloat.zero)
@@ -9705,7 +9709,7 @@ RootObject compileTypeMixin(TypeMixin tm, Loc loc, Scope* sc)
     const len = buf.length;
     buf.writeByte(0);
     const str = buf.extractSlice()[0 .. len];
-    const bool doUnittests = global.params.parsingUnittestsRequired();
+    const bool doUnittests = global.params.parsingUnittestsRequired(sc._module.isRoot);
     scope p = new Parser!ASTCodegen(sc._module, str, false, eSink, &global.compileEnv, doUnittests);
     adjustLocForMixin(str, loc, *p.baseLoc, global.params.mixinOut);
     p.linnum = p.baseLoc.startLine;

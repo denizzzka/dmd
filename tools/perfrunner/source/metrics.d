@@ -1,11 +1,13 @@
 module metrics;
 
+import std.algorithm : min;
 import std.conv : to;
+import std.datetime.stopwatch : AutoStart, StopWatch;
 import std.file : copy, exists, getSize, remove;
 import std.path : buildPath;
 import std.regex : ctRegex, matchFirst;
 
-import std.process : execute;
+import std.process : Config, execute;
 
 import cachegrind : instructions;
 import timetrace : Trace, collectTrace;
@@ -21,16 +23,18 @@ struct MetricDef
 // Some initial metrics to measure will add more later
 immutable MetricDef[] initials = [
     MetricDef("compile_hello_debug_instr",    "compile hello.d (instr)",        "count", "cachegrind"),
-    MetricDef("compile_hello_release_instr",  "compile hello.d -O (instr)",     "count", "cachegrind"),
+    MetricDef("compile_hello_release_instr",  "compile hello.d -O -release (instr)", "count", "cachegrind"),
     MetricDef("compile_phobos_instr",         "compile Phobos (instr)",         "count", "cachegrind"),
     MetricDef("compile_phobos_codegen_instr", "compile Phobos codegen (instr)", "count", "cachegrind"),
     MetricDef("compile_vibed_instr",          "compile vibe.d (instr)",         "count", "cachegrind"),
     MetricDef("dmd_binary_size",              "dmd binary size (stripped)",     "bytes", "stat"),
-    MetricDef("hello_binary_size",            "hello binary size",              "bytes", "stat"),
+    MetricDef("hello_binary_size",            "hello binary size (stripped)",   "bytes", "stat"),
     MetricDef("hello_max_rss",                "peak RSS (compile hello.d)",     "kb",    "time -v"),
     MetricDef("phobos_max_rss",               "peak RSS (compile Phobos)",      "kb",    "time -v"),
     MetricDef("vibed_max_rss",                "peak RSS (compile vibe.d)",      "kb",    "time -v"),
 ];
+
+immutable selfBuild = MetricDef("dmd_self_build_wall", "compile dmd itself (wall)", "ms", "wall");
 
 enum phobosFlags = ["-i=std", "-preview=dip1000"];
 
@@ -72,6 +76,23 @@ Traces collectTraces(string dmd, string workload, string phobos, string tmp, str
     return Traces(
         collectTrace(dmd, [], workload, tmp, tag ~ "-hello"),
         collectTrace(dmd, phobosFlags, stdPackage, tmp, tag ~ "-phobos"));
+}
+
+// Wall time (ms) for the host compiler to build dmd at `src`, min of 3 runs.
+long selfBuildMs(string src, string hostDmd)
+{
+    auto cmd = [buildPath(src, "generated", "build"), "dmd", "HOST_DMD=" ~ hostDmd,
+        "BUILD=debug", "ENABLE_LTO=0", "-j1", "--force"];
+    long best = long.max;
+    foreach (_; 0 .. 3)
+    {
+        auto sw = StopWatch(AutoStart.yes);
+        auto r = execute(cmd, null, Config.none, size_t.max, src);
+        if (r.status != 0)
+            throw new Exception("self build failed:\n" ~ r.output);
+        best = min(best, sw.peek.total!"msecs");
+    }
+    return best;
 }
 
 // Byte size of `binary`

@@ -631,8 +631,23 @@ Dsymbol search_correct(Scope* _this, Identifier ident)
 
         // Do not show `@disable`d declarations
         if (auto decl = s.isDeclaration())
+        {
             if (decl.storage_class & STC.disable)
                 return null;
+            // Do not suggest an alias as a fix for its own undefined
+            // target while it is still resolving that target (`inuse`
+            // is set for the duration of that resolution). Using the
+            // suggestion would make the alias refer to itself, e.g.
+            // `alias Foo = Foo1;` with an undefined `Foo1` would
+            // otherwise suggest `Foo`, which is circular by
+            // construction: `alias Foo = Foo;`. This is specific to
+            // aliases: e.g. `Foo foo;` legitimately suggesting the
+            // variable `foo` itself is not circular in the same way
+            // and should still be shown.
+            // https://github.com/dlang/dmd/issues/18763
+            if (decl.isAliasDeclaration() && decl.inuse)
+                return null;
+        }
         // Or `deprecated` ones if we're not in a deprecated scope
         if (s.isDeprecated() && !sc.isDeprecated())
             return null;
@@ -3887,8 +3902,9 @@ private extern(C++) final class DsymbolSemanticVisitor : Visitor
         const len = buf.length;
         buf.writeByte(0);
         const str = buf.extractSlice()[0 .. len];
-        const bool doUnittests = global.params.parsingUnittestsRequired();
-        scope p = new Parser!ASTCodegen(sc._module, str, false, global.errorSink, &global.compileEnv, doUnittests);
+        auto mod = sc._module;
+        const bool doUnittests = global.params.parsingUnittestsRequired(mod.isRoot);
+        scope p = new Parser!ASTCodegen(mod, str, false, global.errorSink, &global.compileEnv, doUnittests);
         adjustLocForMixin(str, cd.loc, *p.baseLoc, global.params.mixinOut);
         p.linnum = p.baseLoc.startLine;
         p.nextToken();
@@ -4854,7 +4870,14 @@ private extern(C++) final class DsymbolSemanticVisitor : Visitor
             return;
         }
 
-        if (global.params.useUnitTests)
+        auto use = global.params.useUnitTests;
+        if (use && global.params.useUnitTestsRootOnly)
+        {
+            auto m = sc._module;
+            if (m && !m.isRoot())
+                use = false;
+        }
+        if (use)
         {
             if (!utd.type)
                 utd.type = new TypeFunction(ParameterList(), Type.tvoid, LINK.d, utd.storage_class);
@@ -9326,6 +9349,184 @@ Dsymbols* include(Dsymbol d, Scope* sc)
     return icv.symbols;
 }
 
+bool propagateStorageClasses(UnpackDeclaration upd)
+{
+    foreach (d; *upd.decl)
+    {
+        STC d_storage_class;
+        if (auto vd = d.isVarDeclaration())
+        {
+            vd.storage_class |= upd.declared_storage_class;
+            d_storage_class = vd.storage_class;
+            // allow `auto (a, int b) =`
+            if (vd.type)
+                vd.storage_class &= ~STC.auto_;
+        }
+        else if (auto up = d.isUnpackDeclaration())
+        {
+            if (!up.propagateStorageClasses())
+                return false;
+            d_storage_class = up.storage_class;
+        }
+        else
+        {
+            assert(0);
+        }
+
+        auto eSink = global.errorSink;
+        if (d_storage_class & STC.static_ && !(upd.storage_class & STC.static_))
+        {
+            eSink.error(upd.loc, "cannot specify `static` for individual components of an unpack declaration");
+            return false;
+        }
+        if (d_storage_class & STC.manifest && !(upd.storage_class & STC.manifest))
+        {
+            eSink.error(upd.loc, "cannot specify `enum` for individual components of an unpack declaration");
+            return false;
+        }
+        if (d_storage_class & (STC.ref_ | STC.out_))
+        {
+            upd.storage_class |= d_storage_class & (STC.ref_ | STC.out_);
+        }
+    }
+
+    return true;
+}
+
+private void lowerUnpack(UnpackDeclaration upd, Scope* sc)
+{
+    if (upd.lowered)
+        return;
+    if (!sc)
+        return;
+
+    void fail()
+    {
+        upd.decl = null;
+        upd.lowered = true;
+    }
+    if (auto uda = upd.userAttribDecl)
+    {
+        sc.eSink.error(upd.loc, "user defined attributes are not supported yet on unpack declarations");
+        return fail();
+    }
+
+    import dmd.expressionsem;
+    bool needctfe = (upd.storage_class & (STC.manifest | STC.static_)) != 0;
+    if (needctfe)
+    {
+        sc.condition = true;
+        sc = sc.startCTFE();
+    }
+    // _init = _init.inferType(sc); // TODO?
+    upd._init = upd._init.expressionSemantic(sc);
+    upd._init = resolveProperties(sc, upd._init);
+    if (needctfe)
+    {
+        sc = sc.endCTFE();
+        import dmd.dinterpret;
+        upd._init = upd._init.ctfeInterpret();
+    }
+
+    if (upd._init.type.isTypeError())
+    {
+        return fail();
+    }
+
+    TupleExp tup = null;
+    auto tinit = upd._init.type;
+
+    if (upd._init.type.isTypeTuple() && upd._init.isTupleExp())
+    {
+        tup = cast(TupleExp)upd._init;
+    }
+    else
+    {
+        import dmd.dsymbolsem : resolveAliasThis;
+        upd._init = resolveAliasThis(sc, upd._init);
+        if (upd._init.type.isTypeTuple() && upd._init.isTupleExp())
+        {
+            tup = cast(TupleExp)upd._init;
+        }
+    }
+
+    if (!tup)
+    {
+        sc.eSink.error(upd.loc, "right hand side of unpack declaration must resolve to a tuple or expression sequence, not `%s`",
+            tinit.toChars());
+        return fail();
+    }
+    if (upd.decl.length != tup.exps.length)
+    {
+        sc.eSink.error(upd.loc, "incompatible number of components for unpack declaration (`%d` vs. `%d`)", cast(int)upd.decl.length, cast(int)tup.exps.length);
+        return fail();
+    }
+
+    if (!upd.propagateStorageClasses())
+        return fail();
+
+    Expressions* exps = null;
+    if (tup.isAliasThisTuple())
+    {
+        assert(upd.decl.length != 0);
+        import dmd.sideeffect: copyToTemp;
+        auto v = copyToTemp(upd.storage_class, "__tup", tup);
+        import dmd.dsymbolsem : dsymbolSemantic;
+        v.dsymbolSemantic(sc);
+        auto ve = new VarExp(upd.loc, v);
+        ve.type = tup.type;
+
+        exps = new Expressions();
+        exps.setDim(1);
+        (*exps)[0] = ve;
+        expandAliasThisTuples(exps, 0);
+    }
+    else
+    {
+        exps = tup.exps;
+        expandTuples(exps);
+    }
+    assert(exps.length == upd.decl.length);
+
+    foreach (i, d; *upd.decl)
+    {
+        auto exp = (*exps)[i];
+        if (i == 0)
+        {
+            exp = Expression.combine(tup.e0, exp);
+        }
+        if (auto var = d.isVarDeclaration())
+        {
+            assert (!var._init);
+            var._init = new ExpInitializer(exp.loc, exp);
+        }
+        else if (auto unp = d.isUnpackDeclaration())
+        {
+            assert (!unp._init);
+            unp._init = exp;
+        }
+        else
+        {
+            assert(0);
+        }
+        if (upd._scope)
+        {
+            import dmd.dsymbolsem : addMember;
+            d.addMember(upd._scope, upd.scopesym);
+        }
+    }
+    if (upd._scope)
+    {
+        foreach (d; *upd.decl)
+        {
+            import dmd.dsymbolsem : setScope;
+            d.setScope(upd._scope);
+        }
+    }
+    upd.lowered = true;
+
+}
+
 extern(C++) class ConditionIncludeVisitor : Visitor
 {
     alias visit = typeof(super).visit;
@@ -9462,7 +9663,7 @@ extern(C++) class ConditionIncludeVisitor : Visitor
         }
         upd.onStack = true;
         scope(exit) upd.onStack = false;
-        upd.lower(upd._scope ? upd._scope : sc);
+        upd.lowerUnpack(upd._scope ? upd._scope : sc);
         if (!upd.lowered)
         {
             symbols = null;
