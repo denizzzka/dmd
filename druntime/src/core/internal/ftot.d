@@ -440,51 +440,113 @@ if(is(T == ushort) || is(T == uint))
 
         static if(is(F == float))
             const integralPart = frexpf(d, &exp) * (1U << numBits);
-        else static if(is(F == double))
+        else static if(is(F == double)) // TODO: add "real same as double" case here
             const integralPart = frexp(d, &exp) * (1UL << numBits);
         else static if(is(F == real))
         {
-            static assert(F.dig <= 20 /* decimal width of two ulong values */);
+            //~ static assert(F.dig <= 20 /* decimal width of two ulong values */);
+            //~ static assert(F.mant_dig <= ulong.sizeof * 8);
 
-            real integr;
-            const fract = modfl(d, &integr);
+            auto fractPart = frexpl(d, &exp);
 
-            const integralUpper = cast(long) integr;
-            assert(integralUpper % 1 == 0);
+            //~ real integr;
+            //~ const fract = modfl(d, &integr);
+            //~ assert(integr % 1 == 0);
 
-            const integralPart = frexp(cast(double) fract, &exp) * (1UL << double.mant_dig);
+            printf("REAL value to process: fractPart=%Lg exp=%d\n", fractPart, exp);
+
+            //~ const integralPart = cast(long) integr;
+
+            //~ const integralLower = frexp(cast(double) fract, &exp) * (1UL << double.mant_dig);
         }
 
         //TODO: make exp const
         exp -= numBits;
 
-        byte intPartIdx = intPartBigitsNum - 1;
+        byte intPartIdx = intPartBigitsNum;
 
-        void addIntPart(INT)(INT integralPart)
+        void addIntPart(F integralPart)
         {
+            assert(intPartIdx > 0);
+
             auto v = cast(GF) (integralPart < 0 ? -integralPart : integralPart);
 
             while(true)
             {
+                intPartIdx--;
+
                 const lessSig = v % bigitBound;
                 v /= bigitBound;
 
                 bigitsArr[intPartIdx] = lessSig;
                 numBigits++;
 
+                printf("lessSig added: %llu to pos=%d\n", lessSig, intPartIdx);
+
                 if(v == 0)
                     break;
-
-                intPartIdx--;
             }
         }
 
-        addIntPart(integralPart);
+        static if(!is(F == real))
+            addIntPart(integralPart);
+        else
+        {{
+            printf("fractPart=%Lg\n", fractPart);
+
+            // Value should't have fractional part
+            auto integralPart = scalbnl(fractPart, F.mant_dig);
+            assert(integralPart % 1 == 0.0f); //TODO: this check really works?
+
+            foreach(_; 0 .. 4)
+            {
+                printf("integralPart before div: %Lg\n", integralPart);
+
+                //FIXME: 2^^64 value depends on T type
+                enum shiftVal = 2^^64;
+                integralPart /= shiftVal;
+
+                printf("integralPart after div:  %Lg\n", integralPart);
+
+                real remainingUpper;
+                const fract = modfl(integralPart, &remainingUpper);
+
+                addIntPart(fract * shiftVal);
+
+                integralPart = remainingUpper;
+            }
+/+
+            // Special case: picking out big mantissa
+            ulong[10] mantBlocks; //FIXME: hardcoded size
+            size_t i;
+
+            while(fractPart > 0)
+            {
+                printf("fractPart=%Lg\n", fractPart);
+                fractPart *= 2^^64; // 64 bits left shift
+
+                real integralPart;
+                fractPart = modfl(fractPart, &integralPart);
+                printf("integralPart=%Lg\n", integralPart);
+
+                mantBlocks[i] = cast(ulong) integralPart;
+                i++;
+            }
+
+            foreach_reverse(b; mantBlocks[0 .. i])
+                addIntPart(b);
++/
+        }}
 
         assert(intPartIdx >= 0);
 
         // Skip leading zero bigits
         bigits = bigitsArr[intPartIdx .. $];
+
+
+        //TODO: remove
+        foreach(i, b; bigits[0 .. numBigits+1])
+            printf("bigit[%d]=%d\n", cast(int)i, b);
 
         if(exp >= 0)
         {
@@ -500,6 +562,7 @@ if(is(T == ushort) || is(T == uint))
         }
 
         // Assigning again for better boundary control
+        version(D_NoBoundsChecks){} else
         bigits = bigits[0 .. numBigits + 1];
     }
 
