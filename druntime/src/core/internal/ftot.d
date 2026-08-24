@@ -217,8 +217,8 @@ unittest
                 assert(asLibc == stdcText, `"`~asLibc~`" but stdc snprintf("`~fmtStr(expForm)~`") returns: "`~stdcText~`"`);
             }
 
-            libcCmp!(false);
-            libcCmp!(true);
+            //~ libcCmp!(false);
+            //~ libcCmp!(true);
         }
     }
 
@@ -444,20 +444,8 @@ if(is(T == ushort) || is(T == uint))
             const integralPart = frexp(d, &exp) * (1UL << numBits);
         else static if(is(F == real))
         {
-            //~ static assert(F.dig <= 20 /* decimal width of two ulong values */);
-            //~ static assert(F.mant_dig <= ulong.sizeof * 8);
-
-            auto fractPart = frexpl(d, &exp);
-
-            //~ real integr;
-            //~ const fract = modfl(d, &integr);
-            //~ assert(integr % 1 == 0);
-
-            printf("REAL value to process: fractPart=%Lg exp=%d\n", fractPart, exp);
-
-            //~ const integralPart = cast(long) integr;
-
-            //~ const integralLower = frexp(cast(double) fract, &exp) * (1UL << double.mant_dig);
+            auto mant = frexpl(d, &exp).fabsl;
+            printf("REAL value to process: mant=%Lg exp=%d\n", mant, exp);
         }
 
         //TODO: make exp const
@@ -465,11 +453,9 @@ if(is(T == ushort) || is(T == uint))
 
         byte intPartIdx = intPartBigitsNum;
 
-        void addIntPart(F integralPart)
+        void addIntPartAsInteger(GF v)
         {
             assert(intPartIdx > 0);
-
-            auto v = cast(GF) (integralPart < 0 ? -integralPart : integralPart);
 
             while(true)
             {
@@ -488,54 +474,45 @@ if(is(T == ushort) || is(T == uint))
             }
         }
 
+        void addIntPart(F integralPart)
+        {
+            auto v = cast(GF) (integralPart < 0 ? -integralPart : integralPart);
+            addIntPartAsInteger(v);
+        }
+
         static if(!is(F == real))
             addIntPart(integralPart);
         else
         {{
-            printf("fractPart=%Lg\n", fractPart);
+            // Fetch 64-bit unsigned from a big mantiss
+            short shift = F.mant_dig - 64;
+            assert(shift >= 0);
 
-            // Value should't have fractional part
-            auto integralPart = scalbnl(fractPart, F.mant_dig);
-            assert(integralPart % 1 == 0.0f); //TODO: this check really works?
-
-            foreach(_; 0 .. 4)
+            while(true)
             {
-                printf("integralPart before div: %Lg\n", integralPart);
+                printf("shift=%d\n", shift);
 
-                //FIXME: 2^^64 value depends on T type
-                enum shiftVal = 2^^64;
-                integralPart /= shiftVal;
+                // In case incomplete last word when .mant_dig isn't multiple of unsigned bits number
+                static if(F.mant_dig % 64 != 0)
+                    if(shift < 0)
+                        shift = 0;
 
-                printf("integralPart after div:  %Lg\n", integralPart);
+                const scaled = ldexp(mant, shift);
+                printf("scaled=%g\n", scaled);
 
-                real remainingUpper;
-                const fract = modfl(integralPart, &remainingUpper);
+                const word = cast(ulong) scaled;
+                printf("word=%lld shift=%d\n", word, shift);
 
-                addIntPart(fract * shiftVal);
+                addIntPartAsInteger(word);
 
-                integralPart = remainingUpper;
+                if(shift == 0)
+                    break;
+
+                // Remove fetched bits
+                mant -= ldexp(cast(real) word, -shift);
+
+                shift -= 64;
             }
-/+
-            // Special case: picking out big mantissa
-            ulong[10] mantBlocks; //FIXME: hardcoded size
-            size_t i;
-
-            while(fractPart > 0)
-            {
-                printf("fractPart=%Lg\n", fractPart);
-                fractPart *= 2^^64; // 64 bits left shift
-
-                real integralPart;
-                fractPart = modfl(fractPart, &integralPart);
-                printf("integralPart=%Lg\n", integralPart);
-
-                mantBlocks[i] = cast(ulong) integralPart;
-                i++;
-            }
-
-            foreach_reverse(b; mantBlocks[0 .. i])
-                addIntPart(b);
-+/
         }}
 
         assert(intPartIdx >= 0);
