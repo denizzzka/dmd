@@ -486,19 +486,12 @@ if(is(T == ushort) || is(T == uint))
         {{
             // Fetch unsigned values from a big mantiss
 
-            enum bw = bigitBitWidth;
-
-            short shift = F.mant_dig - bw;
+            short shift = F.mant_dig - bigitBitWidth;
             assert(shift >= 0);
 
             while(true)
             {
                 printf("shift=%d\n", shift);
-
-                // In case incomplete last word when .mant_dig isn't multiple of unsigned bits number
-                static if(F.mant_dig % bw != 0)
-                    if(shift < 0)
-                        shift = 0;
 
                 const scaled = ldexp(mant, shift);
                 printf("scaled=%g\n", scaled);
@@ -514,7 +507,12 @@ if(is(T == ushort) || is(T == uint))
                 // Remove fetched bits
                 mant -= ldexp(cast(real) word, -shift);
 
-                shift -= bw;
+                shift -= bigitBitWidth;
+
+                // In case incomplete last word when .mant_dig isn't multiple of unsigned bits number
+                static if(F.mant_dig % bigitBitWidth != 0)
+                    if(shift < 0)
+                        shift = 0;
             }
         }}
 
