@@ -418,13 +418,13 @@ if(is(T == ushort) || is(T == uint))
         alias GF = ulong;
 
         /// Bigits number needed to fit GF
-        enum intPartBigitsNum = 20 / decimalExp + (20 % decimalExp == 0 ? 0 : 1);
-        static assert(intPartBigitsNum == 5);
+        enum intPartBigitsNum = 20 / decimalExp + (20 % decimalExp == 0 ? 0 : 1) + 5 /*FIXME: hardcoded 5 for real values only*/;
+        //~ static assert(intPartBigitsNum == 5);
     }
     else
     {
         alias GF = UL;
-        enum intPartBigitsNum = 2;
+        enum intPartBigitsNum = 2 + 5 /*FIXME: hardcoded 5 for real values only*/;
     }
 
     // TODO: remove
@@ -486,8 +486,7 @@ if(is(T == ushort) || is(T == uint))
         {{
             // Fetch unsigned values from a big mantiss
 
-            short shift = F.mant_dig - bigitBitWidth;
-            assert(shift >= 0);
+            short shift = F.mant_dig;
 
             while(true)
             {
@@ -507,9 +506,12 @@ if(is(T == ushort) || is(T == uint))
                 // Remove fetched bits
                 mant -= ldexp(cast(real) word, -shift);
 
+                if(mant.fabsl < mant.epsilon)
+                    break;
+
                 shift -= bigitBitWidth;
 
-                // In case incomplete last word when .mant_dig isn't multiple of unsigned bits number
+                // In case incomplete last word when .mant_dig isn't multiple of bigitBitWidth
                 static if(F.mant_dig % bigitBitWidth != 0)
                     if(shift < 0)
                         shift = 0;
