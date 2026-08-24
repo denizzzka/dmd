@@ -168,7 +168,7 @@ unittest
             void cmp(bool expForm)()
             {
                 //FIXME: hardcoded buf size
-                char[1000] buf;
+                char[10000] buf;
                 buf[$-1] = '\0';
 
                 const shouldBe = expForm ? phobos_exp : phobos_std;
@@ -253,6 +253,7 @@ unittest
     onAll(-float.max, "-340282346638528859811704183484516925440" /* ditto */, "1.0e-08");
     onAll(double.max, "179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328944075868508455133942304583236903222948165808559332123348274797826204144723168738177180919299881250404026184124858368", "1.0e-08");
     onAll(-double.max, "-179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328944075868508455133942304583236903222948165808559332123348274797826204144723168738177180919299881250404026184124858368", "1.0e-08");
+    onAll(real.max, "no no no", "no no exp");
 }
 
 private mixin template Estimation(T)
@@ -278,7 +279,7 @@ if(is(T == ushort) || is(T == uint))
         //TODO: implement more precise calculation
         //~ enum maxBufSize = F.dig * 2 /*twice for libc-style precission*/ + 1 /*sign*/ + 1 /*dot*/ + 5 /*exponent*/;
         //FIXME:
-        enum maxBufSize = 1000;
+        enum maxBufSize = 10000;
     }
 }
 
@@ -576,7 +577,7 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
     else if(val < -F.max)
         return setRet(buf, "-inf");
 
-    const d = Decimal!(T, 1000 /* FIXME: remove magic number */)(val);
+    const d = Decimal!(T, 10000 /* FIXME: remove magic number */)(val);
 
     uint bigitIndex;
 
