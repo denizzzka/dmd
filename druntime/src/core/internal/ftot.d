@@ -484,8 +484,11 @@ if(is(T == ushort) || is(T == uint))
             addIntPart(integralPart);
         else
         {{
-            // Fetch 64-bit unsigned from a big mantiss
-            short shift = F.mant_dig - 64;
+            // Fetch unsigned values from a big mantiss
+
+            enum bw = bigitBitWidth;
+
+            short shift = F.mant_dig - bw;
             assert(shift >= 0);
 
             while(true)
@@ -493,7 +496,7 @@ if(is(T == ushort) || is(T == uint))
                 printf("shift=%d\n", shift);
 
                 // In case incomplete last word when .mant_dig isn't multiple of unsigned bits number
-                static if(F.mant_dig % 64 != 0)
+                static if(F.mant_dig % bw != 0)
                     if(shift < 0)
                         shift = 0;
 
@@ -511,7 +514,7 @@ if(is(T == ushort) || is(T == uint))
                 // Remove fetched bits
                 mant -= ldexp(cast(real) word, -shift);
 
-                shift -= 64;
+                shift -= bw;
             }
         }}
 
