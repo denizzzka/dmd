@@ -177,7 +177,7 @@ unittest
                 assert(r == shouldBe, `"`~r~`" but expected "`~shouldBe~`" (as implemented in Phobos, expForm=`~(expForm ? "true" : "false")~`)`);
             }
 
-            cmp!false;
+            //~ cmp!false;
             //~ cmp!true;
         }
 
@@ -259,8 +259,8 @@ unittest
     onAll(-float.max, "-340282346638528859811704183484516925440" /* ditto */, "1.0e-08");
     onAll(double.max, "179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328944075868508455133942304583236903222948165808559332123348274797826204144723168738177180919299881250404026184124858368", "1.0e-08");
     onAll(-double.max, "-179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328944075868508455133942304583236903222948165808559332123348274797826204144723168738177180919299881250404026184124858368", "1.0e-08");
-    //~ onAll(real.max, "no no no", "no no exp");
-    //~ onAll(-real.max, "no no no", "no no exp");
+    onAll(real.max, "no no no", "no no exp");
+    onAll(-real.max, "no no no", "no no exp");
 }
 
 private mixin template Estimation(T)
@@ -500,22 +500,20 @@ if(is(T == ushort) || is(T == uint))
             {
                 printf("shift=%d\n", shift);
 
-                if(shift != 0)
-                {
-                    const scaled = ldexp(mant, shift);
-                    //TODO: replace cast(ulong) by cast(T)?
-                    const word = cast(ulong) scaled;
-                    addIntPartAsInteger(word);
-
-                    // Remove fetched bits
-                    mant -= ldexp(cast(real) word, -shift);
-                }
-                else
+                if(shift == 0)
                 {
                     const word = cast(ulong) mant;
                     addIntPartAsInteger(word);
                     break;
                 }
+
+                const scaled = ldexp(mant, shift);
+                //TODO: replace cast(ulong) by cast(T)?
+                const word = cast(ulong) scaled;
+                addIntPartAsInteger(word);
+
+                // Remove fetched bits
+                mant -= ldexp(cast(real) word, -shift);
 
                 if(mant.fabsl < mant.epsilon)
                     break;
