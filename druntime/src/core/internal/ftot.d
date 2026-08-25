@@ -156,9 +156,7 @@ unittest
 
                 const fmt = fmtStr(expForm);
 
-                //FIXME: hardcoded buf size
-                //~ char[precision * 2 + 1 /*dot*/] buf = '|';
-                char[10000] buf = '|';
+                char[5000] buf = '|';
                 buf[$-1] = '\0';
 
                 auto len = snprintf(buf.ptr, buf.length, &fmt[0], val);
