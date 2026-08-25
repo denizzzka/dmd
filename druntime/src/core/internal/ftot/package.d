@@ -348,7 +348,7 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
         count++;
 
         //TODO: char-by-char shift is too slow
-        //TODO: seems, shifting from right to left will be faster, because most values have dot at left size
+        //TODO: implement automatic choice of shifting direction to avoid too much iterations
         foreach_reverse(i; dotIdx .. count)
             buf[i] = buf[i-1];
 
