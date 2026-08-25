@@ -287,7 +287,6 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
     printf("Remaining bigits output\n");
 
     // Remaining bigits output
-    //TODO: first bigit can be printed in this loop too
     while(bigitIndex < d.numBigits)
     {
         static if(expForm)
