@@ -198,9 +198,6 @@ unittest
             testIt(real(val), args);
     }
 
-    //TODO: add test with leading zero
-    //TODO: add tests for all numeric types
-
     onAll(1.0f, "1", "1e+00");
     onAll(0.0f, "0", "0e+00");
     onAll(float.nan, "nan", "nan");
@@ -400,7 +397,6 @@ if(is(T == ushort) || is(T == uint))
     this(F)(F d)
     if(__traits(isFloating, F))
     {
-        //TODO: replace libc frexp() call
         import core.stdc.math;
 
         enum numBits = d.mant_dig;
