@@ -199,7 +199,7 @@ unittest
 
                 //FIXME: hardcoded buf size
                 //~ char[precision * 2 + 1 /*dot*/] buf = '|';
-                char[1000] buf = '|';
+                char[10000] buf = '|';
                 buf[$-1] = '\0';
 
                 auto len = snprintf(buf.ptr, buf.length, &fmt[0], val);
