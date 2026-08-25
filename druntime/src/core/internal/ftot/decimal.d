@@ -38,6 +38,7 @@ if(is(BigitT == ushort) || is(BigitT == uint))
 }
 
 mixin template BufSizeCalculation(BigitT, F)
+if(__traits(isFloating, F))
 {
     enum isNotReal = !is(F == real) ||
         (
@@ -60,17 +61,21 @@ mixin template BufSizeCalculation(BigitT, F)
     else
     {
         alias GF = ulong;
-        // Maximum number of decimal digits in the ulong type
-        enum maxDigits = 20;
+
+        /// Maximum number of decimal digits in the ulong type
+        private enum ulongMaxDigits = 20;
 
         static if(isNotReal)
         {
+            private enum maxDigits = ulongMaxDigits;
             enum intPartBigitsNum = maxDigits / decimalExp + (maxDigits % decimalExp == 0 ? 0 : 1);
             static assert(intPartBigitsNum == 5);
         }
         else
         {
-            enum intPartBigitsNum = 20 / decimalExp + (20 % decimalExp == 0 ? 0 : 1) + 5 /*FIXME: hardcoded 5 for real values only*/;
+            // Special case for "true" real (other than double)
+            private enum bits = bigitBitWidth;
+            private enum intPartBigitsNum = real.mant_dig / bits + (real.mant_dig % bits == 0 ? 0 : 1);
         }
     }
 }
@@ -238,10 +243,9 @@ if(is(T == ushort) || is(T == uint))
 
         void addIntPartAsInteger(GF v)
         {
-            assert(intPartIdx > 0);
-
             while(true)
             {
+                assert(intPartIdx > 0);
                 intPartIdx--;
 
                 const lessSig = v % bigitBound;
@@ -250,7 +254,7 @@ if(is(T == ushort) || is(T == uint))
                 bigitsArr[intPartIdx] = lessSig;
                 numBigits++;
 
-                printf("lessSig added: %d to pos=%d\n", cast(int)lessSig, intPartIdx);
+                printf("lessSig added: %d to pos=%d intPartBigitsNum=%d\n", cast(int)lessSig, intPartIdx, intPartBigitsNum);
 
                 if(v == 0)
                     break;
@@ -266,11 +270,12 @@ if(is(T == ushort) || is(T == uint))
         {{
             // Fetch unsigned values from a big mantiss
 
+            //TODO: first shift integer result is 0 and can be replaced by zero const
             short shift = F.mant_dig;
 
             while(true)
             {
-                printf("shift=%d\n", shift);
+                printf("shift=%d mant=%Lf\n", shift, mant);
 
                 if(shift == 0)
                 {
