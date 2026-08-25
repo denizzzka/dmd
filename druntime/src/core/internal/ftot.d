@@ -460,14 +460,13 @@ if(is(T == ushort) || is(T == uint))
 
                 if(shift == 0)
                 {
-                    const word = cast(ulong) mant;
+                    const word = cast(GF) mant;
                     addIntPartAsInteger(word);
                     break;
                 }
 
                 const scaled = ldexpl(mant, shift);
-                //TODO: replace cast(ulong) by cast(T)?
-                const word = cast(ulong) scaled;
+                const word = cast(GF) scaled;
                 addIntPartAsInteger(word);
 
                 // Remove fetched bits
