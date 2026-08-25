@@ -400,11 +400,17 @@ if(is(T == ushort) || is(T == uint))
         import core.stdc.math;
 
         enum numBits = d.mant_dig;
+        enum isNotReal = !is(F == real) ||
+            (
+                real.mant_dig == double.mant_dig
+                && real.min_10_exp == double.min_10_exp
+                && real.max_10_exp == double.max_10_exp
+            );
 
         static if(is(F == float))
             const integralPart = frexpf(d, &exp) * (1U << numBits);
-        else static if(is(F == double)) // TODO: add "real same as double" case here
-            const integralPart = frexp(d, &exp) * (1UL << numBits);
+        else static if(is(F == double) || isNotReal)
+            const integralPart = frexp(cast(double) d, &exp) * (1UL << numBits);
         else static if(is(F == real))
         {
             auto mant = frexpl(d, &exp).fabsl;
@@ -437,14 +443,11 @@ if(is(T == ushort) || is(T == uint))
             }
         }
 
-        void addIntPart(F integralPart)
+        static if(isNotReal)
         {
             auto v = cast(GF) (integralPart < 0 ? -integralPart : integralPart);
             addIntPartAsInteger(v);
         }
-
-        static if(!is(F == real))
-            addIntPart(integralPart);
         else
         {{
             // Fetch unsigned values from a big mantiss
