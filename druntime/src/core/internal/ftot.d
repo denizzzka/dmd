@@ -840,20 +840,22 @@ private auto round(T)(return scope char[] buf, in uint precision, in T[] notProc
 }
 
 private void exponentOutput(bool stdcCompat)(char[] buf, ref size_t count, int exp)
-in(exp <= 999)
-in(exp >= -999)
+in(exp <= 9999)
+in(exp >= -9999)
 {
     buf[count++] = 'e';
 
-    static if(stdcCompat == false)
+    void append(bool signed)(int n)
     {
-        char[4] tmp;
-        auto digits = signedToTempString(exp);
+        auto digits = signed ? signedToTempString(n) : unsignedToTempString(n);
 
         const end = count + digits.length;
         buf[count .. end] = digits;
         count = end;
     }
+
+    static if(!stdcCompat)
+        append!true(exp);
     else
     {
         if(exp >= 0)
@@ -863,13 +865,13 @@ in(exp >= -999)
             buf[count] = '-';
             exp = -exp;
         }
+
         count++;
 
-        if(exp > 100)
+        if(exp > 99)
         {
-            const hund = exp / 100;
-            buf[count++] = cast(char)('0' + hund);
-            exp %= 100;
+            append!false(exp);
+            return;
         }
 
         const tens = exp / 10;
