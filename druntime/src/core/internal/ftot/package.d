@@ -184,8 +184,7 @@ unittest
 
 import core.stdc.stdio: printf;
 
-//TODO: enableTrailingZeroes -> enableTrailingZeros
-char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F val, ushort precision, in bool enableTrailingZeroes)
+char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F val, ushort precision, in bool enableTrailingZeros)
 {
     static char[] setRet(return scope char[] buf, string s)
     {
@@ -360,7 +359,7 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
         printf("after  dot buf=%s\n", buf.ptr);
     }
 
-    if(enableTrailingZeroes)
+    if(enableTrailingZeros)
     {
         for(; digitsCount < precision; digitsCount++)
             buf[count++] = '0';
