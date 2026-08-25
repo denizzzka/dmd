@@ -339,10 +339,9 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
     printf("numBigits=%d\n", d.numBigits);
 
     // Add decimal dot
-    //TODO: _dotIdx -> dotIdx
-    const _dotIdx= firstDigitIdx + dotPlace;
+    const dotIdx= firstDigitIdx + dotPlace;
 
-    if(stdcCompat || _dotIdx != count)
+    if(stdcCompat || dotIdx != count)
     {
         printf("before dot buf=%s\n", buf.ptr);
 
@@ -350,10 +349,10 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
 
         //TODO: char-by-char shift is too slow
         //TODO: seems, shifting from right to left will be faster, because most values have dot at left size
-        foreach_reverse(i; _dotIdx .. count)
+        foreach_reverse(i; dotIdx .. count)
             buf[i] = buf[i-1];
 
-        buf[_dotIdx] = '.';
+        buf[dotIdx] = '.';
 
         printf("after  dot buf=%s\n", buf.ptr);
     }
@@ -370,12 +369,12 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
         static if(stdcCompat)
         {
             // Special case for adding 0 after dot if no more digits after dot
-            if(_dotIdx == count - 1)
+            if(dotIdx == count - 1)
                 buf[count++] = '0';
         }
 
         // Remove trailing zeros
-        for(; count > _dotIdx; count--)
+        for(; count > dotIdx; count--)
         {
             const c = buf[count-1];
 
