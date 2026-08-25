@@ -77,7 +77,7 @@ unittest
         enum precision = 7;
 
         {
-            void cmp(bool expForm)()
+            void cmp(alias BigitType, bool expForm)()
             {
                 //FIXME: hardcoded buf size
                 char[10000] buf;
@@ -88,13 +88,15 @@ unittest
                 if(shouldBe == "disabled")
                     return;
 
-                const r = floatingToTempString!(expForm, false)(val, buf, precision, false);
+                const r = dtoa_puff!(expForm, false, BigitType)(buf, val, precision, false);
 
                 assert(r == shouldBe, `"`~r~`" but expected "`~shouldBe~`" (as implemented in Phobos, expForm=`~(expForm ? "true" : "false")~`)`);
             }
 
-            cmp!false;
-            cmp!true;
+            cmp!(ushort, false);
+            cmp!(uint, false);
+            cmp!(ushort, true);
+            cmp!(uint, true);
         }
 
         version(ComparisonWithLibc)
@@ -123,7 +125,7 @@ unittest
                 return buf[0 .. len].idup;
             }
 
-            void libcCmp(bool expForm)()
+            void libcCmp(alias BigitType, bool expForm)()
             {
                 const stdcText = getLibcText(val, expForm);
 
@@ -133,12 +135,14 @@ unittest
                 char[maxBufSize!T] buf = '|';
                 buf[$-1] = '\0';
 
-                const asLibc = floatingToTempString!(expForm, true)(val, buf, precision, true);
+                const asLibc = dtoa_puff!(expForm, true, BigitType)(buf, val, precision, true);
                 assert(asLibc == stdcText, `"`~asLibc~`" but stdc snprintf("`~fmtStr(expForm)~`") returns: "`~stdcText~`"`);
             }
 
-            libcCmp!(false);
-            libcCmp!(true);
+            libcCmp!(ushort, false);
+            libcCmp!(ushort, true);
+            libcCmp!(uint, false);
+            libcCmp!(uint, true);
         }
     }
 
