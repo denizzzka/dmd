@@ -49,19 +49,15 @@ if(__traits(isFloating, F))
 
     mixin Estimation!BigitT;
 
-    // Floating value fits into two bigits?
+    enum intPartBigitsNum = F.mant_dig / bigitBitWidth + (F.mant_dig % bigitBitWidth == 0 ? 0 : 1);
+
     static if(is(F == float) || (UL.sizeof == 8 && isNotReal))
     {
-        /// A type that is guaranteed to fit a integral part of floating T
+        /// A type that is guaranteed to fit a integral part of floating T (except "real")
         alias GF = UL;
-
-        /// Bigits number needed to fit GF
-        enum intPartBigitsNum = 2;
     }
     else
     {
-        enum intPartBigitsNum = F.mant_dig / bigitBitWidth + (F.mant_dig % bigitBitWidth == 0 ? 0 : 1);
-
         static if(isNotReal)
             static assert(intPartBigitsNum == 5);
 
