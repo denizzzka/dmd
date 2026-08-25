@@ -82,8 +82,7 @@ unittest
             void cmp(alias BigitType, bool expForm)()
             {
                 //FIXME: hardcoded buf size
-                char[10000] buf;
-                buf[$-1] = '\0';
+                char[100000] buf = '\0';
 
                 const shouldBe = expForm ? phobos_exp : phobos_std;
 
@@ -117,8 +116,7 @@ unittest
 
                 const fmt = fmtStr(expForm);
 
-                char[5000] buf = '|';
-                buf[$-1] = '\0';
+                char[5000] buf = '\0';
 
                 auto len = snprintf(buf.ptr, buf.length, &fmt[0], val);
                 assert(len > 0);
@@ -131,11 +129,8 @@ unittest
             {
                 const stdcText = getLibcText(val, expForm);
 
-                //TODO: test dtoa_puff() using both storage types, not floatingToTempString()
-                mixin Estimation!ushort;
-
-                char[maxBufSize!T] buf = '|';
-                buf[$-1] = '\0';
+                //TODO: hardcoded buf size
+                char[100000] buf = '\0';
 
                 const asLibc = dtoa_puff!(expForm, true, BigitType)(buf, val, precision, true);
                 assert(asLibc == stdcText, `"`~asLibc~`" but stdc snprintf("`~fmtStr(expForm)~`") returns: "`~stdcText~`"`);
@@ -184,7 +179,7 @@ unittest
     // Very small values
     onAll(float.min_normal, "0", "1.175494e-38");
     onAll(double.min_normal, "0", "2.225074e-308");
-    //~ onAll(real.min_normal, "0", "fixme");
+    onAll(real.min_normal, "0", "3.362103e-4932");
 }
 
 import core.stdc.stdio: printf;
@@ -206,7 +201,7 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
     else if(val < -F.max)
         return setRet(buf, "-inf");
 
-    const d = Decimal!(T, 10000 /* FIXME: remove magic number */)(val);
+    const d = Decimal!(T, 100000 /* FIXME: remove magic number */)(val);
 
     uint bigitIndex;
 
