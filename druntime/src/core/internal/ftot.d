@@ -494,19 +494,22 @@ if(is(T == ushort) || is(T == uint))
             {
                 printf("shift=%d\n", shift);
 
-                const scaled = ldexp(mant, shift);
-                printf("scaled=%g\n", scaled);
+                if(shift != 0)
+                {
+                    const scaled = ldexp(mant, shift);
+                    //TODO: replace cast(ulong) by cast(T)?
+                    const word = cast(ulong) scaled;
+                    addIntPartAsInteger(word);
 
-                const word = cast(ulong) scaled;
-                printf("word=%lld shift=%d\n", word, shift);
-
-                addIntPartAsInteger(word);
-
-                if(shift == 0)
+                    // Remove fetched bits
+                    mant -= ldexp(cast(real) word, -shift);
+                }
+                else
+                {
+                    const word = cast(ulong) mant;
+                    addIntPartAsInteger(word);
                     break;
-
-                // Remove fetched bits
-                mant -= ldexp(cast(real) word, -shift);
+                }
 
                 if(mant.fabsl < mant.epsilon)
                     break;
