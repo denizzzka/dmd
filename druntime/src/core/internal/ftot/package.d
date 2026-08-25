@@ -96,8 +96,8 @@ unittest
             }
 
             cmp!(ushort, false);
-            cmp!(uint, false);
             cmp!(ushort, true);
+            cmp!(uint, false);
             cmp!(uint, true);
         }
 
@@ -180,6 +180,14 @@ unittest
     // Comparison with a predefined string is disabled because it would have to be a huge string
     onAll(real.max, "disabled", "disabled");
     onAll(-real.max, "disabled", "disabled");
+
+    // Very small values
+    onAll(float.epsilon, "0", "disabled");
+    onAll(-float.epsilon, "-0", "disabled");
+    onAll(double.epsilon, "0", "disabled");
+    onAll(-double.epsilon, "-0", "disabled");
+    onAll(real.epsilon, "0", "disabled");
+    onAll(-real.epsilon, "-0", "disabled");
 }
 
 import core.stdc.stdio: printf;
