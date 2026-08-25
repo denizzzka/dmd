@@ -49,8 +49,10 @@ Returns:
 char[] floatingToTempString(bool expForm, bool stdcCompat, T)(T value, return scope char[] buf, in ushort precision, bool enableTrailingZeroes)
 if(__traits(isFloating, T))
 {
-    //TODO: try to use uint on 64-bit systems to increase performance
-    alias BigitType = ushort;
+    static if(size_t.sizeof == 4)
+        alias BigitType = ushort;
+    else
+        alias BigitType = uint;
 
     char[] slice = dtoa_puff!(expForm, stdcCompat, BigitType)(buf, value, precision, enableTrailingZeroes);
 
