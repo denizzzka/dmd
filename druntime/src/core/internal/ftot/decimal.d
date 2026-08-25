@@ -10,18 +10,18 @@ package:
 
 import core.stdc.stdio: printf; //TODO: remove
 
-mixin template Estimation(T)
-if(is(T == ushort) || is(T == uint))
+mixin template Estimation(BigitT)
+if(is(BigitT == ushort) || is(BigitT == uint))
 {
     // Set decimal exponent. The most effective is to use
     // the largest power of 10 that is less than T.max.
-    static if(T.sizeof == 4)
+    static if(BigitT.sizeof == 4)
     {
         enum decimalExp = 9; // 10^9 - largest decimal number less than 32-bit value
         enum bigitBitWidth = 29; // 2^29 - largest binary number less than 10^9
-        alias UL = ulong; // Twice longer than T
+        alias UL = ulong; // Twice longer than BigitT
     }
-    else static if(T.sizeof == 2)
+    else static if(BigitT.sizeof == 2)
     {
         enum decimalExp = 4; // 10^4 - largest decimal number less than 16-bit value
         enum bigitBitWidth = 13; // 2^13 - largest binary number less than 10^4
@@ -34,6 +34,44 @@ if(is(T == ushort) || is(T == uint))
         //~ enum maxBufSize = F.dig * 2 /*twice for libc-style precission*/ + 1 /*sign*/ + 1 /*dot*/ + 5 /*exponent*/;
         //FIXME:
         enum maxBufSize = 10000;
+    }
+}
+
+mixin template BufSizeCalculation(BigitT, F)
+{
+    enum isNotReal = !is(F == real) ||
+        (
+            real.mant_dig == double.mant_dig
+            && real.min_10_exp == double.min_10_exp
+            && real.max_10_exp == double.max_10_exp
+        );
+
+    mixin Estimation!BigitT;
+
+    // Floating value fits into two bigits?
+    static if(is(F == float) || (UL.sizeof == 8 && isNotReal))
+    {
+        /// A type that is guaranteed to fit a integral part of floating T
+        alias GF = UL;
+
+        /// Bigits number needed to fit GF
+        enum intPartBigitsNum = 2;
+    }
+    else
+    {
+        alias GF = ulong;
+        // Maximum number of decimal digits in the ulong type
+        enum maxDigits = 20;
+
+        static if(isNotReal)
+        {
+            enum intPartBigitsNum = maxDigits / decimalExp + (maxDigits % decimalExp == 0 ? 0 : 1);
+            static assert(intPartBigitsNum == 5);
+        }
+        else
+        {
+            enum intPartBigitsNum = 20 / decimalExp + (20 % decimalExp == 0 ? 0 : 1) + 5 /*FIXME: hardcoded 5 for real values only*/;
+        }
     }
 }
 
@@ -164,24 +202,6 @@ if(is(T == ushort) || is(T == uint))
         while(n > 0);
     }
 
-    //TODO: naming
-    enum bool tooBig = (T.sizeof == 2 && !is(F == float));
-
-    static if(tooBig)
-    {
-        /// A type that is guaranteed to fit a integral part of floating T
-        alias GF = ulong;
-
-        /// Bigits number needed to fit GF
-        enum intPartBigitsNum = 20 / decimalExp + (20 % decimalExp == 0 ? 0 : 1) + 5 /*FIXME: hardcoded 5 for real values only*/;
-        //~ static assert(intPartBigitsNum == 5);
-    }
-    else
-    {
-        alias GF = UL;
-        enum intPartBigitsNum = 2 + 5 /*FIXME: hardcoded 5 for real values only*/;
-    }
-
     // TODO: remove
     private int exp;
 
@@ -190,7 +210,10 @@ if(is(T == ushort) || is(T == uint))
     {
         import core.stdc.math;
 
+        mixin BufSizeCalculation!(T, F);
+
         enum numBits = d.mant_dig;
+        //TODO: remove
         enum isNotReal = !is(F == real) ||
             (
                 real.mant_dig == double.mant_dig
@@ -227,7 +250,7 @@ if(is(T == ushort) || is(T == uint))
                 bigitsArr[intPartIdx] = lessSig;
                 numBigits++;
 
-                printf("lessSig added: %llu to pos=%d\n", lessSig, intPartIdx);
+                printf("lessSig added: %d to pos=%d\n", cast(int)lessSig, intPartIdx);
 
                 if(v == 0)
                     break;
