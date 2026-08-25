@@ -203,13 +203,6 @@ if(is(T == ushort) || is(T == uint))
         mixin BufSizeCalculation!(T, F);
 
         enum numBits = d.mant_dig;
-        //TODO: remove
-        enum isNotReal = !is(F == real) ||
-            (
-                real.mant_dig == double.mant_dig
-                && real.min_10_exp == double.min_10_exp
-                && real.max_10_exp == double.max_10_exp
-            );
 
         static if(is(F == float))
             const integralPart = frexpf(d, &exp) * (1U << numBits);
