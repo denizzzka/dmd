@@ -182,12 +182,17 @@ unittest
     onAll(-real.max, "disabled", "disabled");
 
     // Very small values
-    onAll(float.epsilon, "0", "disabled");
-    onAll(-float.epsilon, "-0", "disabled");
-    onAll(double.epsilon, "0", "disabled");
-    onAll(-double.epsilon, "-0", "disabled");
-    onAll(real.epsilon, "0", "disabled");
-    onAll(-real.epsilon, "-0", "disabled");
+    void smallCheck(T)()
+    {
+        onAll(T.epsilon, "0", "disabled");
+        onAll(-T.epsilon, "-0", "disabled");
+
+        //~ onAll(T.epsilon * T(2) ^^ T.min_exp, "0", "disabled");
+    }
+
+    smallCheck!float;
+    smallCheck!double;
+    smallCheck!real;
 }
 
 import core.stdc.stdio: printf;
