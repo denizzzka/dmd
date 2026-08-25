@@ -60,23 +60,12 @@ if(__traits(isFloating, F))
     }
     else
     {
-        alias GF = ulong;
-
-        /// Maximum number of decimal digits in the ulong type
-        private enum ulongMaxDigits = 20;
+        enum intPartBigitsNum = F.mant_dig / bigitBitWidth + (F.mant_dig % bigitBitWidth == 0 ? 0 : 1);
 
         static if(isNotReal)
-        {
-            private enum maxDigits = ulongMaxDigits;
-            enum intPartBigitsNum = maxDigits / decimalExp + (maxDigits % decimalExp == 0 ? 0 : 1);
             static assert(intPartBigitsNum == 5);
-        }
-        else
-        {
-            // Special case for "true" real (other than double)
-            private enum bits = bigitBitWidth;
-            private enum intPartBigitsNum = real.mant_dig / bits + (real.mant_dig % bits == 0 ? 0 : 1);
-        }
+
+        alias GF = ulong;
     }
 }
 
