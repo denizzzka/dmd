@@ -201,7 +201,8 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
     else if(val < -F.max)
         return setRet(buf, "-inf");
 
-    const d = Decimal!(T, 100000 /* FIXME: remove magic number */)(val);
+    mixin BufSizeCalculation!(T, F);
+    const d = Decimal!(T, bigitsArrLength)(val);
 
     uint bigitIndex;
 
