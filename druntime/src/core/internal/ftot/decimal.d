@@ -75,7 +75,7 @@ if(__traits(isFloating, F))
  * Params:
  *  T = unsigned integer of size 16 or 32
  */
-struct Decimal(T, size_t maxLen)
+struct Decimal(T, ushort maxLen)
 if(is(T == ushort) || is(T == uint))
 {
     /// Each bigit is a 9-digit decimal number.
@@ -91,9 +91,8 @@ if(is(T == ushort) || is(T == uint))
     /// Radix
     enum T bigitBound = 10 ^^ decimalExp;
 
-    //TODO: decrease type size?
-    uint numBigits;
-    int fractionStart;
+    ushort numBigits;
+    short fractionStart;
 
     void shiftFewBitsLeft(in int n)
     in(n > 0)
