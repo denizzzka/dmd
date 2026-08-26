@@ -2,7 +2,7 @@
 module core.internal.ftot;
 
 import core.internal.ftot.decimal;
-import core.internal.string: signedToTempString, unsignedToTempString;
+import core.internal.string: unsignedToTempString;
 
 //~ pure:
 //~ nothrow:
@@ -459,15 +459,6 @@ in(exp >= -9999)
 {
     buf[count++] = 'e';
 
-    void append(bool signed)(int n)
-    {
-        auto digits = signed ? signedToTempString(n) : unsignedToTempString(n);
-
-        const end = count + digits.length;
-        buf[count .. end] = digits;
-        count = end;
-    }
-
     version(all)
     {
         if(exp >= 0)
@@ -482,7 +473,12 @@ in(exp >= -9999)
 
         if(exp > 99)
         {
-            append!false(exp);
+            auto digits = unsignedToTempString(exp);
+
+            const end = count + digits.length;
+            buf[count .. end] = digits;
+            count = end;
+
             return;
         }
 
