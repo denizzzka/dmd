@@ -27,7 +27,7 @@ if(is(BigitT == ushort) || is(BigitT == uint))
     }
 }
 
-mixin template BufSizeCalculation(BigitT, F)
+mixin template BigitsArraySizeCalculation(BigitT, F)
 if(__traits(isFloating, F))
 {
     enum isNotReal = !is(F == real) ||
@@ -194,7 +194,7 @@ if(is(T == ushort) || is(T == uint))
     {
         import core.stdc.math;
 
-        mixin BufSizeCalculation!(T, F);
+        mixin BigitsArraySizeCalculation!(T, F);
         static assert(maxLen <= bigitsArrLength);
 
         enum numBits = d.mant_dig;

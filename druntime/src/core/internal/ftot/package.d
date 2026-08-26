@@ -201,7 +201,7 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
     else if(val < -F.max)
         return setRet(buf, "-inf");
 
-    mixin BufSizeCalculation!(T, F);
+    mixin BigitsArraySizeCalculation!(T, F);
     const d = Decimal!(T, bigitsArrLength)(val);
 
     uint bigitIndex;
