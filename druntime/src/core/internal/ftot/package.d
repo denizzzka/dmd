@@ -213,16 +213,16 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
         const end = count + d.decimalExp;
         auto block = buf[count .. end];
 
-        const digits = to_chars_reverse(block, bigit);
-        assert(digits.length <= d.decimalExp);
+        const digitsLen = to_chars_reverse(block, bigit);
+        assert(digitsLen <= d.decimalExp);
 
         static if(enableLeadingZeros)
         {
-            block[0 .. $ - digits.length] = '0';
+            block[0 .. $ - digitsLen] = '0';
             digitsCount += block.length;
         }
         else
-            digitsCount += digits.length;
+            digitsCount += digitsLen;
 
         count = end;
         bigitIndex++;
@@ -493,7 +493,7 @@ in(exp >= -9999)
 }
 
 /// Same as C++ std::to_chars but outputs from right boundary
-private char[] to_chars_reverse(T)(scope char[] buf, T val, bool noTrailingZeros = false)
+private size_t to_chars_reverse(T)(scope char[] buf, T val, bool noTrailingZeros = false)
 if(__traits(isUnsigned, T))
 {
     char[] digits;
@@ -503,6 +503,5 @@ if(__traits(isUnsigned, T))
     else
         digits = unsignedToTempString(val, buf);
 
-    //TODO: return len, not slice
-    return digits;
+    return digits.length;
 }
