@@ -1,9 +1,9 @@
 ///
 module core.internal.ftot.decimal;
 
-//~ pure:
-//~ nothrow:
-//~ @nogc:
+pure:
+nothrow:
+@nogc:
 //~ @safe:
 
 package:
@@ -199,6 +199,7 @@ if(is(T == ushort) || is(T == uint))
         import core.stdc.math;
 
         mixin BufSizeCalculation!(T, F);
+        static assert(maxLen <= bigitsArrLength);
 
         enum numBits = d.mant_dig;
 
