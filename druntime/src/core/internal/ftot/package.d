@@ -436,13 +436,13 @@ private auto round(T)(return scope char[] buf, in uint precision, in T[] notProc
 
     if(digit > '5' || (digit == '5' && ((buf[precision - 1] % 2) == 1 || hasNonzero)))
     {
-        // TODO: foreach_reverse
         int i = precision - 1;
-        for (; i >= 0 && buf[i] == '9'; --i)
-            buf[i] = '0';
 
-        if (i >= 0)
-            ++buf[i];
+        while(i >= 0 && buf[i] == '9')
+            buf[i--] = '0';
+
+        if(i >= 0)
+            buf[i]++;
         else
         {
             buf[0] = '1';
