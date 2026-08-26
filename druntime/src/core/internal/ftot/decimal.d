@@ -8,8 +8,6 @@ module core.internal.ftot.decimal;
 
 package:
 
-import core.stdc.stdio: printf; //TODO: remove
-
 mixin template Estimation(BigitT)
 if(is(BigitT == ushort) || is(BigitT == uint))
 {
@@ -209,10 +207,7 @@ if(is(T == ushort) || is(T == uint))
         else static if(is(F == double) || isNotReal)
             const integralPart = frexp(cast(double) d, &exp) * (1UL << numBits);
         else static if(is(F == real))
-        {
             auto mant = frexpl(d, &exp).fabsl;
-            printf("REAL value to process: mant=%Lg exp=%d\n", mant, exp);
-        }
 
         //TODO: make exp const
         exp -= numBits;
@@ -232,8 +227,6 @@ if(is(T == ushort) || is(T == uint))
                 bigitsArr[intPartIdx] = lessSig;
                 numBigits++;
 
-                printf("lessSig added: %d to pos=%d intPartBigitsNum=%d\n", cast(int)lessSig, intPartIdx, intPartBigitsNum);
-
                 if(v == 0)
                     break;
             }
@@ -252,8 +245,6 @@ if(is(T == ushort) || is(T == uint))
 
             while(true)
             {
-                printf("shift=%d mant=%Lf\n", shift, mant);
-
                 if(shift == 0)
                 {
                     const word = cast(GF) mant;
@@ -285,11 +276,6 @@ if(is(T == ushort) || is(T == uint))
         // Skip leading zero bigits
         bigits = bigitsArr[intPartIdx .. $];
 
-
-        //TODO: remove
-        foreach(i, b; bigits[0 .. numBigits+1])
-            printf("bigit[%d]=%d\n", cast(int)i, b);
-
         if(exp >= 0)
         {
             massiveLeftShift(exp);
@@ -306,8 +292,6 @@ if(is(T == ushort) || is(T == uint))
         // Assigning again for better boundary control
         version(D_NoBoundsChecks){} else
         bigits = bigits[0 .. numBigits + 1];
-
-        printf("type=%s numBigits=%d bigitsArrLength=%d\n", cast(char*)F.stringof.idup, numBigits, bigitsArrLength);
     }
 
     private static T assumeSafeCastT(V)(V val, size_t line = __LINE__)
@@ -328,9 +312,6 @@ unittest
     d.bigitsArr = 0; // resets bigits storage
 
     d.bigits[0] = 1;
-
-    foreach(i, b; d.bigits)
-        printf("%llu %d\n", i, b);
 
     d.shiftFewBitsLeft(1);
     assert(d.bigits[0] == 2);
