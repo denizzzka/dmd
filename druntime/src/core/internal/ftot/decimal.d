@@ -4,7 +4,7 @@ module core.internal.ftot.decimal;
 pure:
 nothrow:
 @nogc:
-//~ @safe:
+@safe:
 
 package:
 
@@ -275,7 +275,9 @@ if(is(T == ushort) || is(T == uint))
         assert(intPartIdx >= 0);
 
         // Skip leading zero bigits
-        bigits = bigitsArr[intPartIdx .. $];
+        () @trusted {
+            bigits = bigitsArr[intPartIdx .. $];
+        }();
 
         if(exp >= 0)
         {
