@@ -86,8 +86,6 @@ if(is(T == ushort) || is(T == uint))
 
     mixin Estimation!T;
 
-    //TODO: add bigitsArr.length assert
-
     static assert(decimalExp <= bigitBitWidth);
 
     private enum maxLeftShift = bigitBitWidth;
