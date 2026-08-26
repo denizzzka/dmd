@@ -190,9 +190,6 @@ if(is(T == ushort) || is(T == uint))
         while(n > 0);
     }
 
-    // TODO: remove
-    private int exp;
-
     this(F)(F d)
     if(__traits(isFloating, F))
     {
@@ -202,6 +199,7 @@ if(is(T == ushort) || is(T == uint))
         static assert(maxLen <= bigitsArrLength);
 
         enum numBits = d.mant_dig;
+        int exp;
 
         static if(is(F == float))
             const integralPart = frexpf(d, &exp) * (1U << numBits);
@@ -210,7 +208,6 @@ if(is(T == ushort) || is(T == uint))
         else static if(is(F == real))
             auto mant = frexpl(d, &exp).fabsl;
 
-        //TODO: make exp const
         exp -= numBits;
 
         byte intPartIdx = intPartBigitsNum;
