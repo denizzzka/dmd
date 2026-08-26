@@ -64,7 +64,7 @@ if(__traits(isFloating, F))
         enum maxShifts = maxLeftShifts < maxRightShifts ? maxRightShifts : maxLeftShifts;
     }
 
-    enum bigitsArrLength = (totalDigits + decimalExp-1) / decimalExp + /*intPartBigitsNum /*TODO: remove?*/ + maxShifts + 0 /* safety margin */;
+    enum bigitsArrLength = (totalDigits + decimalExp-1) / decimalExp + maxShifts;
 }
 
 /**
