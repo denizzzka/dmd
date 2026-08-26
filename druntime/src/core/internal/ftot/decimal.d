@@ -27,14 +27,6 @@ if(is(BigitT == ushort) || is(BigitT == uint))
         enum bigitBitWidth = 13; // 2^13 - largest binary number less than 10^4
         alias UL = uint;
     }
-
-    template maxBufSize(F)
-    {
-        //TODO: implement more precise calculation
-        //~ enum maxBufSize = F.dig * 2 /*twice for libc-style precission*/ + 1 /*sign*/ + 1 /*dot*/ + 5 /*exponent*/;
-        //FIXME:
-        enum maxBufSize = 10000;
-    }
 }
 
 mixin template BufSizeCalculation(BigitT, F)
