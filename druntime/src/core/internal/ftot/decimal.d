@@ -250,7 +250,6 @@ if(is(T == ushort) || is(T == uint))
         {{
             // Fetch unsigned values from a big mantiss
 
-            //TODO: first shift integer result is 0 and can be replaced by zero const
             short shift = F.mant_dig;
 
             while(true)
