@@ -198,7 +198,7 @@ if(is(T == ushort) || is(T == uint))
         static assert(maxLen <= bigitsArrLength);
 
         enum numBits = d.mant_dig;
-        int exp;
+        int exp; // in fact, exponent value always fits into a short type
 
         static if(is(F == float))
             const integralPart = frexpf(d, &exp) * (1U << numBits);
