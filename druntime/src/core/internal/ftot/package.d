@@ -81,7 +81,7 @@ unittest
         {
             void cmp(alias BigitType, bool expForm)()
             {
-                const bufLen = maxOutputBufSize!(T, expForm)(precision);
+                const bufLen = maxOutputBufSize!(BigitType, T, expForm)(precision);
                 // For convenient debugging with printf():
                 char[bufLen] buf = 'x';
                 buf[$-1] = '\0';
@@ -186,7 +186,7 @@ unittest
 
 import core.stdc.stdio: printf;
 
-auto maxOutputBufSize(F, bool expForm)(ushort precision)
+auto maxOutputBufSize(BigitType, F, bool expForm)(ushort precision)
 if(__traits(isFloating, F))
 {
     static assert(F.max_10_exp <= 9999 && -F.min_10_exp <= 9999);
@@ -198,7 +198,7 @@ if(__traits(isFloating, F))
     else
         enum expLen = 2;
 
-    enum decimalExp = 9; //FIXME: remove
+    mixin BigitsArraySizeCalculation!(BigitType, F);
 
     static if(expForm)
     {
@@ -207,7 +207,6 @@ if(__traits(isFloating, F))
     }
     else
     {
-        mixin BigitsArraySizeCalculation!(uint, real);
         enum totalDigits = initialDigits + maxShifts * decimalExp;
 
         // -1234567890.1234567
