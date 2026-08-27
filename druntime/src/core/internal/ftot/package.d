@@ -52,7 +52,7 @@ if(__traits(isFloating, T))
     else
         alias BigitType = uint;
 
-    debug
+    version(assert)
     {
         const bufLen = maxOutputBufSize!(BigitType, T, expForm) + precision;
         assert(buf.length >= bufLen);
