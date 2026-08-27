@@ -4,7 +4,6 @@ module core.internal.ftot;
 import core.internal.ftot.decimal;
 import core.internal.string: unsignedToTempString;
 
-//~ pure:
 nothrow:
 @nogc:
 @safe:
@@ -411,7 +410,7 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
     return buf[startIdx .. count];
 }
 
-private auto round(T)(return scope char[] buf, in uint precision, in T[] notProcessedBigits)
+private auto round(T)(return scope char[] buf, in uint precision, in T[] notProcessedBigits) pure
 {
     // Checks: exactly 0.5 or a little higher?
     bool hasNonzero()
@@ -449,7 +448,7 @@ private auto round(T)(return scope char[] buf, in uint precision, in T[] notProc
     return expDelta;
 }
 
-private void exponentOutput(bool stdcCompat)(char[] buf, ref size_t count, int exp)
+private void exponentOutput(bool stdcCompat)(char[] buf, ref size_t count, int exp) pure
 in(exp <= 9999)
 in(exp >= -9999)
 {
@@ -485,7 +484,7 @@ in(exp >= -9999)
 }
 
 /// Same as C++ std::to_chars but outputs from right boundary
-private size_t to_chars_reverse(T)(scope char[] buf, T val, bool noTrailingZeros = false)
+private size_t to_chars_reverse(T)(scope char[] buf, T val, bool noTrailingZeros = false) pure
 if(__traits(isUnsigned, T))
 {
     char[] digits;
