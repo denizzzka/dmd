@@ -131,8 +131,9 @@ unittest
             {
                 const stdcText = getLibcText(val, expForm);
 
-                //TODO: hardcoded buf size
-                char[100000] buf = '\0';
+                const bufLen = maxOutputBufSize!(BigitType, T, expForm)(precision);
+                char[bufLen] buf = 'x';
+                buf[$-1] = '\0';
 
                 const asLibc = dtoa_puff!(expForm, true, BigitType)(buf, val, precision, true);
                 assert(asLibc == stdcText, `"`~asLibc~`" but stdc snprintf("`~fmtStr(expForm)~`") returns: "`~stdcText~`"`);
