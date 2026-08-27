@@ -79,7 +79,6 @@ if(__traits(isFloating, F))
 struct Decimal(T, ushort maxLen)
 if(is(T == ushort) || is(T == uint))
 {
-    /// Each bigit is a 9-digit decimal number.
     private T[maxLen] bigitsArr;
     T[] bigits;
 
@@ -88,8 +87,6 @@ if(is(T == ushort) || is(T == uint))
     static assert(decimalExp <= bigitBitWidth);
 
     private enum maxLeftShift = bigitBitWidth;
-
-    /// Radix
     enum T bigitBound = 10 ^^ decimalExp;
 
     ushort numBigits;

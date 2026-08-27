@@ -40,6 +40,7 @@ Params:
     value = the floating value to convert
     buf   = the pre-allocated buffer used to store the result
     precision = required count of significant digits
+    enableTrailingZeroes = add zeros as end filler
 
 Returns:
     The floating value as a string of characters
