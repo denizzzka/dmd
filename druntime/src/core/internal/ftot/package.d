@@ -189,7 +189,8 @@ unittest
     onAll(real.min_normal, "0", "disabled" /* platform-dependent */);
 }
 
-/// Don't forget to add the precision value to the result if exponent form used!
+/// Returns: immutable portion of needed resulting buffer size.
+/// Does not adds variable precision part for scientific notation.
 template maxOutputBufSize(BigitType, F, bool expForm)
 if(__traits(isFloating, F))
 {
