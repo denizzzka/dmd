@@ -5,7 +5,6 @@ import core.internal.ftot.decimal;
 import core.internal.string: unsignedToTempString;
 
 nothrow:
-@nogc:
 @safe:
 
 unittest
@@ -45,7 +44,7 @@ Params:
 Returns:
     The floating value as a string of characters
 */
-char[] floatingToTempString(bool expForm, bool stdcCompat, T)(T value, return scope char[] buf, in ushort precision, bool enableTrailingZeroes)
+char[] floatingToTempString(bool expForm, bool stdcCompat, T)(T value, return scope char[] buf, in ushort precision, bool enableTrailingZeroes) @nogc
 if(__traits(isFloating, T))
 {
     static if(size_t.sizeof == 4)
@@ -98,8 +97,7 @@ unittest
 
                 const r = dtoa_puff!(expForm, false, BigitType)(buf, val, precision, false);
 
-                //assert(r == shouldBe, `"`~r~`" but expected "`~shouldBe~`" (as implemented in Phobos, expForm=`~(expForm ? "true" : "false")~`)`);
-                assert(r == shouldBe);
+                assert(r == shouldBe, `"`~r~`" but expected "`~shouldBe~`" (as implemented in Phobos, expForm=`~(expForm ? "true" : "false")~`)`);
             }
 
             cmp!(ushort, false);
@@ -143,8 +141,7 @@ unittest
 
                 const asLibc = dtoa_puff!(expForm, true, BigitType)(buf, val, precision, true);
 
-                //assert(asLibc == stdcText, `"`~asLibc~`" but stdc snprintf("`~fmtStr(expForm)~`") returns: "`~stdcText~`"`);
-                assert(asLibc == stdcText);
+                assert(asLibc == stdcText, `"`~asLibc~`" but stdc snprintf("`~fmtStr(expForm)~`") returns: "`~stdcText~`"`);
             }
 
             libcCmp!(ushort, false);
