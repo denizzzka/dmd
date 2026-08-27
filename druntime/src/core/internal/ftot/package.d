@@ -5,9 +5,9 @@ import core.internal.ftot.decimal;
 import core.internal.string: unsignedToTempString;
 
 //~ pure:
-//~ nothrow:
+nothrow:
 @nogc:
-//~ @safe:
+@safe:
 
 unittest
 {
@@ -119,7 +119,7 @@ unittest
                     return expForm ? "%Le" : "%Lf";
             }
 
-            static char[] getLibcText(T val, bool expForm, return scope char[] buf)
+            static char[] getLibcText(T val, bool expForm, return scope char[] buf) @trusted
             {
                 import core.stdc.stdio: snprintf;
 
@@ -193,8 +193,6 @@ unittest
     onAll(double.min_normal, "0", "2.225074e-308");
     onAll(real.min_normal, "0", "disabled" /* platform-dependent */);
 }
-
-import core.stdc.stdio: printf;
 
 /// Don't forget to add the precision value to the result if exponent form used!
 template maxOutputBufSize(BigitType, F, bool expForm)
@@ -300,16 +298,6 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
     if(val < 0)
         buf[--startIdx] = '-';
 
-    printf("bigit=%d\n", d.bigits[bigitIndex]);
-    printf("buf=%s\n", buf.ptr);
-    printf("count=%d\n", cast(int)count);
-    printf("digitsCount=%d\n", cast(uint)digitsCount);
-    printf("fractionStart=%d\n", cast(int)d.fractionStart);
-    printf("bigitIndex=%d\n", cast(int)bigitIndex);
-
-    //~ foreach(i, b; d.bigits)
-        //~ printf("bigits[%d] = %d\n", cast(uint)i, cast(uint)b);
-
     static if(!expForm)
     {
         size_t dotPlace = d.fractionStart <= 0 ? 1 : digitsCount;
@@ -319,14 +307,9 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
         const dotPlace = 1;
         const remainedIntDigits = (d.fractionStart - bigitIndex) * d.decimalExp;
         int exp = cast(int)digitsCount - dotPlace + remainedIntDigits;
-
-        printf("remainedIntDigits=%d\n", cast(int)remainedIntDigits);
-        printf("exp=%d\n", cast(int)exp);
     }
 
     assert(dotPlace > 0);
-
-    printf("Remaining bigits output\n");
 
     // Remaining bigits output
     while(bigitIndex < d.numBigits)
@@ -338,9 +321,6 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
             const onIntegerPart = (bigitIndex < d.fractionStart);
             const currPrecision = onIntegerPart ? 0 : digitsCount - dotPlace;
         }
-
-        printf("precision=%d\n", cast(int)precision);
-        printf("currPrecision=%d\n", cast(int)currPrecision);
 
         if(currPrecision > precision)
             break;
@@ -360,8 +340,6 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
         precision += dotPlace - 1;
     }
 
-    printf("firstDigitIdx=%d\n", cast(int)firstDigitIdx);
-
     if(digitsCount > precision)
     {
         auto toRound = buf[firstDigitIdx .. count];
@@ -372,21 +350,13 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
             exp += deltaExp;
 
         digitsCount = precision;
-        printf("aft round buf=%s\n", buf.ptr);
     }
-
-    printf("startIdx=%d\n", cast(int)startIdx);
-    printf("digitsCount=%d\n", cast(uint)digitsCount);
-    printf("precision=%d\n", precision);
-    printf("numBigits=%d\n", d.numBigits);
 
     // Add decimal dot
     const dotIdx= firstDigitIdx + dotPlace;
 
     if(stdcCompat || dotIdx != count)
     {
-        printf("before dot buf=%s\n", buf.ptr);
-
         count++;
 
         //TODO: char-by-char shift is too slow
@@ -395,8 +365,6 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
             buf[i] = buf[i-1];
 
         buf[dotIdx] = '.';
-
-        printf("after  dot buf=%s\n", buf.ptr);
     }
 
     if(enableTrailingZeros)
@@ -406,8 +374,6 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
     }
     else
     {
-        printf("remove trailing zeros branch\n");
-
         static if(stdcCompat)
         {
             // Special case for adding 0 after dot if no more digits after dot
@@ -447,30 +413,19 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
 
 private auto round(T)(return scope char[] buf, in uint precision, in T[] notProcessedBigits)
 {
-    printf("to round buf=%s\n", buf.ptr);
-    printf("to round buf.length=%llu\n", buf.length);
-
     // Checks: exactly 0.5 or a little higher?
     bool hasNonzero()
     {
         foreach(i, ref c; buf[precision + 1 .. $])
             if(c != '0')
-            {
-                printf("found nonzero at idx=%d\n", cast(int)i);
                 return true;
-            }
 
         foreach(i, ref b; notProcessedBigits)
             if(b != 0)
-            {
-                printf("found nonzero at bigit idx=%d\n", cast(int)i);
                 return true;
-            }
 
         return false;
     };
-
-    //~ printf("hasNonzero=%d\n", hasNonzero);
 
     int expDelta;
     const digit = buf[precision];
