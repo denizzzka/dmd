@@ -56,7 +56,7 @@ if(__traits(isFloating, T))
 
     version(D_NoBoundsChecks){} else
     {
-        const bufLen = maxOutputBufSize!(BigitType, T, expForm)(precision);
+        const bufLen = maxOutputBufSize!(BigitType, T, expForm) + precision;
         assert(buf.length >= bufLen);
     }
 
@@ -87,7 +87,7 @@ unittest
         {
             void cmp(alias BigitType, bool expForm)()
             {
-                const bufLen = maxOutputBufSize!(BigitType, T, expForm)(precision);
+                enum bufLen = maxOutputBufSize!(BigitType, T, expForm) + (expForm ? precision : 0);
                 // For convenient debugging with printf():
                 char[bufLen] buf = 'x';
                 buf[$-1] = '\0';
@@ -137,7 +137,8 @@ unittest
                 char[5000] libcBuf;
                 const stdcText = getLibcText(val, expForm, libcBuf);
 
-                const bufLen = maxOutputBufSize!(BigitType, T, expForm)(precision);
+                //TODO: redundant bufLen calculation
+                enum bufLen = maxOutputBufSize!(BigitType, T, expForm) + (expForm ? precision : 0);
                 char[bufLen] buf = 'x';
                 buf[$-1] = '\0';
 
@@ -195,7 +196,8 @@ unittest
 
 import core.stdc.stdio: printf;
 
-auto maxOutputBufSize(BigitType, F, bool expForm)(ushort precision)
+/// Don't forget to add the precision value to the result if exponent form used!
+template maxOutputBufSize(BigitType, F, bool expForm)
 if(__traits(isFloating, F))
 {
     static assert(F.max_10_exp <= 9999 && -F.min_10_exp <= 9999);
@@ -212,14 +214,14 @@ if(__traits(isFloating, F))
     static if(expForm)
     {
         // -0.12345e-123
-        return 1 /* sign */ + (decimalExp-1) /* leading zeros */ + precision + 1 /* dot */ + 2 /* e with sign */ + expLen;
+        enum maxOutputBufSize = 1 /* sign */ + (decimalExp-1) /* possible leading zeros */ + 1 /* dot */ + 2 /* e with sign */ + expLen;
     }
     else
     {
         enum totalDigits = initialDigits + maxShifts * decimalExp;
 
         // -1234567890.1234567
-        return 1 /* sign */ + 1 /* dot */ + totalDigits;
+        enum maxOutputBufSize = 1 /* sign */ + 1 /* dot */ + totalDigits;
     }
 }
 
