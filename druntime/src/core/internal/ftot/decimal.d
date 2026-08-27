@@ -56,13 +56,14 @@ if(__traits(isFloating, F))
 
     private
     {
-        enum totalDigits = 1 /* digit before dot */ + F.max_10_exp + (-F.min_10_exp) + F.dig;
         enum maxLeftShifts = (F.max_10_exp + decimalExp-1) / decimalExp;
         enum maxRightShifts = (-F.min_10_exp + decimalExp-1) / decimalExp;
-        enum maxShifts = maxLeftShifts < maxRightShifts ? maxRightShifts : maxLeftShifts;
     }
 
-    enum bigitsArrLength = (totalDigits + decimalExp-1) / decimalExp + maxShifts;
+    enum initialDigits = 1 /* digit before dot */ + F.max_10_exp + (-F.min_10_exp) + F.dig;
+    enum maxShifts = maxLeftShifts < maxRightShifts ? maxRightShifts : maxLeftShifts;
+
+    enum bigitsArrLength = (initialDigits + decimalExp-1) / decimalExp + maxShifts;
 }
 
 /**

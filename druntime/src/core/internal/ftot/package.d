@@ -207,7 +207,11 @@ if(__traits(isFloating, F))
     }
     else
     {
-        return 100000; //FIXME
+        mixin BigitsArraySizeCalculation!(uint, real);
+        enum totalDigits = initialDigits + maxShifts * decimalExp;
+
+        // -1234567890.1234567
+        return 1 /* sign */ + 1 /* dot */ + totalDigits;
     }
 }
 
