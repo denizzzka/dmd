@@ -76,13 +76,15 @@ unittest
 {
     static void testIt(T)(T val, string phobos_std, string phobos_exp)
     {
-        enum precision = 7;
+        const precision = 7;
 
         {
             void cmp(alias BigitType, bool expForm)()
             {
-                //FIXME: hardcoded buf size
-                char[100000] buf = '\0';
+                const bufLen = maxOutputBufSize!(T, expForm)(precision);
+                // For convenient debugging with printf():
+                char[bufLen] buf = 'x';
+                buf[$-1] = '\0';
 
                 const shouldBe = expForm ? phobos_exp : phobos_std;
 
@@ -183,6 +185,31 @@ unittest
 }
 
 import core.stdc.stdio: printf;
+
+auto maxOutputBufSize(F, bool expForm)(ushort precision)
+if(__traits(isFloating, F))
+{
+    static assert(F.max_10_exp <= 9999 && -F.min_10_exp <= 9999);
+
+    static if(F.max_10_exp > 999 && -F.min_10_exp > 999)
+        enum expLen = 4;
+    else static if(F.max_10_exp > 99 && -F.min_10_exp > 99)
+        enum expLen = 3;
+    else
+        enum expLen = 2;
+
+    enum decimalExp = 9; //FIXME: remove
+
+    static if(expForm)
+    {
+        // -0.12345e-123
+        return 1 /* sign */ + (decimalExp-1) /* leading zeros */ + precision + 1 /* dot */ + 2 /* e with sign */ + expLen;
+    }
+    else
+    {
+        return 100000; //FIXME
+    }
+}
 
 char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F val, ushort precision, in bool enableTrailingZeros)
 {
