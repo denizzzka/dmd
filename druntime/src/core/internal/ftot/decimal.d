@@ -250,6 +250,7 @@ if(is(T == ushort) || is(T == uint))
                     break;
                 }
 
+                //TODO: implement our own ldexpl() using core.internal.convert to achieve pure ctor
                 const scaled = ldexpl(mant, shift);
                 const word = cast(GF) scaled;
                 addIntPartAsInteger(word);
