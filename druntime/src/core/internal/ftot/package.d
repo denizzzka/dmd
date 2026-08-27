@@ -54,6 +54,12 @@ if(__traits(isFloating, T))
     else
         alias BigitType = uint;
 
+    version(D_NoBoundsChecks){} else
+    {
+        const bufLen = maxOutputBufSize!(BigitType, T, expForm)(precision);
+        assert(buf.length >= bufLen);
+    }
+
     char[] slice = dtoa_puff!(expForm, stdcCompat, BigitType)(buf, value, precision, enableTrailingZeroes);
 
     return slice;
@@ -61,7 +67,7 @@ if(__traits(isFloating, T))
 
 unittest
 {
-    char[20] buf;
+    char[21] buf;
     auto r = floatingToTempString!(true, true)(-123.456789, buf, 6, false);
 
     assert(r == "-1.23457e+02");
