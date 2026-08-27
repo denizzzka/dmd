@@ -355,7 +355,8 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
         count++;
 
         //TODO: char-by-char shift is too slow
-        //TODO: implement automatic choice of shifting direction to avoid too much iterations
+        //1. Split integral and fractional parts to completely avoid such shifts for output by write()
+        //2. Implement automatic choice of shifting direction to avoid too much iterations during formatting
         foreach_reverse(i; dotIdx .. count)
             buf[i] = buf[i-1];
 
