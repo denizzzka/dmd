@@ -134,7 +134,6 @@ unittest
                 char[5000] libcBuf;
                 const stdcText = getLibcText(val, expForm, libcBuf);
 
-                //TODO: redundant bufLen calculation
                 enum bufLen = maxOutputBufSize!(BigitType, T, expForm) + (expForm ? precision : 0);
                 char[bufLen] buf = 'x';
                 buf[$-1] = '\0';
