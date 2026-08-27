@@ -6,7 +6,7 @@ import core.internal.string: unsignedToTempString;
 
 //~ pure:
 //~ nothrow:
-//~ @nogc:
+@nogc:
 //~ @safe:
 
 unittest
@@ -99,7 +99,8 @@ unittest
 
                 const r = dtoa_puff!(expForm, false, BigitType)(buf, val, precision, false);
 
-                assert(r == shouldBe, `"`~r~`" but expected "`~shouldBe~`" (as implemented in Phobos, expForm=`~(expForm ? "true" : "false")~`)`);
+                //assert(r == shouldBe, `"`~r~`" but expected "`~shouldBe~`" (as implemented in Phobos, expForm=`~(expForm ? "true" : "false")~`)`);
+                assert(r == shouldBe);
             }
 
             cmp!(ushort, false);
@@ -118,31 +119,32 @@ unittest
                     return expForm ? "%Le" : "%Lf";
             }
 
-            static string getLibcText(T val, bool expForm)
+            static char[] getLibcText(T val, bool expForm, return scope char[] buf)
             {
                 import core.stdc.stdio: snprintf;
 
                 const fmt = fmtStr(expForm);
 
-                char[5000] buf = '\0';
-
                 auto len = snprintf(buf.ptr, buf.length, &fmt[0], val);
                 assert(len > 0);
                 assert(len <= buf.length);
 
-                return buf[0 .. len].idup;
+                return buf[0 .. len];
             }
 
             void libcCmp(alias BigitType, bool expForm)()
             {
-                const stdcText = getLibcText(val, expForm);
+                char[5000] libcBuf;
+                const stdcText = getLibcText(val, expForm, libcBuf);
 
                 const bufLen = maxOutputBufSize!(BigitType, T, expForm)(precision);
                 char[bufLen] buf = 'x';
                 buf[$-1] = '\0';
 
                 const asLibc = dtoa_puff!(expForm, true, BigitType)(buf, val, precision, true);
-                assert(asLibc == stdcText, `"`~asLibc~`" but stdc snprintf("`~fmtStr(expForm)~`") returns: "`~stdcText~`"`);
+
+                //assert(asLibc == stdcText, `"`~asLibc~`" but stdc snprintf("`~fmtStr(expForm)~`") returns: "`~stdcText~`"`);
+                assert(asLibc == stdcText);
             }
 
             libcCmp!(ushort, false);
@@ -226,7 +228,7 @@ char[] dtoa_puff(bool expForm, bool stdcCompat, T, F)(return scope char[] buf, F
     static char[] setRet(return scope char[] buf, string s)
     {
         auto ret = buf[0 .. s.length];
-        ret[] = s.dup;
+        ret[] = s[0 .. $];
         return ret;
     }
 
