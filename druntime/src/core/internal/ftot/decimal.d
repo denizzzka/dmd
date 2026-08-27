@@ -239,6 +239,16 @@ if(is(T == ushort) || is(T == uint))
         {{
             // Fetch unsigned values from a big mantiss
 
+            version(assert)
+            {
+                //TODO: implement our own scalbnl() using core.internal.convert to achieve pure ctor
+                import core.stdc.errno;
+                import core.stdc.fenv;
+
+                assert(errno == 0);
+                () @trusted { feclearexcept(FE_ALL_EXCEPT); }();
+            }
+
             short shift = F.mant_dig;
 
             while(true)
@@ -250,13 +260,19 @@ if(is(T == ushort) || is(T == uint))
                     break;
                 }
 
-                //TODO: implement our own ldexpl() using core.internal.convert to achieve pure ctor
-                const scaled = ldexpl(mant, shift);
+                const scaled = scalbnl(mant, shift);
+                () @trusted {
+                    assert(fetestexcept(FE_OVERFLOW|FE_UNDERFLOW) == 0);
+                }();
+
                 const word = cast(GF) scaled;
                 addIntPartAsInteger(word);
 
                 // Remove fetched bits
-                mant -= ldexpl(cast(real) word, -shift);
+                mant -= scalbnl(cast(real) word, -shift);
+                () @trusted {
+                    assert(fetestexcept(FE_OVERFLOW|FE_UNDERFLOW) == 0);
+                }();
 
                 if(mant < mant.epsilon)
                     break;
