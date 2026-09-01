@@ -50,6 +50,7 @@ alias xSemaphoreTake = xQueueSemaphoreTake;
 auto _xSemaphoreGive(SemaphoreHandle_t xSemaphore) => xQueueGenericSend(cast(QueueHandle_t) xSemaphore, null , TickType_t(0) , BaseType_t(0));
 void _vSemaphoreDelete(SemaphoreHandle_t xSemaphore) { vQueueDelete(cast(QueueHandle_t) xSemaphore); }
 
+c_long xTaskCreate(void function(void*), const(const(char)*), const(ushort), void*, c_ulong, tskTaskControlBlock**);
 tskTaskControlBlock* xTaskCreateStatic(void function(void*), const(const(char)*), const(uint), void*, c_ulong, uint*, xSTATIC_TCB*);
 tskTaskControlBlock* xTaskGetCurrentTaskHandle();
 void vTaskDelay(const(uint));
