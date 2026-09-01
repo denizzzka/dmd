@@ -32,10 +32,12 @@ alias EventGroupHandle_t = EventGroupDef_t*;
 struct QueueDefinition;
 alias QueueHandle_t = QueueDefinition*;
 alias SemaphoreHandle_t = QueueDefinition*;
-struct xSTATIC_TCB; //TODO: size unknown but needed
+struct xSTATIC_TCB;
 alias StaticTask_t = xSTATIC_TCB;
 alias TaskFunction_t = void function(void*);
 struct tskTaskControlBlock;
+alias TaskHandle_t = tskTaskControlBlock*;
+alias TaskStatus_t = xTASK_STATUS;
 
 EventGroupDef_t* xEventGroupCreate();
 void vEventGroupDelete(EventGroupDef_t*);
