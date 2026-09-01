@@ -50,11 +50,35 @@ alias xSemaphoreTake = xQueueSemaphoreTake;
 auto _xSemaphoreGive(SemaphoreHandle_t xSemaphore) => xQueueGenericSend(cast(QueueHandle_t) xSemaphore, null , TickType_t(0) , BaseType_t(0));
 void _vSemaphoreDelete(SemaphoreHandle_t xSemaphore) { vQueueDelete(cast(QueueHandle_t) xSemaphore); }
 
+enum eTaskState
+{
+    eRunning = 0,
+    eReady = 1,
+    eBlocked = 2,
+    eSuspended = 3,
+    eDeleted = 4,
+    eInvalid = 5,
+}
+
+struct xTASK_STATUS
+{
+    tskTaskControlBlock* xHandle;
+    const(char)* pcTaskName;
+    c_ulong xTaskNumber;
+    eTaskState eCurrentState;
+    c_ulong uxCurrentPriority;
+    c_ulong uxBasePriority;
+    uint ulRunTimeCounter;
+    uint* pxStackBase;
+    ushort usStackHighWaterMark;
+}
+
 c_long xTaskCreate(void function(void*), const(const(char)*), const(ushort), void*, c_ulong, tskTaskControlBlock**);
 tskTaskControlBlock* xTaskCreateStatic(void function(void*), const(const(char)*), const(uint), void*, c_ulong, uint*, xSTATIC_TCB*);
 tskTaskControlBlock* xTaskGetCurrentTaskHandle();
 void vTaskDelay(const(uint));
 void vTaskDelete(tskTaskControlBlock*);
+void vTaskGetInfo(tskTaskControlBlock*, xTASK_STATUS*, c_long, eTaskState);
 uint xTaskGetTickCount();
 void vTaskResume(tskTaskControlBlock*);
 void vTaskSuspend();
