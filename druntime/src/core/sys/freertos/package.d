@@ -21,6 +21,9 @@ alias TickType_t = uint;
 
 enum pdTRUE = c_long(1);
 enum pdFALSE = c_long(0);
+enum pdPASS = pdTRUE;
+enum pdFAIL = pdFALSE;
+
 enum portMAX_DELAY = TickType_t(0xffffffff);
 enum portNVIC_PENDSVSET_BIT = 1UL << 28UL;
 
