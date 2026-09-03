@@ -72,10 +72,7 @@ class Thread : ThreadBase
 
     override final @property bool isRunning() nothrow @nogc => true;
 
-    static void sleep( Duration val ) @nogc nothrow @trusted
-    {
-        assert(false, assertMsg);
-    }
+    static void sleep( Duration val ) @nogc nothrow @trusted {}
 
     static void yield() @nogc nothrow
     {
