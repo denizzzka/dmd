@@ -922,6 +922,7 @@ extern (C) void thread_init() @nogc nothrow
 
     _mainThreadStore[] = cast(void[]) __traits(initSymbol, Thread)[];
     Thread.sm_main = attachThread((cast(Thread)_mainThreadStore.ptr).__ctor());
+    assert(Thread.sm_main !is null);
 }
 
 private alias MainThreadStore = void[__traits(classInstanceSize, Thread)];

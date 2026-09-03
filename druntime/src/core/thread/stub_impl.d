@@ -29,10 +29,7 @@ class Thread : ThreadBase
         assert(false, assertMsg);
     }
 
-    package this( size_t sz = 0 ) @safe pure nothrow @nogc
-    {
-        assert(false, assertMsg);
-    }
+    package this( size_t sz = 0 ) @safe pure nothrow @nogc {}
 
     ~this() nothrow @nogc {}
 
@@ -116,9 +113,7 @@ package void afterStopTheWorld(bool suspendedSelf, size_t cnt) @nogc nothrow
 }
 
 package void loadStackAndRegInfo(Thread t, const bool sameThread) nothrow @nogc
-{
-    assert(false, assertMsg);
-}
+{}
 
 package void purgeStackAndRegInfo(Thread t, const bool sameThread) nothrow @nogc
 {
@@ -138,7 +133,7 @@ package auto gettid() => 0;
 
 package void* getStackBottomImpl() nothrow @nogc
 {
-    assert(false, assertMsg);
+    return null;
 }
 
 package struct LLThreadProperties

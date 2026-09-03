@@ -17,7 +17,6 @@ import core.stdc.errno : errno;
 import core.stdc.stdio : fflush, fprintf, fwrite, stderr, stdout;
 import core.stdc.stdlib : alloca, EXIT_FAILURE, EXIT_SUCCESS, free, malloc, realloc;
 import core.stdc.string : strerror;
-import core.thread : isSingleThreaded;
 import rt.config : rt_cmdline_enabled, rt_configOption;
 import rt.memory;
 import rt.sections;
@@ -130,7 +129,7 @@ extern (C) int rt_init()
         // this initializes mono time before anything else to allow usage
         // in other druntime systems.
         _d_initMonoTime();
-        static if(!isSingleThreaded) thread_init();
+        thread_init();
         // TODO: fixme - calls GC.addRange -> Initializes GC
         initStaticDataGC();
         rt_moduleCtor();
@@ -158,10 +157,10 @@ extern (C) int rt_term()
     try
     {
         rt_moduleTlsDtor();
-        static if(!isSingleThreaded) thread_joinAll();
+        thread_joinAll();
         rt_moduleDtor();
         gc_term();
-        static if(!isSingleThreaded) thread_term();
+        thread_term();
         return 1;
     }
     catch (Throwable t)
