@@ -19,14 +19,17 @@ package void* swapContextImpl(void* newContext) nothrow @nogc
 version (CoreDdoc) {} else
 class Thread : ThreadBase
 {
-    this( void function() fn, size_t sz = 0 ) @safe pure nothrow @nogc
+    private void function() fn;
+    private void delegate() dg;
+
+    this(void function() fn, size_t sz = 0) @safe pure nothrow @nogc
     {
-        assert(false, assertMsg);
+        this.fn = fn;
     }
 
     this( void delegate() dg, size_t sz = 0 ) @safe pure nothrow @nogc
     {
-        assert(false, assertMsg);
+        this.dg = dg;
     }
 
     package this( size_t sz = 0 ) @safe pure nothrow @nogc {}
@@ -43,9 +46,14 @@ class Thread : ThreadBase
         return null;
     }
 
-    final Thread start() nothrow
+    final Thread start()
     {
-        assert(false, assertMsg);
+        if(dg !is null)
+            dg();
+        else
+            fn();
+
+        return this;
     }
 
     override final Throwable join( bool rethrow = true )
