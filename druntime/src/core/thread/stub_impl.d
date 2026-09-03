@@ -19,9 +19,20 @@ package void* swapContextImpl(void* newContext) nothrow @nogc
 version (CoreDdoc) {} else
 class Thread : ThreadBase
 {
-    this( void function() fn, size_t sz = 0 ) @safe pure nothrow @nogc {}
-    this( void delegate() dg, size_t sz = 0 ) @safe pure nothrow @nogc {}
-    package this( size_t sz = 0 ) @safe pure nothrow @nogc {}
+    this( void function() fn, size_t sz = 0 ) @safe pure nothrow @nogc
+    {
+        assert(false, assertMsg);
+    }
+
+    this( void delegate() dg, size_t sz = 0 ) @safe pure nothrow @nogc
+    {
+        assert(false, assertMsg);
+    }
+
+    package this( size_t sz = 0 ) @safe pure nothrow @nogc
+    {
+        assert(false, assertMsg);
+    }
 
     ~this() nothrow @nogc {}
 
