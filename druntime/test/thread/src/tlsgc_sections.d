@@ -47,6 +47,9 @@ void test()
 
 void main()
 {
+    if(core.thread.isSingleThreaded)
+        return;
+
     g_mutex = new Mutex;
     g_cond = new Condition(g_mutex);
 
