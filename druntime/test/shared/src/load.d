@@ -122,7 +122,9 @@ void runTests(string libName)
 
     testEH();
     testGC();
-    testInit();
+
+    static if(!isSingleThreaded)
+        testInit();
 
     closeLib(handle);
     assert(findModuleInfo("lib") is null);
