@@ -32,6 +32,9 @@ void* entry_point2(void*)
 
 void main()
 {
+    if(core.thread.isSingleThreaded)
+        return;
+
     // allocate some garbage
     auto x = new int[1000];
 

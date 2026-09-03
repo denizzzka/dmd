@@ -5,6 +5,9 @@ __gshared bool caught;
 
 void main()
 {
+    if(core.thread.isSingleThreaded)
+        return;
+
     Thread t = new MyThread(&entry);
     t.start();
     t.join();

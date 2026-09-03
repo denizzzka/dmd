@@ -5,6 +5,9 @@ __gshared bool caught;
 
 void main()
 {
+    if(core.thread.isSingleThreaded)
+        return;
+
     filterThreadThrowableHandler = (ref Throwable t) {
         if (auto t2 = cast(AssertError) t)
         {
