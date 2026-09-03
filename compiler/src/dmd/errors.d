@@ -13,7 +13,6 @@ module dmd.errors;
 
 public import core.stdc.stdarg;
 public import dmd.root.string: fTuple;
-public import dmd.hdrgen : toErrMsg;
 import core.stdc.stdio;
 import core.stdc.stdlib;
 import core.stdc.string;
@@ -409,6 +408,8 @@ else
  *      format = printf-style format specification
  *      ...    = printf-style variadic arguments
  */
+version (LDC) // LDC needs updating to add eSink.warning instead of warning
+{
 static if (__VERSION__ < 2092)
     extern (C++) void warning(Loc loc, const(char)* format, ...)
     {
@@ -425,6 +426,7 @@ else
         global.errorSink.vwarning(loc, format, ap);
         va_end(ap);
     }
+}
 
 /**
  * Print additional details about a warning message.
