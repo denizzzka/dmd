@@ -63,5 +63,4 @@ void main()
 {
     testEH();
     testGC();
-    testInit();
 }

@@ -199,6 +199,4 @@ package bool launchLLThread(LLThreadProperties* tprop, ref LLThreadContext conte
 
 version (CoreDdoc) {} else
 void joinLowLevelThread(ThreadID tid) nothrow @nogc
-{
-    assert(false, assertMsg);
-}
+{}
