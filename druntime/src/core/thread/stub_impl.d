@@ -40,7 +40,7 @@ class Thread : ThreadBase
 
     override final void[] savedRegisters() nothrow @nogc
     {
-        assert(false, assertMsg);
+        return null;
     }
 
     final Thread start() nothrow
@@ -116,9 +116,7 @@ package void loadStackAndRegInfo(Thread t, const bool sameThread) nothrow @nogc
 {}
 
 package void purgeStackAndRegInfo(Thread t, const bool sameThread) nothrow @nogc
-{
-    assert(false, assertMsg);
-}
+{}
 
 version (CoreDdoc) {} else
 private extern (C) void* thread_entryPoint( void* arg ) nothrow
