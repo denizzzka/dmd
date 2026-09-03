@@ -156,10 +156,11 @@ else
     }
 }
 
+//TODO: move to core.internal
 version (WASI)
-    package(core) enum isSingleThreaded = true;
+    enum isSingleThreaded = true;
 else
-    package(core) enum isSingleThreaded = false;
+    enum isSingleThreaded = false;
 
 version (CoreDdoc) {} else
 class Thread : ThreadBase

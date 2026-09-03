@@ -6,7 +6,7 @@ import core.thread.threadbase;
 import core.time: Duration;
 import core.thread.types: ll_ThreadData, ThreadDescr;
 
-package(core) enum isSingleThreaded = true;
+enum isSingleThreaded = true;
 
 private alias ThreadID = size_t;
 private immutable assertMsg = "threading not implemented";
@@ -19,20 +19,9 @@ package void* swapContextImpl(void* newContext) nothrow @nogc
 version (CoreDdoc) {} else
 class Thread : ThreadBase
 {
-    this( void function() fn, size_t sz = 0 ) @safe pure nothrow @nogc
-    {
-        assert(false, assertMsg);
-    }
-
-    this( void delegate() dg, size_t sz = 0 ) @safe pure nothrow @nogc
-    {
-        assert(false, assertMsg);
-    }
-
-    package this( size_t sz = 0 ) @safe pure nothrow @nogc
-    {
-        assert(false, assertMsg);
-    }
+    this( void function() fn, size_t sz = 0 ) @safe pure nothrow @nogc {}
+    this( void delegate() dg, size_t sz = 0 ) @safe pure nothrow @nogc {}
+    package this( size_t sz = 0 ) @safe pure nothrow @nogc {}
 
     ~this() nothrow @nogc {}
 
@@ -81,6 +70,8 @@ class Thread : ThreadBase
         assert(false, assertMsg);
     }
 
+    override final @property bool isRunning() nothrow @nogc => true;
+
     static void sleep( Duration val ) @nogc nothrow @trusted
     {
         assert(false, assertMsg);
@@ -93,13 +84,10 @@ class Thread : ThreadBase
 
     package static ThreadDescr getCurrentThreadDescr() nothrow @nogc
     {
-        assert(false, assertMsg);
+        return ThreadDescr(tid: 0);
     }
 
-    package static void afterDeploy() nothrow @nogc
-    {
-        assert(false, assertMsg);
-    }
+    package static void afterDeploy() nothrow @nogc {}
 }
 
 // Returns true on success
