@@ -133,7 +133,8 @@ package auto gettid() => 0;
 
 package void* getStackBottomImpl() nothrow @nogc
 {
-    return null;
+    //FIXME:
+    return getStackTop();
 }
 
 package struct LLThreadProperties
