@@ -1,7 +1,7 @@
 /// Single-threaded Thread stub
 module core.thread.stub_impl;
 
-import core.thread.osthread: toThread;
+import core.thread.osthread: toThread, _d_eh_swapContext;
 import core.thread.threadbase;
 import core.time: Duration;
 import core.thread.types: ll_ThreadData, ThreadDescr;
@@ -13,7 +13,7 @@ private immutable assertMsg = "threading not implemented";
 
 package void* swapContextImpl(void* newContext) nothrow @nogc
 {
-    assert(false, assertMsg);
+    return _d_eh_swapContext(newContext);
 }
 
 version (CoreDdoc) {} else
