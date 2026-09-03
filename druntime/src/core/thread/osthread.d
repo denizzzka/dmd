@@ -301,6 +301,8 @@ private extern(D) static void thread_yield() @nogc nothrow
 
 ///
 static if (!isSingleThreaded)
+{
+
 unittest
 {
     class DerivedThread : Thread
@@ -330,7 +332,6 @@ unittest
     }).start();
 }
 
-static if (!isSingleThreaded)
 unittest
 {
     int x = 0;
@@ -342,7 +343,6 @@ unittest
     assert( x == 1 );
 }
 
-static if (!isSingleThreaded)
 unittest
 {
     enum MSG = "Test message.";
@@ -363,7 +363,6 @@ unittest
     }
 }
 
-static if (!isSingleThreaded)
 unittest
 {
     // use >pageSize to avoid stack overflow (e.g. in an syscall)
@@ -371,7 +370,6 @@ unittest
     thr.join();
 }
 
-static if (!isSingleThreaded)
 unittest
 {
     import core.memory : GC;
@@ -388,7 +386,6 @@ unittest
     t2.join();
 }
 
-static if (!isSingleThreaded)
 unittest
 {
     import core.sync.semaphore;
@@ -442,7 +439,6 @@ unittest
     }
 }
 
-static if (!isSingleThreaded)
 unittest // Bugzilla 8960
 {
     import core.sync.semaphore;
@@ -456,6 +452,8 @@ unittest // Bugzilla 8960
         auto prio = thr.priority;    // getting priority doesn't cause error
         assert(prio >= PRIORITY_MIN && prio <= PRIORITY_MAX);
     }
+}
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
