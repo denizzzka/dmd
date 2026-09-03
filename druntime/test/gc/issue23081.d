@@ -29,6 +29,9 @@ import core.time;
 
 void main()
 {
+    static if(isSingleThreaded)
+        return;
+
     auto collections = GC.profileStats().numCollections;
 
     // Allocate enough to fill the first GC pool (minPoolSize:1 = 1MB) so the
