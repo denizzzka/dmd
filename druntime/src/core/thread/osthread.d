@@ -26,7 +26,8 @@ import core.time;
 ///////////////////////////////////////////////////////////////////////////////
 
 version (Posix)
-    public import core.thread.posix_impl;
+    public import core.thread.stub_impl;
+    //~ public import core.thread.posix_impl;
 else version (Windows)
     public import core.thread.windows_impl;
 else

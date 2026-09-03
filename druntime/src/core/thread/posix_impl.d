@@ -20,7 +20,7 @@ import core.thread.threadbase;
 import core.thread.types : isStackGrowingDown, ThreadID, ThreadDescr, ll_ThreadData;
 import core.time;
 
-version (Posix):
+version (Posix_disabled):
 
 version (OSX)
     version = Darwin;
