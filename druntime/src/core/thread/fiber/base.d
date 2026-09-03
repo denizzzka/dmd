@@ -990,6 +990,7 @@ unittest
 }
 
 // stress testing GC stack scanning
+static if(!isSingleThreaded)
 unittest
 {
     import core.memory;
