@@ -140,10 +140,29 @@ public auto getpid() => 0;
 
 package auto gettid() => 0;
 
+//FIXME: remove
+import core.sys.posix.pthread;
+private extern(C) int pthread_getattr_np(pthread_t thread, pthread_attr_t* attr) @nogc nothrow;
+
 package void* getStackBottomImpl() nothrow @nogc
 {
-    //FIXME:
-    return getStackTop();
+    version(linux)
+    {
+        import core.thread.types: isStackGrowingDown;
+
+        pthread_attr_t attr;
+        void* addr; size_t size;
+
+        pthread_attr_init(&attr);
+        pthread_getattr_np(pthread_self(), &attr);
+        pthread_attr_getstack(&attr, &addr, &size);
+        pthread_attr_destroy(&attr);
+        static if (isStackGrowingDown)
+            addr += size;
+        return addr;
+    }
+    else
+        static assert(false, "Platform not supported.");
 }
 
 package struct LLThreadProperties

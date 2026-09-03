@@ -931,6 +931,7 @@ unittest
     first.call();
     second.call();
     first.call();
+    assert(false, "I am here!");
     second.call();
     assert(first.state == Fiber.State.TERM);
     assert(second.state == Fiber.State.TERM);
