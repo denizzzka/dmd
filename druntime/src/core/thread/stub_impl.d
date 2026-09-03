@@ -27,7 +27,7 @@ class Thread : ThreadBase
         this.fn = fn;
     }
 
-    this( void delegate() dg, size_t sz = 0 ) @safe pure nothrow @nogc
+    this(void delegate() dg, size_t sz = 0) @safe pure nothrow @nogc
     {
         this.dg = dg;
     }
@@ -50,7 +50,7 @@ class Thread : ThreadBase
     {
         if(dg !is null)
             dg();
-        else
+        else if(fn !is null)
             fn();
 
         return this;
