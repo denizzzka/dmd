@@ -103,7 +103,7 @@ class Thread : ThreadBase
 
     package static ThreadDescr getCurrentThreadDescr() nothrow @nogc
     {
-        return ThreadDescr(tid: 0);
+        return ThreadDescr(tid: gettid());
     }
 
     package static void afterDeploy() nothrow @nogc {}
@@ -135,7 +135,7 @@ package void purgeStackAndRegInfo(Thread t, const bool sameThread) nothrow @nogc
 version (CoreDdoc) {} else
 public auto getpid() => 0;
 
-package auto gettid() => 0;
+package auto gettid() => 1;
 
 //FIXME: remove
 import core.sys.posix.pthread;
