@@ -300,9 +300,6 @@ private extern(D) static void thread_yield() @nogc nothrow
 }
 
 ///
-static if (!isSingleThreaded)
-{
-
 unittest
 {
     class DerivedThread : Thread
@@ -331,6 +328,9 @@ unittest
         // Codes to run in the newly created thread.
     }).start();
 }
+
+static if (!isSingleThreaded)
+{
 
 unittest
 {
