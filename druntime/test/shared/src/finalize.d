@@ -60,6 +60,10 @@ void main(string[] args)
     setFinalizeCounter(finalizeCounterPtr);
 
     runTest();
+
+    static if(isSingleThreaded)
+        return;
+
     auto thr = new Thread(&runTest);
     thr.start();
     thr.join();

@@ -58,7 +58,10 @@ class Thread : ThreadBase
 
     override final Throwable join( bool rethrow = true )
     {
-        assert(false, assertMsg);
+        fn = null;
+        dg = null;
+
+        return null;
     }
 
     @property static int PRIORITY_MIN() @nogc nothrow pure @trusted

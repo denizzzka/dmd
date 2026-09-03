@@ -11,6 +11,9 @@ static ~this()
 
 void main()
 {
+    static if(isSingleThreaded)
+        return;
+
     sem = new Semaphore;
     auto thr = new Thread({assert(sem.wait(1.seconds));});
     thr.start();
