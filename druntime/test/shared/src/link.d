@@ -61,6 +61,11 @@ void testInit()
 
 void main()
 {
+    import core.thread : isSingleThreaded;
+
     testEH();
     testGC();
+
+    static if(!isSingleThreaded)
+        testInit();
 }
