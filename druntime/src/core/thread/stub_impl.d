@@ -133,12 +133,6 @@ package void purgeStackAndRegInfo(Thread t, const bool sameThread) nothrow @nogc
 {}
 
 version (CoreDdoc) {} else
-private extern (C) void* thread_entryPoint( void* arg ) nothrow
-{
-    assert(false, assertMsg);
-}
-
-version (CoreDdoc) {} else
 public auto getpid() => 0;
 
 package auto gettid() => 0;
