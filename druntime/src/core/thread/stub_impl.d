@@ -147,8 +147,8 @@ else version (Windows)
 else
     static assert(false, "Platform not supported.");
 
-package void* getStackBottomImpl() nothrow @nogc => thirdParty.getStackBottomImpl;
-package void* swapContextImpl(void* newContext) nothrow @nogc => thirdParty.swapContextImpl(newContext);
+alias getStackBottomImpl = thirdParty.getStackBottomImpl;
+alias swapContextImpl = thirdParty.swapContextImpl;
 
 package struct LLThreadProperties
 {
