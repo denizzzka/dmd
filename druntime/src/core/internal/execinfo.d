@@ -29,6 +29,10 @@
 
 module core.internal.execinfo;
 
+static import core.thread;
+///
+enum bool isSingleThreaded = core.thread.isSingleThreaded;
+
 version (OSX)
     version = Darwin;
 else version (iOS)

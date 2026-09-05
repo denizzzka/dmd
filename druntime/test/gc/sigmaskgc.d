@@ -5,6 +5,7 @@ extern(C) __gshared string[] rt_options = [ "gcopt=parallel:1" ];
 
 void main()
 {
+    import core.internal.execinfo : isSingleThreaded;
     import core.thread;
 
     static if(isSingleThreaded)

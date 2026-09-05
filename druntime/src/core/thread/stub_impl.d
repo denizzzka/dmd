@@ -6,7 +6,7 @@ import core.thread.threadbase;
 import core.time: Duration;
 import core.thread.types: ll_ThreadData, ThreadDescr;
 
-enum isSingleThreaded = true;
+package(core) enum isSingleThreaded = true;
 
 private alias ThreadID = size_t;
 private immutable assertMsg = "threading not implemented";

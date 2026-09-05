@@ -1,3 +1,4 @@
+import core.internal.execinfo : isSingleThreaded;
 import core.memory;
 import core.sync.condition;
 import core.sync.mutex;
@@ -47,7 +48,7 @@ void test()
 
 void main()
 {
-    if(core.thread.isSingleThreaded)
+    if(isSingleThreaded)
         return;
 
     g_mutex = new Mutex;

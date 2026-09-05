@@ -1,9 +1,10 @@
 debug (SENTINEL)
 void main()
 {
+    import core.internal.execinfo : isSingleThreaded;
     import core.stdc.stdio : printf;
     import core.sys.posix.unistd : _exit;
-    import core.thread : isSingleThreaded, Thread, thread_detachThis;
+    import core.thread : Thread, thread_detachThis;
     import core.memory : GC;
 
     static if(isSingleThreaded)

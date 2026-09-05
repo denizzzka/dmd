@@ -1,3 +1,4 @@
+import core.internal.execinfo : isSingleThreaded;
 import core.memory;
 import core.sys.posix.pthread : pthread_create, pthread_join;
 import core.sys.posix.sys.types : pthread_t;
@@ -32,7 +33,7 @@ void* entry_point2(void*)
 
 void main()
 {
-    if(core.thread.isSingleThreaded)
+    if(isSingleThreaded)
         return;
 
     // allocate some garbage

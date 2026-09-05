@@ -26,6 +26,8 @@ import core.thread;
 import core.stdc.stdio;
 import core.sys.posix.sys.resource;
 import core.time;
+import core.internal.execinfo : isSingleThreaded;
+
 
 void main()
 {

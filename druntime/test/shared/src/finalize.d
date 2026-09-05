@@ -1,4 +1,5 @@
 import core.atomic : atomicLoad;
+import core.internal.execinfo : isSingleThreaded;
 import core.internal.traits : Unshared;
 import core.runtime;
 import core.stdc.string : strrchr;
