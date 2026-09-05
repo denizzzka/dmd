@@ -1,7 +1,6 @@
 /// Single-threaded Thread stub
 module core.thread.stub_impl;
 
-import core.thread.osthread: toThread, _d_eh_swapContext;
 import core.thread.threadbase;
 import core.time: Duration;
 import core.thread.types: ll_ThreadData, ThreadDescr;
@@ -10,50 +9,6 @@ package(core) enum isSingleThreaded = true;
 
 private alias ThreadID = size_t;
 private immutable assertMsg = "threading not implemented";
-
-version (DigitalMars)
-{
-    extern(C) void* _d_eh_swapContextDwarf(void* newContext) nothrow @nogc;
-
-    package void* swapContextImpl(void* newContext) nothrow @nogc
-    {
-        /* Detect at runtime which scheme is being used.
-         * Eventually, determine it statically.
-         */
-        static int which = 0;
-        final switch (which)
-        {
-            case 0:
-            {
-                assert(newContext == null);
-                auto p = _d_eh_swapContext(newContext);
-                auto pdwarf = _d_eh_swapContextDwarf(newContext);
-                if (p)
-                {
-                    which = 1;
-                    return p;
-                }
-                else if (pdwarf)
-                {
-                    which = 2;
-                    return pdwarf;
-                }
-                return null;
-            }
-            case 1:
-                return _d_eh_swapContext(newContext);
-            case 2:
-                return _d_eh_swapContextDwarf(newContext);
-        }
-    }
-}
-else
-{
-    package void* swapContextImpl(void* newContext) nothrow @nogc
-    {
-        return _d_eh_swapContext(newContext);
-    }
-}
 
 version (CoreDdoc) {} else
 class Thread : ThreadBase
@@ -185,17 +140,15 @@ public auto getpid() => 0;
 
 package auto gettid() => 1;
 
-package void* getStackBottomImpl() nothrow @nogc
-{
-    version (Posix)
-        import core.thread.posix_impl: impl = getStackBottomImpl;
-    else version (Windows)
-        import core.thread.windows_impl: impl = getStackBottomImpl;
-    else
-        static assert(false, "Unknown stack bottom");
+version (Posix)
+    import thirdParty = core.thread.posix_impl;
+else version (Windows)
+    import thirdParty = core.thread.windows_impl;
+else
+    static assert(false, "Platform not supported.");
 
-    return impl();
-}
+package void* getStackBottomImpl() nothrow @nogc => thirdParty.getStackBottomImpl;
+package void* swapContextImpl(void* newContext) nothrow @nogc => thirdParty.swapContextImpl(newContext);
 
 package struct LLThreadProperties
 {
