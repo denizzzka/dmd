@@ -26,14 +26,9 @@ import core.thread;
 import core.stdc.stdio;
 import core.sys.posix.sys.resource;
 import core.time;
-import core.internal.execinfo : isSingleThreaded;
-
 
 void main()
 {
-    static if(isSingleThreaded)
-        return;
-
     auto collections = GC.profileStats().numCollections;
 
     // Allocate enough to fill the first GC pool (minPoolSize:1 = 1MB) so the

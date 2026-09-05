@@ -5,16 +5,11 @@ extern(C) __gshared string[] rt_options = [ "gcopt=parallel:1" ];
 
 void main()
 {
-    import core.internal.execinfo : isSingleThreaded;
-    import core.thread;
-
-    static if(isSingleThreaded)
-        return;
-
     version (Posix)
     {
         import core.sys.posix.signal;
         import core.sys.posix.unistd;
+        import core.thread;
         import core.memory;
 
         sigset_t m;

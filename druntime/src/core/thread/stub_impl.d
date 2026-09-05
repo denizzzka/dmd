@@ -50,21 +50,34 @@ class Thread : ThreadBase
 
     override final Throwable join( bool rethrow = true )
     {
-        if(started)
+        if(!started)
+            return null;
+
+        if(rethrow)
+            run();
+        else
         {
-            if(dg !is null)
-            {
-                dg();
-                dg = null;
-            }
-            else if(fn !is null)
-            {
-                fn();
-                fn = null;
-            }
+            try
+                run();
+            catch(Exception e)
+                return e;
         }
 
         return null;
+    }
+
+    private void run()
+    {
+        if(dg !is null)
+        {
+            dg();
+            dg = null;
+        }
+        else if(fn !is null)
+        {
+            fn();
+            fn = null;
+        }
     }
 
     @property static int PRIORITY_MIN() @nogc nothrow pure @trusted
@@ -95,9 +108,7 @@ class Thread : ThreadBase
     override final @property bool isRunning() nothrow @nogc => true;
 
     static void sleep( Duration val ) @nogc nothrow @trusted
-    {
-        assert(false, assertMsg);
-    }
+    {}
 
     static void yield() @nogc nothrow
     {

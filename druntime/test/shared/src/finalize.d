@@ -1,5 +1,4 @@
 import core.atomic : atomicLoad;
-import core.internal.execinfo : isSingleThreaded;
 import core.internal.traits : Unshared;
 import core.runtime;
 import core.stdc.string : strrchr;
@@ -61,10 +60,6 @@ void main(string[] args)
     setFinalizeCounter(finalizeCounterPtr);
 
     runTest();
-
-    static if(isSingleThreaded)
-        return;
-
     auto thr = new Thread(&runTest);
     thr.start();
     thr.join();
