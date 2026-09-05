@@ -87,18 +87,21 @@ class Thread : ThreadBase
 
     final Thread start()
     {
-        if(dg !is null)
-            dg();
-        else if(fn !is null)
-            fn();
-
         return this;
     }
 
     override final Throwable join( bool rethrow = true )
     {
-        fn = null;
-        dg = null;
+        if(dg !is null)
+        {
+            dg();
+            dg = null;
+        }
+        else if(fn !is null)
+        {
+            fn();
+            fn = null;
+        }
 
         return null;
     }
