@@ -58,6 +58,7 @@ else
 version (CoreDdoc) {} else
 class Thread : ThreadBase
 {
+    private bool started;
     private void function() fn;
     private void delegate() dg;
 
@@ -87,20 +88,25 @@ class Thread : ThreadBase
 
     final Thread start()
     {
+        started = true;
+
         return this;
     }
 
     override final Throwable join( bool rethrow = true )
     {
-        if(dg !is null)
+        if(started)
         {
-            dg();
-            dg = null;
-        }
-        else if(fn !is null)
-        {
-            fn();
-            fn = null;
+            if(dg !is null)
+            {
+                dg();
+                dg = null;
+            }
+            else if(fn !is null)
+            {
+                fn();
+                fn = null;
+            }
         }
 
         return null;
