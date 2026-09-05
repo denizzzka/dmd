@@ -76,9 +76,9 @@ class Thread : ThreadBase
 
     ~this() nothrow @nogc {}
 
-    static Thread getThis() @safe nothrow @nogc
+    static Thread getThis() @trusted nothrow @nogc
     {
-        return ThreadBase.getThis().toThread;
+        return cast(Thread) cast(void*) ThreadBase.getThis();
     }
 
     override final void[] savedRegisters() nothrow @nogc

@@ -20,7 +20,8 @@ import core.thread.threadbase;
 import core.thread.types : isStackGrowingDown, ThreadID, ThreadDescr, ll_ThreadData;
 import core.time;
 
-version (Posix_disabled):
+//~ version (Posix_disabled):
+version (Posix):
 
 version (OSX)
     version = Darwin;
@@ -205,9 +206,9 @@ class Thread : ThreadBase
         }
     }
 
-    static Thread getThis() @safe nothrow @nogc
+    static Thread getThis() @trusted nothrow @nogc
     {
-        return ThreadBase.getThis().toThread;
+        return cast(Thread) cast(void*) ThreadBase.getThis();
     }
 
     version (Darwin)

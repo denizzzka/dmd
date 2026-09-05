@@ -84,9 +84,9 @@ class Thread : ThreadBase
         m_tdescr.hndl = m_tdescr.hndl.init;
     }
 
-    static Thread getThis() @safe nothrow @nogc
+    static Thread getThis() @trusted nothrow @nogc
     {
-        return ThreadBase.getThis().toThread;
+        return cast(Thread) cast(void*) ThreadBase.getThis();
     }
 
     version (all)
