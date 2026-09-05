@@ -185,29 +185,16 @@ public auto getpid() => 0;
 
 package auto gettid() => 1;
 
-//FIXME: remove
-import core.sys.posix.pthread;
-private extern(C) int pthread_getattr_np(pthread_t thread, pthread_attr_t* attr) @nogc nothrow;
-
 package void* getStackBottomImpl() nothrow @nogc
 {
-    version(linux)
-    {
-        import core.thread.types: isStackGrowingDown;
-
-        pthread_attr_t attr;
-        void* addr; size_t size;
-
-        pthread_attr_init(&attr);
-        pthread_getattr_np(pthread_self(), &attr);
-        pthread_attr_getstack(&attr, &addr, &size);
-        pthread_attr_destroy(&attr);
-        static if (isStackGrowingDown)
-            addr += size;
-        return addr;
-    }
+    version (Posix)
+        import core.thread.posix_impl: impl = getStackBottomImpl;
+    else version (Windows)
+        import core.thread.windows_impl: impl = getStackBottomImpl;
     else
-        static assert(false, "Platform not supported.");
+        static assert(false, "Unknown stack bottom");
+
+    return impl();
 }
 
 package struct LLThreadProperties
