@@ -1,3 +1,4 @@
+import core.internal.execinfo : isSingleThreaded;
 import core.thread, core.memory, core.atomic;
 
 // test init
@@ -42,6 +43,9 @@ void testGC()
 
 extern(C) int runTests()
 {
+    static if(isSingleThreaded)
+        return true;
+
     try
     {
         assert(atomicLoad!(MemoryOrder.acq)(gctor) == 1);
